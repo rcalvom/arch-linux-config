@@ -5,7 +5,7 @@ from libqtile.config import Key
 from libqtile.command import lazy
 
 # Reference to Windows key
-windows_key = "mod4"
+mod = "mod4"
 
 # Reference to Alt key
 alt = "mod1"
@@ -35,35 +35,35 @@ keys = [
     Key([alt, shift], "Down", lazy.layout.shuffle_down()),
 
     # Toggle between different layouts as defined below
-    Key([windows_key], "Tab", lazy.next_layout()),
-    Key([windows_key, shift], "Tab", lazy.prev_layout()),
+    Key([mod], "Tab", lazy.next_layout()),
+    Key([mod, shift], "Tab", lazy.prev_layout()),
 
     # Kill window
-    Key([windows_key], "w", lazy.window.kill()),
+    Key([mod], "w", lazy.window.kill()),
     Key([alt], "F4", lazy.window.kill()),
 
     # Switch focus of monitors
-    Key([windows_key], "period", lazy.next_screen()),
-    Key([windows_key], "comma", lazy.prev_screen()),
+    Key([mod], "period", lazy.next_screen()),
+    Key([mod], "comma", lazy.prev_screen()),
 
     # Restart Qtile
-    Key([windows_key], "l", lazy.shutdown()),
+    Key([mod], "l", lazy.shutdown()),
 
     # Menu
-    Key([windows_key], "r", lazy.spawn("rofi -show drun")),
+    Key([mod], "m", lazy.spawn("rofi -show drun")),
 
     # Window Nav
-    Key([windows_key, shift], "m", lazy.spawn("rofi -show")),
+    Key([mod, shift], "m", lazy.spawn("rofi -show")),
 
     # Browser
-    Key([windows_key], "b", lazy.spawn("firefox")),
+    Key([mod], "b", lazy.spawn("firefox")),
 
     # Terminal
-    Key([windows_key], "Return", lazy.spawn("alacritty")),
+    Key([mod], "Return", lazy.spawn("alacritty")),
 
     # Redshift
-    Key([windows_key], "r", lazy.spawn("redshift -O 4500")),
-    Key([windows_key, shift], "r", lazy.spawn("redshift -x")),
+    Key([mod], "r", lazy.spawn("redshift -O 4500")),
+    Key([mod, shift], "r", lazy.spawn("redshift -x")),
 
     # Screenshot
     Key([], "Print", lazy.spawn("maim --format png --quality 1 --hidecursor ~/Pictures/screenshots/screenshot_\"$(date +%Y-%M-%d_%H-%m-%S)\".png")),
