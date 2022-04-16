@@ -2,7 +2,6 @@
 
 # System
 from os import path
-import subprocess
 import json
 
 # Configuration

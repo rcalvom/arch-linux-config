@@ -5,63 +5,69 @@ from libqtile.config import Key
 from libqtile.command import lazy
 
 # Reference to Windows key
-mod = "mod4"
+windows_key = "mod4"
 
-keys = [Key(key[0], key[1], *key[2:]) for key in [
+# Reference to Alt key
+alt = "mod1"
 
-     # Switch between windows in current stack pane
-    ([mod], "j", lazy.layout.down()),
-    ([mod], "k", lazy.layout.up()),
-    ([mod], "h", lazy.layout.left()),
-    ([mod], "l", lazy.layout.right()),
+# Reference to Shift key
+shift = "shift"
+
+# Reference to Control key
+control = "control"
+
+# List of Keybinds
+keys = [
+
+    # Switch focus between windows in current stack pane
+    Key([alt], "Tab", lazy.layout.up()),
+    Key([alt, shift], "Tab", lazy.layout.down()),
 
     # Change window sizes (MonadTall)
-    ([mod, "shift"], "l", lazy.layout.grow()),
-    ([mod, "shift"], "h", lazy.layout.shrink()),
+    Key([alt], "Up", lazy.layout.grow()),
+    Key([alt], "Down", lazy.layout.shrink()),
 
     # Toggle floating
-    ([mod, "shift"], "f", lazy.window.toggle_floating()),
+    Key([alt], "f", lazy.window.toggle_floating()),
 
     # Move windows up or down in current stack
-    ([mod, "shift"], "j", lazy.layout.shuffle_down()),
-    ([mod, "shift"], "k", lazy.layout.shuffle_up()),
+    Key([alt, shift], "Up", lazy.layout.shuffle_up()),
+    Key([alt, shift], "Down", lazy.layout.shuffle_down()),
 
     # Toggle between different layouts as defined below
-    ([mod], "Tab", lazy.next_layout()),
-    ([mod, "shift"], "Tab", lazy.prev_layout()),
+    Key([windows_key], "Tab", lazy.next_layout()),
+    Key([windows_key, shift], "Tab", lazy.prev_layout()),
 
     # Kill window
-    ([mod], "w", lazy.window.kill()),
+    Key([windows_key], "w", lazy.window.kill()),
+    Key([alt], "F4", lazy.window.kill()),
 
     # Switch focus of monitors
-    ([mod], "period", lazy.next_screen()),
-    ([mod], "comma", lazy.prev_screen()),
+    Key([windows_key], "period", lazy.next_screen()),
+    Key([windows_key], "comma", lazy.prev_screen()),
 
     # Restart Qtile
-    ([mod, "control"], "r", lazy.restart()),
-
-    ([mod, "control"], "q", lazy.shutdown()),
-    ([mod], "r", lazy.spawncmd()),
+    Key([windows_key], "l", lazy.shutdown()),
 
     # Menu
-    ([mod], "m", lazy.spawn("rofi -show drun")),
+    Key([windows_key], "r", lazy.spawn("rofi -show drun")),
 
     # Window Nav
-    ([mod, "shift"], "m", lazy.spawn("rofi -show")),
+    Key([windows_key, shift], "m", lazy.spawn("rofi -show")),
 
     # Browser
-    ([mod], "b", lazy.spawn("firefox")),
+    Key([windows_key], "b", lazy.spawn("firefox")),
 
     # Terminal
-    ([mod], "Return", lazy.spawn("alacritty")),
+    Key([windows_key], "Return", lazy.spawn("alacritty")),
 
     # Redshift
-    ([mod], "r", lazy.spawn("redshift -O 2400")),
-    ([mod, "shift"], "r", lazy.spawn("redshift -x")),
+    Key([windows_key], "r", lazy.spawn("redshift -O 4500")),
+    Key([windows_key, shift], "r", lazy.spawn("redshift -x")),
 
     # Screenshot
-    ([mod], "s", lazy.spawn("scrot")),
-    ([mod, "shift"], "s", lazy.spawn("scrot -s")),
-
-
-]]
+    Key([], "Print", lazy.spawn("maim --format png --quality 1 --hidecursor ~/Pictures/screenshots/screenshot_\"$(date +%Y-%M-%d_%H-%m-%S)\".png")),
+    Key([control], "Print", lazy.spawn("maim --format png --quality 1 --hidecursor | xclip -selection clipboard -t image/png")),
+    Key([shift], "Print", lazy.spawn("maim --select --format png --quality 1 --hidecursor ~/Pictures/screenshots/screenshot_\"$(date +%Y-%M-%d_%H-%m-%S)\".png")),
+    Key([control, shift], "Print", lazy.spawn("maim --select --format png --quality 1 --hidecursor | xclip -selection clipboard -t image/png"))
+]
