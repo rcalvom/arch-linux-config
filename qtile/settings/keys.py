@@ -64,9 +64,21 @@ keys = [
     # Terminal
     Key([mod], "Return", lazy.spawn("alacritty")),
 
+    # File explorer
+    Key([mod], "e", lazy.spawn("ranger")),
+
     # Redshift
     Key([mod], "r", lazy.spawn("redshift -O 4500")),
     Key([mod, shift], "r", lazy.spawn("redshift -x")),
+
+    # Volume Control
+    Key([], "XF86AudioLowerVolume", lazy.spawn("pamixer --decrease 10")),
+    Key([], "XF86AudioRaiseVolume", lazy.spawn("pamixer --increase 10")),
+    Key([], "XF86AudioMute", lazy.spawn("pamixer --toggle-mute")),
+
+    # Brightness
+    Key([], "XF86MonBrightnessUp", lazy.spawn("brightnessctl set +10%")),
+    Key([], "XF86MonBrightnessDown", lazy.spawn("brightnessctl set 10%-")),
 
     # Screenshot
     Key([], "Print", lazy.spawn('maim --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
