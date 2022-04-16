@@ -46,8 +46,11 @@ keys = [
     Key([mod], "period", lazy.next_screen()),
     Key([mod], "comma", lazy.prev_screen()),
 
-    # Restart Qtile
+    # Logout Qtile
     Key([mod], "l", lazy.shutdown()),
+
+    # Restart Qtile
+    Key([mod, shift], "l", lazy.restart()),
 
     # Menu
     Key([mod], "m", lazy.spawn("rofi -show drun")),
@@ -66,8 +69,8 @@ keys = [
     Key([mod, shift], "r", lazy.spawn("redshift -x")),
 
     # Screenshot
-    Key([], "Print", lazy.spawn("maim --format png --quality 1 --hidecursor ~/Pictures/screenshots/screenshot_\"$(date +%Y-%M-%d_%H-%m-%S)\".png")),
-    Key([control], "Print", lazy.spawn("maim --format png --quality 1 --hidecursor | xclip -selection clipboard -t image/png")),
-    Key([shift], "Print", lazy.spawn("maim --select --format png --quality 1 --hidecursor ~/Pictures/screenshots/screenshot_\"$(date +%Y-%M-%d_%H-%m-%S)\".png")),
-    Key([control, shift], "Print", lazy.spawn("maim --select --format png --quality 1 --hidecursor | xclip -selection clipboard -t image/png"))
+    Key([], "Print", lazy.spawn('maim --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
+    Key([control], "Print", lazy.spawn('maim --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png', shell=True)),
+    Key([shift], "Print", lazy.spawn('maim --select --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
+    Key([control, shift], "Print", lazy.spawn("maim --select --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png", shell=True)),
 ]
