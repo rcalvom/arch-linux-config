@@ -22,6 +22,8 @@ groups = [
 for i, group in enumerate(groups):
     actual_key = str(i + 1)
     keys.extend([
-        Key([alt], actual_key, lazy.group[group.name].toscreen()),
-        Key([alt, control], actual_key, lazy.window.togroup(group.name))
+        Key([alt], actual_key, lazy.group[group.name].toscreen(),
+            desc='Change to group "{}"'.format(group.name)),
+        Key([alt, control], actual_key, lazy.window.togroup(group.name),
+            desc='Send current window to group "{}"'.format(group.name))
     ])
