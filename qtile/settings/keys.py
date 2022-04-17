@@ -18,7 +18,6 @@ control = "control"
 
 # List of Keybinds
 keys = [
-
     # Switch focus between windows in current stack pane
     Key([alt], "Tab", lazy.layout.up()),
     Key([alt, shift], "Tab", lazy.layout.down()),
@@ -65,7 +64,7 @@ keys = [
     Key([mod], "Return", lazy.spawn("alacritty")),
 
     # File explorer
-    Key([mod], "e", lazy.spawn("ranger")),
+    Key([mod], "e", lazy.spawn("alacritty -e ranger")),
 
     # Redshift
     Key([mod], "r", lazy.spawn("redshift -O 4500")),
@@ -81,8 +80,12 @@ keys = [
     Key([], "XF86MonBrightnessDown", lazy.spawn("brightnessctl set 10%-")),
 
     # Screenshot
-    Key([], "Print", lazy.spawn('maim --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
-    Key([control], "Print", lazy.spawn('maim --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png', shell=True)),
-    Key([shift], "Print", lazy.spawn('maim --select --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
-    Key([control, shift], "Print", lazy.spawn("maim --select --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png", shell=True)),
+    Key([], "Print", lazy.spawn(
+        'maim --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
+    Key([control], "Print", lazy.spawn(
+        'maim --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png', shell=True)),
+    Key([shift], "Print", lazy.spawn(
+        'maim --select --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True)),
+    Key([control, shift], "Print", lazy.spawn(
+        "maim --select --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png", shell=True)),
 ]

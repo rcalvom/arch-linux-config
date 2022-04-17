@@ -11,11 +11,17 @@ import subprocess
 # Configuration
 from .widgets import primary_widgets, secondary_widgets
 
+
 def status_bar(widgets):
-    return bar.Bar(widgets, 24, opacity=0.92)
+    return bar.Bar(widgets, 28, opacity=0.92)
 
 
-screens = [Screen(top=status_bar(primary_widgets))]
+screens = [
+    Screen(
+        top=status_bar(primary_widgets), 
+        wallpaper='~/Pictures/wallpaper.png', 
+        wallpaper_mode='fill')
+    ]
 
 xrandr = "xrandr | grep -w 'connected' | cut -d ' ' -f 2 | wc -l"
 

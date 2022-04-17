@@ -7,26 +7,26 @@ from libqtile.config import Match
 # Configuration
 from .theme import colors
 
-layout_conf = {
-    'border_focus': colors['focus'][0],
-    'border_width': 2,
-    'margin': 5
-}
-
+# Group's layouts
 layouts = [
+    layout.MonadTall(
+        border_focus=colors['focus'][0],
+        border_width=2,
+        margin=5
+    ),
     layout.Max(),
-    layout.MonadTall(**layout_conf),
-    layout.MonadWide(**layout_conf),
-    layout.Bsp(**layout_conf),
-    layout.Matrix(columns=2, **layout_conf),
-    layout.RatioTile(**layout_conf),
-    # layout.Columns(),
-    # layout.Tile(),
-    # layout.TreeTab(),
-    # layout.VerticalTile(),
-    # layout.Zoomy(),
+    layout.Matrix(
+        columns=2,
+        border_focus=colors['focus'][0],
+        border_width=2,
+        margin=5
+    ),
+    layout.Zoomy(
+        margin=5
+    ),
 ]
 
+# Floating Layout, for floating windows
 floating_layout = layout.Floating(
     float_rules=[
         *layout.Floating.default_float_rules,
