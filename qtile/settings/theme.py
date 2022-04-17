@@ -1,4 +1,4 @@
-"""Qtile theme"""
+"""Qtile theme loading"""
 
 # System
 from os import path
@@ -9,24 +9,16 @@ from .path import qtile_path
 
 
 def load_theme():
-    theme = "dark-grey"
+    """Load the theme corresponding to theme.json file"""
 
-    config = path.join(qtile_path, "config.json")
-    if path.isfile(config):
-        with open(config) as f:
-            theme = json.load(f)["theme"]
-    else:
-        with open(config, "w") as f:
-            f.write(f'{{"theme": "{theme}"}}\n')
-
-
-    theme_file = path.join(qtile_path, "themes", f'{theme}.json')
-    if not path.isfile(theme_file):
-        raise Exception(f'"{theme_file}" does not exist')
-
-    with open(path.join(theme_file)) as f:
-        return json.load(f)
+    theme_config_path = path.join(qtile_path, 'theme.json')
+    try:
+        with open(theme_config_path) as f:
+            return json.load(f)
+    except Exception as e:
+        raise Exception(
+            'Failed loading theme from "theme.json" file.', e)
 
 
-if __name__ == "settings.theme":
+if __name__ == 'settings.theme':
     colors = load_theme()

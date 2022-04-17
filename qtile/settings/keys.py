@@ -19,8 +19,8 @@ control = "control"
 # List of Keybinds
 keys = [
     # Switch focus between windows in current stack pane
-    Key([alt], "Tab", lazy.layout.up()),
-    Key([alt, shift], "Tab", lazy.layout.down()),
+    Key([alt], "Tab", lazy.layout.down()),
+    Key([alt, shift], "Tab", lazy.layout.up()),
 
     # Change window sizes (MonadTall)
     Key([alt], "Up", lazy.layout.grow()),

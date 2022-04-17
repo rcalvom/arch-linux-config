@@ -20,8 +20,9 @@ screens = [
     Screen(
         top=status_bar(primary_widgets), 
         wallpaper='~/Pictures/wallpaper.png', 
-        wallpaper_mode='fill')
-    ]
+        wallpaper_mode='fill'
+    )
+]
 
 xrandr = "xrandr | grep -w 'connected' | cut -d ' ' -f 2 | wc -l"
 
@@ -34,11 +35,15 @@ command = subprocess.run(
 
 if command.returncode != 0:
     error = command.stderr.decode("UTF-8")
-    logger.error(f"Failed counting monitors using {xrandr}:\n{error}")
+    logger.error("Failed counting monitors using {0}:\n{1}".format(xrandr, error))
     connected_monitors = 1
 else:
     connected_monitors = int(command.stdout.decode("UTF-8"))
 
 if connected_monitors > 1:
     for _ in range(1, connected_monitors):
-        screens.append(Screen(top=status_bar(secondary_widgets)))
+        screens.append(
+            Screen(
+                top=status_bar(secondary_widgets)
+            )
+        )
