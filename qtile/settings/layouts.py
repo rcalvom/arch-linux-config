@@ -5,24 +5,24 @@ from libqtile import layout
 from libqtile.config import Match
 
 # Configuration
-from .theme import colors
+from .theme import theme
 
 # Group's layouts
 layouts = [
     layout.MonadTall(
-        border_focus=colors['focus'][0],
-        border_width=2,
-        margin=5
+        border_focus=theme['colors']['focus'],
+        border_width=theme['layouts']['border_width'],
+        margin=theme['layouts']['margin']
     ),
     layout.Max(),
     layout.Matrix(
-        columns=2,
-        border_focus=colors['focus'][0],
-        border_width=2,
-        margin=5
+        columns=theme['layouts']['columns'],
+        border_focus=theme['colors']['focus'],
+        border_width=theme['layouts']['border_width'],
+        margin=theme['layouts']['margin']
     ),
     layout.Zoomy(
-        margin=5
+        margin=theme['layouts']['margin']
     ),
 ]
 
@@ -37,5 +37,5 @@ floating_layout = layout.Floating(
         Match(title='branchdialog'),
         Match(title='pinentry'),
     ],
-    border_focus=colors["color4"][0]
+    border_focus=theme['colors']['focus']
 )

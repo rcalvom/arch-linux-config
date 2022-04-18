@@ -4,6 +4,9 @@
 from libqtile.config import Key
 from libqtile.command import lazy
 
+# Configuration
+from .path import user_path
+
 # Reference to Windows key
 mod = 'mod4'
 
@@ -87,11 +90,11 @@ keys = [
 
     # Screenshot
     Key([], "Print", lazy.spawn(
-        'maim --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True), desc='Save a screenshot'),
+        'maim --format png --quality 5 --hidecursor {0}/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png'.format(user_path), shell=True), desc='Save a screenshot'),
     Key([control], "Print", lazy.spawn(
         'maim --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png', shell=True), desc='Copy to clipboard a screenshot'),
     Key([shift], "Print", lazy.spawn(
-        'maim --select --format png --quality 5 --hidecursor /home/ricardo/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png', shell=True), desc='Save a snip'),
+        'maim --select --format png --quality 5 --hidecursor {0}/Pictures/screenshots/screenshot_"$(date +%Y-%M-%d_%H-%m-%S)".png'.format(user_path), shell=True), desc='Save a snip'),
     Key([control, shift], "Print", lazy.spawn(
         "maim --select --format png --quality 5 --hidecursor | xclip -selection clipboard -t image/png", shell=True), desc='Copy to clipboard a snip'),
 ]

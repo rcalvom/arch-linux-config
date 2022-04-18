@@ -21,4 +21,4 @@ def load_theme():
 
 
 if __name__ == 'settings.theme':
-    colors = load_theme()
+    theme = load_theme()
