@@ -69,32 +69,17 @@ primary_widgets = [
         fmt='墳 {}',
         padding=theme['widgets']['pulse_volume']['padding'],
     ),
-    widget.CPU(
+    widget.Backlight(
         background=theme['colors']['color1'],
-        format='﬙ {load_percent}%',
-        padding=theme['widgets']['cpu']['padding']
+        backlight_name='intel_backlight',
+        format='  {percent:2.0%}',
+        padding=10
     ),
-    widget.Memory(
+    widget.Battery(
         background=theme['colors']['color1'],
-        format=' {MemUsed:.0f}{mm}',
-        padding=theme['widgets']['memory']['padding']
-    ),
-    widget.Net(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        interface='enp63s0',
-        format='{down} ↓↑ {up}',
-        padding=theme['widgets']['net']['padding']
-    ),
-    widget.CurrentLayoutIcon(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        scale=theme['widgets']['current_layout_icon']['scale']
-    ),
-    widget.CurrentLayout(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        padding=theme['widgets']['current_layout']['padding']
+        battery=2,
+        format=' {percent:2.0%}',
+        padding=10
     ),
     widget.Clock(
         foreground=theme['colors']['text'],
