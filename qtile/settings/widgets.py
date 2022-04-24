@@ -7,37 +7,24 @@ from libqtile import widget
 from .theme import theme
 
 
-def icon(foreground='text', background='dark', fontsize=16, text="?"):
-    return widget.TextBox(
-        foreground=theme['colors'][foreground],
-        background=theme['colors'][background],
-        fontsize=fontsize,
-        text=text,
-        padding=3
-    )
-
-
-def powerline(foreground="light", background="dark"):
-    return widget.TextBox(
-        foreground=theme['colors'][foreground],
-        background=theme['colors'][background],
-        text="",
-        fontsize=37,
-        padding=-3
-    )
-
-
 def workspaces():
+    """
+    Create Widgets por Workspaces.
+    Include:
+        - Group buttons
+        - Window Name
+    """
     return [
         widget.GroupBox(
             foreground=theme['colors']['light'],
             background=theme['colors']['dark'],
-            font='UbuntuMono Nerd Font',
-            fontsize=19,
-            margin_y=3,
-            margin_x=0,
-            padding_y=8,
-            padding_x=10,
+            font=theme['widgets']['group_box']['font'],
+            fontsize=theme['widgets']['group_box']['fontsize'],
+            margin_y=theme['widgets']['group_box']['margin_y'],
+            margin_x=theme['widgets']['group_box']['margin_x'],
+            padding_y=theme['widgets']['group_box']['padding_y'],
+            padding_x=theme['widgets']['group_box']['padding_x'],
+            borderwidth=theme['widgets']['group_box']['borderwidth'],
             active=theme['colors']['active'],
             inactive=theme['colors']['inactive'],
             rounded=False,
@@ -53,20 +40,20 @@ def workspaces():
         widget.Sep(
             foreground=theme['colors']['dark'],
             background=theme['colors']['dark'],
-            linewidth=0,
-            padding=50
+            linewidth=theme['widgets']['separator']['linewidth'],
+            padding=theme['widgets']['separator']['padding']
         ),
         widget.WindowName(
             foreground=theme['colors']['light'],
             background=theme['colors']['dark'],
-            fontsize=14,
-            padding=0
+            fontsize=theme['widgets']['window_name']['fontsize'],
+            padding=theme['widgets']['window_name']['padding']
         ),
         widget.Sep(
             foreground=theme['colors']['dark'],
             background=theme['colors']['dark'],
-            linewidth=0,
-            padding=50
+            linewidth=theme['widgets']['separator']['linewidth'],
+            padding=theme['widgets']['separator']['padding']
         )
     ]
 
@@ -75,80 +62,62 @@ primary_widgets = [
     *workspaces(),
     widget.PulseVolume(
         background=theme['colors']['color1'],
-        update_interval=0.1,
-        step=10,
-        limit_max_volume=True,
-        volume_app="pamixer",
+        update_interval=theme['widgets']['pulse_volume']['update_interval'],
+        step=theme['widgets']['pulse_volume']['step'],
+        limit_max_volume=theme['widgets']['pulse_volume']['limit_max_volume'],
+        volume_app=theme['widgets']['pulse_volume']['volume_app'],
         fmt='墳 {}',
-        padding=10
+        padding=theme['widgets']['pulse_volume']['padding'],
     ),
     widget.CPU(
         background=theme['colors']['color1'],
         format='﬙ {load_percent}%',
-        padding=10
+        padding=theme['widgets']['cpu']['padding']
     ),
     widget.Memory(
         background=theme['colors']['color1'],
         format=' {MemUsed:.0f}{mm}',
-        padding=10
+        padding=theme['widgets']['memory']['padding']
     ),
     widget.Net(
         foreground=theme['colors']['text'],
         background=theme['colors']['color1'],
         interface='enp63s0',
         format='{down} ↓↑ {up}',
-        padding=10
+        padding=theme['widgets']['net']['padding']
     ),
     widget.CurrentLayoutIcon(
         foreground=theme['colors']['text'],
         background=theme['colors']['color1'],
-        scale=0.4
+        scale=theme['widgets']['current_layout_icon']['scale']
     ),
     widget.CurrentLayout(
         foreground=theme['colors']['text'],
         background=theme['colors']['color1'],
-        padding=10
+        padding=theme['widgets']['current_layout']['padding']
     ),
     widget.Clock(
         foreground=theme['colors']['text'],
         background=theme['colors']['color1'],
         format='  %d/%m/%Y - %I:%M %p',
-        padding=10
+        padding=theme['widgets']['clock']['padding']
     ),
     widget.Systray(
-        background=theme['colors']['dark'], 
-        padding=10
+        background=theme['colors']['dark'],
+        padding=theme['widgets']['systray']['padding']
     ),
 ]
 
 secondary_widgets = [
     *workspaces(),
-    widget.Sep(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['dark'],
-        linewidth=0,
-        padding=10
-    ),
-    powerline('color1', 'dark'),
-    widget.CurrentLayoutIcon(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        scale=0.65
-    ),
-    widget.CurrentLayout(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        padding=5
-    ),
-    powerline('color2', 'color1'),
     widget.Clock(
         foreground=theme['colors']['text'],
-        background=theme['colors']['color2'],
-        format='%d/%m/%Y - %I:%M %p'
+        background=theme['colors']['color1'],
+        format='  %d/%m/%Y - %I:%M %p',
+        padding=theme['widgets']['clock']['padding']
     ),
-    powerline('dark', 'color2'),
 ]
 
-widget_defaults = theme['defaults']
+widget_defaults = theme['widgets']['defaults']
 
 extension_defaults = widget_defaults.copy()
