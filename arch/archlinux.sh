@@ -92,7 +92,7 @@ nano /etc/hostname
 nano /etc/hosts
 
 # Instalar network manager
-pacman -S networkmanager ntfs-3g grub efibootmgr os-prober base-devel linux-headers bluez bluez-utils pulseaudio-bluetooth xdg-utils xdg-user-dirs git
+pacman -S networkmanager ntfs-3g grub efibootmgr os-prober base-devel linux-headers bluez bluez-utils pulseaudio-bluetooth xdg-utils xdg-user-dirs git psutil
 
 # Habilitar network manager
 systemctl enable NetworkManager
@@ -188,3 +188,6 @@ makepkg -si
 
 yay -S lightdm-webkit-theme-aether
 
+
+
+sudo pacman -S alacritty
