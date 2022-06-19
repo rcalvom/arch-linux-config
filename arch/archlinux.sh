@@ -16,6 +16,7 @@ ping google.com
 timedatectl set-ntp true
 
 # Mirrors
+pacman -Sy
 pacman -S reflector
 reflector -c Colombia -a 6 --sort rate --save /etc/pacman.d/mirrorlist
 
@@ -113,7 +114,7 @@ passwd username
 usermod -aG wheel,video,audio,storage username
 
 # Habilitar nano para usuario
-nano /etc/sudoers
+sudo nano /etc/sudoers
 
 # Reiniciar
 exit
@@ -190,4 +191,4 @@ yay -S lightdm-webkit-theme-aether
 
 
 
-sudo pacman -S alacritty
+sudo pacman -S alacritty imagemagick
