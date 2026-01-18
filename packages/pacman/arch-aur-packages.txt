@@ -1,0 +1,5 @@
+slack-desktop
+visual-studio-code-bin
+yay-bin
+yay-bin-debug
+zoom
