@@ -34,8 +34,8 @@ terminal-border: "76"
 
 + label {
   top = 10%
-  left = 35%
-  width = 30%
+  left = 0%
+  width = 100%
   align = "center"
   text = "Choose the operating system"
   color = "#ffffff"

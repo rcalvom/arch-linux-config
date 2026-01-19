@@ -8,7 +8,7 @@ Install the configuration file:
 sudo cp grub/grub /etc/default/grub
 ```
 
-Font creation from a regular TTF:
+Create the font from a regular TTF:
 
 ```sh
 grub-mkfont -o <Output font> -s 24 <Path to font>
@@ -32,14 +32,18 @@ Regenerate the GRUB config after updating `/etc/default/grub` or the theme:
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-One list commands:
+One list of commands:
 ```
 sudo rm -rf /usr/share/grub/themes/arch
 sudo cp -r grub/theme /usr/share/grub/themes/arch
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-Todo:
-- Rename GRUB entries in `/etc/grub.d` to change entry names and add terminal messages.
-- Font is Blurry
+To add custom comments in the GRUB terminal, add the following around line 147 in `/etc/grub.d/10_linux`:
+```
+  echo "	echo	'$(echo "Past Ricardo says Hello! Please be happy!" | grub_quote)'" | sed "s/^/$submenu_indentation/"
+```
 
+Todo:
+- Rename GRUB entries in `/etc/grub.d` to change entry names.
+- Font is blurry; it does not seem trivial to fix. The custom font resolution may not be supported by GRUB.
