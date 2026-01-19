@@ -2,7 +2,7 @@
 # Designed for any resolution
 
 # Global Property
-title-text: "Choose the operating system"
+title-text: ""
 title-font: "UbuntuMono Nerd Font Regular 48"
 title-color: "#ffffff"
 desktop-color: "#000000"
@@ -32,10 +32,32 @@ terminal-border: "76"
   selected_item_pixmap_style = "select_*.png"
 }
 
-+ image {
-  top = 100%-76
-  left = 50%-360
-  width = 720
-  height = 63
-  file = "info.png"
++ label {
+  top = 10%
+  left = 35%
+  width = 30%
+  align = "center"
+  text = "Choose the operating system"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 48"
+}
+
++ label {
+  top = 100%-200
+  left = 35%
+  width = 30%
+  align = "center"
+  text = "Press E to edit entry parameters"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 18"
+}
+
++ label {
+  top = 100%-150
+  left = 35%
+  width = 30%
+  align = "center"
+  text = "Press C to open GRUB terminal"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 18"
 }
