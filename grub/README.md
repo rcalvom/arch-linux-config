@@ -38,3 +38,8 @@ sudo rm -rf /usr/share/grub/themes/arch
 sudo cp -r grub/theme /usr/share/grub/themes/arch
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
+
+Todo:
+- Update `info.png` with native labels.
+- Rename GRUB entries in `/etc/grub.d` to change entry names and add terminal messages.
+- Fix the title placement so it is not at the top of the page.
