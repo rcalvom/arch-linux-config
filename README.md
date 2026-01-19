@@ -72,6 +72,7 @@ Contains custom **GRUB bootloader** configuration.
 
 This includes:
 - Custom GRUB themes
+- Theme installer script
 - Boot menu appearance settings
 - Configuration overrides and generation notes
 

@@ -1,0 +1,41 @@
+# GRUB2 gfxmenu Linux theme
+# Designed for any resolution
+
+# Global Property
+title-text: "Choose the operating system"
+title-font: "UbuntuMono Nerd Font Regular 48"
+title-color: "#ffffff"
+desktop-color: "#000000"
+terminal-font: "UbuntuMono Nerd Font Regular 18"
+terminal-left: "20%"
+terminal-top: "20%"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "76"
+
+# Show the boot menu
++ boot_menu {
+  left = 35%
+  top = 35%
+  width = 30%
+  height = 30%
+  item_font = "UbuntuMono Nerd Font Regular 24"
+  item_color = "#ffffff"
+  selected_item_color = "#f1ffffcc"
+  #selected_item_color = "#033e8ccc"
+  icon_width = 48
+  icon_height = 48
+  item_icon_space = 24
+  item_height = 56
+  item_padding = 8
+  item_spacing = 16
+  selected_item_pixmap_style = "select_*.png"
+}
+
++ image {
+  top = 100%-76
+  left = 50%-360
+  width = 720
+  height = 63
+  file = "info.png"
+}
