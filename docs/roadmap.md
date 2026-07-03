@@ -21,4 +21,4 @@
 - Broader hardware support.
 - Conservative `apply-config.sh` for existing Arch installs.
 - Optional AUR support after the core flow is reliable.
-- Optional archiso support after VM installs are stable.
+- Expand the current live ISO into a more complete test/recovery environment after VM installs are stable.

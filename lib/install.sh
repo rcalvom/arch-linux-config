@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+refresh_mirrors_if_available() {
+  if ! command -v reflector >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log_info "Refreshing pacman mirrorlist"
+  if ! reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist; then
+    log_warn "Could not refresh mirrorlist; continuing with existing mirrors"
+  fi
+}
+
 install_base_system() {
   local target=$1
   local repo_dir=$2

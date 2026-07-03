@@ -3,6 +3,7 @@ set -euo pipefail
 
 require_vm_commands() {
   require_command lsblk
+  require_command mountpoint
   require_command wipefs
   require_command sgdisk
   require_command mkfs.fat
@@ -11,6 +12,25 @@ require_vm_commands() {
   require_command udevadm
   require_command mount
   require_command umount
+}
+
+unmount_vm_disk_mounts() {
+  local disk=$1
+  local mount_points=()
+  local mount_point
+  local i
+
+  mapfile -t mount_points < <(lsblk -nrpo MOUNTPOINT "$disk")
+
+  for ((i = ${#mount_points[@]} - 1; i >= 0; i--)); do
+    mount_point=${mount_points[$i]}
+    [[ -n "$mount_point" ]] || continue
+
+    if mountpoint -q "$mount_point"; then
+      log_info "Unmounting existing mount from $disk: $mount_point"
+      umount -R "$mount_point"
+    fi
+  done
 }
 
 partition_path() {

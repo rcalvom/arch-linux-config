@@ -20,11 +20,26 @@ source "$SCRIPT_DIR/lib/install.sh"
 
 parse_args "$@"
 
+cleanup_on_error() {
+  local exit_code=$?
+
+  set +e
+  if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]] && mountpoint -q "$TARGET"; then
+    log_warn "Installation failed; unmounting $TARGET"
+    umount -R "$TARGET"
+  fi
+
+  exit "$exit_code"
+}
+
+trap cleanup_on_error ERR
+
 main() {
   require_root
   validate_profile "$PROFILE"
   validate_uefi
   validate_internet
+  refresh_mirrors_if_available
   require_command pacstrap
   require_command genfstab
   require_command arch-chroot
@@ -33,10 +48,11 @@ main() {
     validate_disk "$DISK"
     require_vm_commands
     confirm_vm_disk "$DISK" "$YES"
+    unmount_vm_disk_mounts "$DISK"
     partition_vm_disk "$DISK"
     format_vm_partitions "$DISK"
-    mount_vm_partitions "$DISK" "$TARGET"
     MOUNTED_BY_INSTALLER=1
+    mount_vm_partitions "$DISK" "$TARGET"
   else
     validate_target_mount "$TARGET"
     validate_target_boot_mount "$TARGET"

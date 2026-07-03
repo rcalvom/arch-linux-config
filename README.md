@@ -55,7 +55,7 @@ The goal is to enable reproducible package installation and minimize manual inte
 ---
 
 ### `live/`
-Contains resources for building and maintaining a custom Arch Linux live environment.
+Contains the minimal `archiso` profile for building a custom live installer environment.
 
 This includes:
 - Scripts and configuration files for generating a live ISO
@@ -63,6 +63,8 @@ This includes:
 - Documentation describing the live environment build process
 
 This directory is intended for system bootstrap, recovery, and testing.
+
+Build documentation: `docs/live-iso.md`.
 
 ---
 

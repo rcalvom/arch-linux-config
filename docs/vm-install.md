@@ -17,6 +17,23 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
 
 The installer prints `lsblk` before destructive operations and requires typing `ERASE` unless `--yes` is passed.
 
+## Retry After A Failed Run
+
+If a package download fails, rerun the installer. VM mode now unmounts previous mounts from the selected disk before wiping it again.
+
+With an older checkout, manually unmount first:
+
+```bash
+umount -R /mnt
+```
+
+If package downloads repeatedly fail, refresh the checkout and retry:
+
+```bash
+git pull
+sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
+```
+
 Current limitations:
 
 - UEFI only.
