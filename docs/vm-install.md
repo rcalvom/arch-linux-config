@@ -7,7 +7,8 @@ Recommended VirtualBox settings:
 - Enable EFI.
 - Graphics Controller: VMSVGA.
 - Video Memory: 128 MB.
-- 3D Acceleration can be enabled, but the `virtualbox` profile also allows software rendering because 3D is often unavailable in test VMs.
+- Disable 3D Acceleration for the Arch ISO test loop. On this host, VirtualBox reports 3D as enabled but disables it internally and the VM boots to a black screen.
+- The `virtualbox` profile also allows software rendering because 3D is often unavailable in test VMs.
 
 ```bash
 pacman -Sy git
