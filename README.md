@@ -76,7 +76,7 @@ This includes:
 - Branding, layout, and visual customization
 - Behavior and authentication presentation settings
 
-The new Hyprland installer path uses `greetd` instead of LightDM.
+The new Hyprland installer path uses `greetd` with ReGreet instead of LightDM.
 
 ---
 

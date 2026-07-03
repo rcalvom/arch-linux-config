@@ -7,6 +7,7 @@ configure_wayland_desktop() {
   if ! id -u greeter >/dev/null 2>&1; then
     useradd -M -r -s /usr/bin/nologin greeter
   fi
+  usermod -aG video,input greeter
 
   install -dm755 /etc/greetd
   cat > /etc/greetd/config.toml <<'GREETD'
@@ -14,9 +15,25 @@ configure_wayland_desktop() {
 vt = 1
 
 [default_session]
-command = "agreety --cmd Hyprland"
+command = "cage -s -- regreet"
 user = "greeter"
 GREETD
+
+  cat > /etc/greetd/environments <<'ENVIRONMENTS'
+Hyprland
+bash
+ENVIRONMENTS
+
+  cat > /etc/greetd/regreet.toml <<'REGREET'
+[GTK]
+application_prefer_dark_theme = true
+font_name = "Ubuntu 11"
+theme_name = "Adwaita-dark"
+
+[commands]
+reboot = ["systemctl", "reboot"]
+poweroff = ["systemctl", "poweroff"]
+REGREET
 
   install -Dm644 /dev/stdin /etc/environment <<'ENVIRONMENT'
 MOZ_ENABLE_WAYLAND=1

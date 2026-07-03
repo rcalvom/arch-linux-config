@@ -39,4 +39,4 @@ Current limitations:
 - UEFI only.
 - Simple layout: `/boot` EFI partition plus ext4 root.
 - Official repository packages only. AUR packages are intentionally skipped.
-- Hyprland/Wayland is installed; Qtile is not installed by this path.
+- Hyprland/Wayland is installed with `greetd` + ReGreet; Qtile is not installed by this path.

@@ -19,6 +19,8 @@ poppler
 ripgrep
 fzf
 greetd
+greetd-regreet
+cage
 pipewire
 pipewire-pulse
 wireplumber

@@ -5,6 +5,7 @@ bluez
 bluez-utils
 brightnessctl
 btop
+cage
 cliphist
 dosfstools
 e2fsprogs
@@ -14,6 +15,7 @@ fzf
 gcc
 git
 greetd
+greetd-regreet
 grim
 grub
 hyprland
