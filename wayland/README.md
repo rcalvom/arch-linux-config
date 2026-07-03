@@ -2,13 +2,13 @@
 
 **Last updated:** 2026-05-15
 
-This folder records the Wayland/Hyprland setup work done on the Arch Linux system, while keeping the existing Qtile setup intact.
+This folder records the active Wayland/Hyprland setup used by the installer. Qtile remains only as a legacy reference outside this path.
 
 ## Current scope
 
-- Hyprland session alongside Qtile.
+- Hyprland session as the primary desktop target.
 - Waybar as the status bar.
-- Hyprlauncher as the app launcher.
+- Wofi as the app launcher for the reproducible installer path.
 - Yazi as terminal file manager.
 - Ubuntu as the preferred UI font, with Noto fallback for missing glyphs.
 
@@ -30,7 +30,7 @@ Important packages added/used:
 - `mako`
 - `wl-clipboard`
 - `cliphist`
-- `hyprlauncher`
+- `wofi`
 - `yazi`
 - `noto-fonts`
 - `noto-fonts-cjk`
@@ -49,29 +49,29 @@ Important packages added/used:
 Config snapshots:
 
 ```text
-wayland/hypr/hyprland.lua
 wayland/hypr/hyprland.conf
+wayland/hypr/hyprland.lua
 ```
 
 Live locations:
 
 ```text
-~/.config/hypr/hyprland.lua
 ~/.config/hypr/hyprland.conf
+~/.config/hypr/hyprland.lua
 ```
 
 Notes:
 
-- The active setup uses a Lua-style Hyprland config.
-- Program commands are centralized near the top of `hyprland.lua` in the `MY PROGRAMS` section.
-- Avoid adding duplicate app variables/binds lower in the file. Prefer updating the default variables near the top.
+- The installer uses the standard `hyprland.conf` config so a fresh official Hyprland package can load it without extra tooling.
+- The Lua-style config is kept as a personal snapshot and reference.
+- Program commands are centralized near the top of both configs.
 
 Current important program variables:
 
 ```lua
 local terminal    = "alacritty"
 local fileManager = "alacritty -e yazi"
-local menu        = "hyprlauncher"
+local menu        = "wofi --show drun"
 local browser     = "firefox"
 ```
 
@@ -79,8 +79,8 @@ Important bindings:
 
 ```text
 SUPER + Return -> Alacritty
-SUPER + D      -> Hyprlauncher
-SUPER + R      -> Hyprlauncher
+SUPER + D      -> Wofi launcher
+SUPER + R      -> Wofi launcher
 SUPER + B      -> Firefox
 SUPER + E      -> Alacritty running Yazi
 SUPER + Q      -> close active window
@@ -96,7 +96,7 @@ alacritty -e yazi
 
 ## Autostart / session helpers
 
-The legacy `hyprland.conf` snapshot includes these session helpers:
+The `hyprland.conf` config includes these session helpers:
 
 ```text
 exec-once = waybar
@@ -108,7 +108,7 @@ exec-once = /usr/lib/polkit-kde-authentication-agent-1
 exec-once = nm-applet --indicator
 ```
 
-The current Lua config starts `waybar` and also bootstraps the Hyprsunset schedule at session start.
+The installer config starts `waybar` and also bootstraps the Hyprsunset schedule at session start.
 
 ## Hyprsunset / redshift equivalent
 
@@ -267,27 +267,27 @@ To reload Waybar manually:
 pkill waybar && waybar &
 ```
 
-## Hyprlauncher
+## Wofi
 
-Installed from the official Arch `extra` repository:
+Installed from the official Arch repository:
 
 ```bash
-sudo pacman -S --needed hyprlauncher
+sudo pacman -S --needed wofi
 ```
 
 Run manually:
 
 ```bash
-hyprlauncher
+wofi --show drun
 ```
 
-Useful toggle mode:
+The current Hyprland config uses `wofi --show drun` as the menu command.
+
+Clipboard history uses Wofi as a dmenu-compatible picker:
 
 ```bash
-hyprlauncher --toggle
+cliphist list | wofi --dmenu | cliphist decode | wl-copy
 ```
-
-The current Hyprland config uses `hyprlauncher` as the menu command.
 
 ## Yazi
 

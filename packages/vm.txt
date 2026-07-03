@@ -1,0 +1,3 @@
+# Extra packages for disposable VirtualBox test installs.
+linux-headers
+virtualbox-guest-utils

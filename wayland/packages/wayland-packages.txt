@@ -11,7 +11,7 @@ mako
 wl-clipboard
 cliphist
 alacritty
-hyprlauncher
+wofi
 yazi
 poppler
 ripgrep
@@ -28,5 +28,9 @@ brightnessctl
 playerctl
 polkit-kde-agent
 network-manager-applet
-wofi
 xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+greetd
+pipewire
+pipewire-pulse
+wireplumber

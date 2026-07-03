@@ -48,7 +48,7 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "alacritty"
 local fileManager = "alacritty -e yazi"
-local menu        = "hyprlauncher"
+local menu        = "wofi --show drun"
 local browser     = "firefox"
 
 

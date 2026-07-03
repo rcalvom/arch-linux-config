@@ -1,0 +1,9 @@
+# Personal developer tools from official repositories only.
+base-devel
+openssh
+wget
+unzip
+zsh
+btop
+python-pip
+gcc

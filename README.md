@@ -1,7 +1,7 @@
 # Arch Linux Configuration Repository
 
 **Author:** Ricardo Andres Calvo Mendez  
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-07-03
 
 ---
 
@@ -9,6 +9,32 @@
 
 This repository contains a curated and reproducible set of configurations for an Arch Linux system.  
 Its purpose is to document, version, and automate system setup across installations, enabling fast recovery, consistency, and incremental improvements over time.
+
+The active installer target is a UEFI Arch Linux system with a Hyprland/Wayland desktop. Qtile files are kept only as legacy reference and are not installed by the new installer path.
+
+---
+
+## Quick Start
+
+Safe install mode assumes the target system is already partitioned, formatted, and mounted:
+
+```bash
+sudo ./install.sh --target /mnt --profile developer
+```
+
+VM mode is destructive and requires an explicit disk:
+
+```bash
+sudo ./install.sh --vm --disk /dev/sda --profile virtualbox
+```
+
+For repeated disposable VM testing:
+
+```bash
+sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
+```
+
+Available profiles: `minimal`, `desktop`, `developer`, `virtualbox`.
 
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
 
@@ -40,42 +66,32 @@ This directory is intended for system bootstrap, recovery, and testing.
 
 ---
 
-### `greeter/`
-Contains configuration for a custom **LightDM greeter**.
+### `lightdm-greeter/`
+Contains legacy configuration for a custom **LightDM greeter**.
 
 This includes:
 - Theme configuration
 - Branding, layout, and visual customization
 - Behavior and authentication presentation settings
 
-The objective is to provide a consistent and minimal login experience aligned with the overall system theme.
+The new Hyprland installer path uses `greetd` instead of LightDM.
 
 ---
 
-### `desktop-environment/`
-Contains desktop environment and window manager configuration.
-
-Currently supported:
-- **Qtile**
-- **Hyprland / Wayland**
+### `wayland/`
+Contains the active Hyprland/Wayland desktop configuration.
 
 This directory includes:
 - Window manager configuration files
 - Keybindings, layouts, and startup hooks
 - Environment-specific scripts and theming adjustments
-
-Support for additional desktop environments may be added in the future.
-
----
-
-### `wayland/`
-Contains notes and configuration snapshots for the Wayland/Hyprland setup.
-
-This includes:
 - Hyprland configuration snapshots
 - Waybar configuration
 - Fontconfig fallback for Ubuntu + Noto
 - Package notes for Wayland-related tools
+
+### `qtile/`
+Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.
 
 ---
 
@@ -112,5 +128,3 @@ Adjustments may be required when applying it to different machines or use cases.
 ## License
 
 Specify a license here (e.g., MIT, GPL, or private use).
-
-

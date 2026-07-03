@@ -1,0 +1,13 @@
+# Minimal bootable Arch system and installer essentials.
+base
+linux
+linux-firmware
+sudo
+nano
+git
+networkmanager
+grub
+efibootmgr
+os-prober
+dosfstools
+e2fsprogs
