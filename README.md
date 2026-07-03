@@ -57,6 +57,7 @@ Contains desktop environment and window manager configuration.
 
 Currently supported:
 - **Qtile**
+- **Hyprland / Wayland**
 
 This directory includes:
 - Window manager configuration files
@@ -66,6 +67,18 @@ This directory includes:
 Support for additional desktop environments may be added in the future.
 
 ---
+
+### `wayland/`
+Contains notes and configuration snapshots for the Wayland/Hyprland setup.
+
+This includes:
+- Hyprland configuration snapshots
+- Waybar configuration
+- Fontconfig fallback for Ubuntu + Noto
+- Package notes for Wayland-related tools
+
+---
+
 
 ### `grub/`
 Contains custom **GRUB bootloader** configuration.
@@ -99,3 +112,5 @@ Adjustments may be required when applying it to different machines or use cases.
 ## License
 
 Specify a license here (e.g., MIT, GPL, or private use).
+
+

@@ -1,0 +1,32 @@
+# Wayland / Hyprland related packages installed during setup
+# Generated from current system state on 2026-05-15.
+
+hyprland
+hyprlang
+hyprpaper
+hyprlock
+hyprsunset
+waybar
+mako
+wl-clipboard
+cliphist
+alacritty
+hyprlauncher
+yazi
+poppler
+ripgrep
+fzf
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+noto-fonts-extra
+ttf-ubuntu-font-family
+ttf-nerd-fonts-symbols
+grim
+slurp
+brightnessctl
+playerctl
+polkit-kde-agent
+network-manager-applet
+wofi
+xdg-desktop-portal-hyprland

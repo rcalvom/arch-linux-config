@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Usage:
+#   hyprsunset-set temperature 3500
+#   hyprsunset-set identity
+set -u
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+  wayland_socket="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -type s -name 'wayland-*' -printf '%f\n' 2>/dev/null | sort | tail -n 1 || true)"
+  [ -n "$wayland_socket" ] && export WAYLAND_DISPLAY="$wayland_socket"
+fi
+
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+  sig="$(find "$XDG_RUNTIME_DIR/hypr" -mindepth 1 -maxdepth 1 -type d -exec test -S '{}/.socket.sock' ';' -print 2>/dev/null | sed 's#.*/##' | tail -n 1 || true)"
+  [ -n "$sig" ] && export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+fi
+
+# Make Wayland vars visible to systemd user services started from timers.
+systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP 2>/dev/null || true
+
+# Ensure the hyprsunset daemon is available.
+systemctl --user start hyprsunset.service 2>/dev/null || true
+sleep 0.2
+
+exec hyprctl hyprsunset "$@"
