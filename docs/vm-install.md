@@ -2,6 +2,13 @@
 
 Use this only on a disposable virtual disk. The selected disk is erased.
 
+Recommended VirtualBox settings:
+
+- Enable EFI.
+- Graphics Controller: VMSVGA.
+- Video Memory: 128 MB.
+- 3D Acceleration can be enabled, but the `virtualbox` profile also allows software rendering because 3D is often unavailable in test VMs.
+
 ```bash
 pacman -Sy git
 git clone -b project https://github.com/rcalvom/arch-linux-config.git
@@ -33,6 +40,15 @@ If package downloads repeatedly fail, refresh the checkout and retry:
 git pull
 sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
 ```
+
+If the installed system boots to a black screen, boot the Arch ISO again and verify that the checkout includes the VirtualBox rendering fix:
+
+```bash
+cd arch-linux-config
+git log --oneline -1
+```
+
+The commit should be `021a39f` or newer.
 
 Current limitations:
 
