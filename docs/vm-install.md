@@ -40,3 +40,4 @@ Current limitations:
 - Simple layout: `/boot` EFI partition plus ext4 root.
 - Official repository packages only. AUR packages are intentionally skipped.
 - Hyprland/Wayland is installed with `greetd` + ReGreet; Qtile is not installed by this path.
+- The `virtualbox` profile allows software rendering for Wayland because VirtualBox often boots without usable 3D/EGL acceleration.

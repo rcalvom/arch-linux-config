@@ -156,7 +156,7 @@ main() {
 
   if profile_has_desktop "$PROFILE"; then
     install_wayland_dotfiles "$REPO_DIR" "$INSTALL_USERNAME"
-    configure_wayland_desktop
+    configure_wayland_desktop "$PROFILE"
   fi
 
   enable_core_services "$PROFILE"
