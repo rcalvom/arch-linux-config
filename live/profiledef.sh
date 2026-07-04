@@ -17,7 +17,11 @@ airootfs_image_type="erofs"
 airootfs_image_tool_options=('-zlzma,109' -E 'ztailpacking,fragments,dedupe')
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
+  ["/etc/gshadow"]="0:0:400"
+  ["/etc/sudoers.d/10-live"]="0:0:440"
   ["/root/.bash_profile"]="0:0:644"
+  ["/home/live"]="1000:1000:755"
+  ["/home/live/.bash_profile"]="1000:1000:644"
   ["/usr/local/bin/archcfg-install"]="0:0:755"
   ["/usr/local/bin/archcfg-live-session"]="0:0:755"
 )

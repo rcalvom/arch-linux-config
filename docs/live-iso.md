@@ -30,7 +30,7 @@ Use a UEFI VM:
 Settings > System > Motherboard > Enable EFI
 ```
 
-Boot the generated ISO. It should log in as root and start Hyprland automatically using the repository configs.
+Boot the generated ISO. It should log in as the `live` user and start Hyprland automatically using the repository configs.
 
 Open a terminal with `SUPER + Return`, or use the terminal opened by the live session. To install from the live ISO, run:
 

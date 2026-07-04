@@ -2,7 +2,8 @@
 set -euo pipefail
 
 REPO_DIR="/opt/arch-linux-config"
-LIVE_HOME="/root"
+LIVE_USER="${USER:-live}"
+LIVE_HOME="${HOME:-/home/live}"
 
 log_info() {
   printf '[INFO] %s\n' "$*"
@@ -46,11 +47,13 @@ install_live_configs() {
 exec-once = alacritty -e bash -lc 'cat /etc/motd; exec bash'
 HYPRLIVE
   fi
+
+  chown -R "$LIVE_USER:$LIVE_USER" "$LIVE_HOME/.config" "$LIVE_HOME/.local"
 }
 
 prepare_runtime() {
   export HOME="$LIVE_HOME"
-  export XDG_RUNTIME_DIR="/run/user/0"
+  export XDG_RUNTIME_DIR="/run/user/$(id -u)"
   export XDG_SESSION_TYPE="wayland"
   export XDG_CURRENT_DESKTOP="Hyprland"
   export MOZ_ENABLE_WAYLAND="1"
