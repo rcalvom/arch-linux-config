@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="/opt/arch-linux-config"
+LIVE_HOME="/root"
+
+log_info() {
+  printf '[INFO] %s\n' "$*"
+}
+
+log_warn() {
+  printf '[WARN] %s\n' "$*" >&2
+}
+
+install_live_file() {
+  local src=$1
+  local dest=$2
+  local mode=$3
+
+  [[ -f "$src" ]] || return 0
+  install -Dm"$mode" "$src" "$dest"
+}
+
+install_live_configs() {
+  local unit
+  local hypr_config="$LIVE_HOME/.config/hypr/hyprland.conf"
+
+  install_live_file "$REPO_DIR/wayland/hypr/hyprland.conf" "$hypr_config" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/hyprlock.conf" "$LIVE_HOME/.config/hypr/hyprlock.conf" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/hyprpaper.conf" "$LIVE_HOME/.config/hypr/hyprpaper.conf" 0644
+  install_live_file "$REPO_DIR/wayland/waybar/config.jsonc" "$LIVE_HOME/.config/waybar/config.jsonc" 0644
+  install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
+  install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
+  install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
+  install_live_file "$REPO_DIR/wayland/bin/hyprsunset-set" "$LIVE_HOME/.local/bin/hyprsunset-set" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hyprsunset-apply-current" "$LIVE_HOME/.local/bin/hyprsunset-apply-current" 0755
+
+  for unit in hyprsunset-day.service hyprsunset-day.timer hyprsunset-night.service hyprsunset-night.timer; do
+    install_live_file "$REPO_DIR/wayland/systemd/user/$unit" "$LIVE_HOME/.config/systemd/user/$unit" 0644
+  done
+
+  if [[ -f "$hypr_config" ]] && ! grep -q 'Arch Config Live terminal' "$hypr_config"; then
+    cat >> "$hypr_config" <<'HYPRLIVE'
+
+# Arch Config Live terminal
+exec-once = alacritty -e bash -lc 'cat /etc/motd; exec bash'
+HYPRLIVE
+  fi
+}
+
+prepare_runtime() {
+  export HOME="$LIVE_HOME"
+  export XDG_RUNTIME_DIR="/run/user/0"
+  export XDG_SESSION_TYPE="wayland"
+  export XDG_CURRENT_DESKTOP="Hyprland"
+  export MOZ_ENABLE_WAYLAND="1"
+  export QT_QPA_PLATFORM="wayland;xcb"
+  export WLR_RENDERER_ALLOW_SOFTWARE="1"
+  export LIBGL_ALWAYS_SOFTWARE="1"
+  export GSK_RENDERER="cairo"
+  export WLR_NO_HARDWARE_CURSORS="1"
+
+  install -dm700 "$XDG_RUNTIME_DIR"
+}
+
+main() {
+  if grep -qw archcfg_nowayland /proc/cmdline; then
+    log_info "Skipping Wayland live session because archcfg_nowayland is set"
+    return 0
+  fi
+
+  if [[ ! -d "$REPO_DIR" ]]; then
+    log_warn "Repository not found: $REPO_DIR"
+    return 1
+  fi
+
+  if ! command -v Hyprland >/dev/null 2>&1; then
+    log_warn "Hyprland is not installed in this live environment"
+    return 1
+  fi
+
+  install_live_configs
+  prepare_runtime
+
+  log_info "Starting Hyprland live session"
+  if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session Hyprland
+  fi
+
+  exec Hyprland
+}
+
+main "$@"

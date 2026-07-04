@@ -1,8 +1,8 @@
 # Live ISO
 
-This repository includes a minimal `archiso` profile under `live/`.
+This repository includes an `archiso` profile under `live/`.
 
-The ISO is an installer environment, not a full custom distribution. It boots a live Arch system, includes this repository at `/opt/arch-linux-config`, and provides `archcfg-install` as a shortcut to the installer.
+The ISO is an installer and desktop test environment, not a full custom distribution. It boots a live Arch system, includes this repository at `/opt/arch-linux-config`, starts a Hyprland live session on tty1, and provides `archcfg-install` as a shortcut to the installer.
 
 ## Build
 
@@ -30,7 +30,9 @@ Use a UEFI VM:
 Settings > System > Motherboard > Enable EFI
 ```
 
-Boot the generated ISO and run:
+Boot the generated ISO. It should log in as root and start Hyprland automatically using the repository configs.
+
+Open a terminal with `SUPER + Return`, or use the terminal opened by the live session. To install from the live ISO, run:
 
 ```bash
 archcfg-install --vm --disk /dev/sda --profile virtualbox
@@ -44,9 +46,15 @@ archcfg-install --vm --disk /dev/sda --profile virtualbox --yes
 
 The installer still prints `lsblk` before destructive operations. Without `--yes`, it requires typing `ERASE`.
 
+To skip the automatic Wayland session for troubleshooting, add this kernel argument from the boot menu:
+
+```text
+archcfg_nowayland
+```
+
 ## Current Scope
 
 - UEFI installer target only.
-- Live ISO includes the installer and required disk/network tools.
+- Live ISO includes Hyprland/Waybar/Mako/Wofi plus required installer disk/network tools.
 - The installed system is still produced by `install.sh`.
 - No AUR helper, graphical installer, or independent distribution layer yet.

@@ -19,4 +19,5 @@ file_permissions=(
   ["/etc/shadow"]="0:0:400"
   ["/root/.bash_profile"]="0:0:644"
   ["/usr/local/bin/archcfg-install"]="0:0:755"
+  ["/usr/local/bin/archcfg-live-session"]="0:0:755"
 )
