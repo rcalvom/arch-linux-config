@@ -110,6 +110,11 @@ prepare_profile() {
 
   rm -rf "$bundled_repo"
   copy_committed_repo_tree "$bundled_repo"
+  chmod +x \
+    "$bundled_repo/install.sh" \
+    "$bundled_repo/postinstall.sh" \
+    "$bundled_repo/installation/archlinux.sh" \
+    "$bundled_repo/scripts/build-iso.sh"
 
   enable_system_service_in_profile "$profile_copy" NetworkManager.service
 }

@@ -3,10 +3,10 @@ set -euo pipefail
 
 REPO_DIR="/opt/arch-linux-config"
 
-if [[ ! -x "$REPO_DIR/install.sh" ]]; then
+if [[ ! -f "$REPO_DIR/install.sh" ]]; then
   printf '[ERROR] Installer not found at %s/install.sh\n' "$REPO_DIR" >&2
   exit 1
 fi
 
 cd "$REPO_DIR"
-exec ./install.sh "$@"
+exec bash ./install.sh "$@"
