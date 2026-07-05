@@ -1,5 +1,74 @@
-* { font-family: sans-serif; font-size: 12px; }
-window#waybar { background: rgba(30, 30, 46, 0.92); color: #cdd6f4; }
-#workspaces button { padding: 0 8px; color: #cdd6f4; }
-#workspaces button.active { background: #89b4fa; color: #1e1e2e; }
-#clock, #battery, #network, #pulseaudio, #tray, #window { padding: 0 10px; }
+* {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: "UbuntuMono Nerd Font Bold", "UbuntuMono Nerd Font", monospace;
+  font-size: 14px;
+  min-height: 0;
+}
+
+window#waybar {
+  background: rgba(15, 16, 26, 0.92);
+  color: #f1ffff;
+}
+
+tooltip {
+  background: #0f101a;
+  border: 1px solid #66818d;
+  color: #f1ffff;
+}
+
+#workspaces {
+  background: #0f101a;
+  margin: 0 50px 0 0;
+}
+
+#workspaces button {
+  background: transparent;
+  color: #4c566a;
+  margin: 3px 0;
+  padding: 0 10px;
+}
+
+#workspaces button.active,
+#workspaces button.focused {
+  background: #66818d;
+  color: #f1ffff;
+}
+
+#workspaces button.visible {
+  background: #37383b;
+  color: #f1ffff;
+}
+
+#workspaces button.urgent {
+  background: #3f575b;
+  color: #f1ffff;
+}
+
+#window {
+  background: #0f101a;
+  color: #f1ffff;
+  font-family: "UbuntuMono Nerd Font", monospace;
+  padding: 0 50px;
+}
+
+#pulseaudio,
+#cpu,
+#memory,
+#network,
+#clock {
+  background: #0f101a;
+  color: #f1ffff;
+  padding: 0 10px;
+}
+
+#tray {
+  background: #0f101a;
+  padding: 0 10px;
+}
+
+#pulseaudio.muted,
+#network.disconnected {
+  color: #4c566a;
+}
