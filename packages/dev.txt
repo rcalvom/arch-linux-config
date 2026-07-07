@@ -3,7 +3,6 @@ base-devel
 openssh
 wget
 unzip
-zsh
 neovim
 btop
 python-pip

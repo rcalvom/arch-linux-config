@@ -2,7 +2,15 @@
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
 # Path to your Oh My Zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
+if [[ -d "$HOME/.oh-my-zsh" ]]; then
+  export ZSH="$HOME/.oh-my-zsh"
+elif [[ -d /usr/share/oh-my-zsh ]]; then
+  export ZSH="/usr/share/oh-my-zsh"
+  export ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+else
+  export ZSH="$HOME/.oh-my-zsh"
+  export ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+fi
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time Oh My Zsh is loaded, in which case,
@@ -72,7 +80,13 @@ ZSH_THEME="ginger"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git)
 
-source $ZSH/oh-my-zsh.sh
+if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+else
+  autoload -Uz colors && colors
+  setopt prompt_subst
+  [[ -r "$ZSH_CUSTOM/themes/ginger.zsh-theme" ]] && source "$ZSH_CUSTOM/themes/ginger.zsh-theme"
+fi
 
 # User configuration
 

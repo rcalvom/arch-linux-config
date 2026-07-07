@@ -87,7 +87,7 @@ This directory includes:
 - Package notes for Wayland-related tools
 
 ### `packages/alacritty/` and `packages/nvim/`
-Contain the active terminal and editor configuration. Package folders can include `files.conf` manifests so the installer and live session copy configs into the correct `~/.config` locations automatically.
+Contain the active terminal, editor, and shell configuration. Package folders can include `files.conf` manifests so the installer and live session copy configs into the correct home-directory locations automatically.
 
 ### `qtile/`
 Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.

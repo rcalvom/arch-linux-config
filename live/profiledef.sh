@@ -22,6 +22,7 @@ file_permissions=(
   ["/root/.bash_profile"]="0:0:644"
   ["/home/live"]="1000:1000:755"
   ["/home/live/.bash_profile"]="1000:1000:644"
+  ["/home/live/.zprofile"]="1000:1000:644"
   ["/usr/local/bin/archcfg-install"]="0:0:755"
   ["/usr/local/bin/archcfg-live-session"]="0:0:755"
 )

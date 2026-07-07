@@ -98,7 +98,7 @@ install_live_configs() {
     cat >> "$hypr_config" <<'HYPRLIVE'
 
 # Arch Config Live terminal
-exec-once = alacritty -e bash -lc 'cat /etc/motd; exec bash'
+exec-once = alacritty -e zsh -lc 'cat /etc/motd; exec zsh'
 HYPRLIVE
   fi
 

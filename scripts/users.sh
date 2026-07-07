@@ -4,6 +4,7 @@ set -euo pipefail
 configure_initial_user() {
   local username=$1
   local password_file="/root/.archcfg-user-password"
+  local zsh_path
 
   log_info "Configuring user: $username"
 
@@ -13,8 +14,9 @@ configure_initial_user() {
     useradd -m -G wheel,video,audio,storage,input "$username"
   fi
 
-  if [[ -x /bin/zsh ]]; then
-    chsh -s /bin/zsh "$username"
+  zsh_path=$(command -v zsh || true)
+  if [[ -n "$zsh_path" ]]; then
+    chsh -s "$zsh_path" "$username"
   fi
 
   install -dm755 /etc/sudoers.d

@@ -6,6 +6,7 @@ sudo
 nano
 git
 networkmanager
+zsh
 grub
 efibootmgr
 os-prober

@@ -50,6 +50,7 @@ slurp
 sudo
 ttf-nerd-fonts-symbols
 ttf-ubuntu-font-family
+ttf-ubuntu-mono-nerd
 unzip
 waybar
 wget

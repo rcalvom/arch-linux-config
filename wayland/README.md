@@ -36,6 +36,8 @@ Important packages added/used:
 - `noto-fonts-cjk`
 - `noto-fonts-emoji`
 - `noto-fonts-extra`
+- `ttf-ubuntu-font-family`
+- `ttf-ubuntu-mono-nerd`
 - `ttf-nerd-fonts-symbols`
 - `grim` / `slurp`
 - `brightnessctl`

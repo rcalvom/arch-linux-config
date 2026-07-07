@@ -6,7 +6,7 @@ This folder groups configuration files and package lists for common tools.
 - `aur.txt` lists optional AUR packages installed only when `install.sh` receives `--aur`.
 - `alacritty/` contains the Alacritty terminal config (`alacritty.toml`).
 - `nvim/` contains the active Neovim Lua config copied into `~/.config/nvim`.
-- `oh-my-zsh/` stores the Oh My Zsh theme used here (`ginger.zsh-theme`).
+- `oh-my-zsh/` stores `.zshrc` and the `ginger` theme copied into the user's home.
 - `pacman/` keeps package lists and a helper script for updating them.
 - `xorg/` holds legacy Xorg session settings (`.xprofile`).
 

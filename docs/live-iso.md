@@ -30,7 +30,7 @@ Use a UEFI VM:
 Settings > System > Motherboard > Enable EFI
 ```
 
-Boot the generated ISO. It should log in as the `live` user and start Hyprland automatically using the repository configs, including Alacritty and Neovim under `~/.config`.
+Boot the generated ISO. It should log in as the `live` user with Zsh and start Hyprland automatically using the repository configs, including Alacritty, Neovim, and Zsh under the live user's home.
 
 Open a terminal with `SUPER + Return`, or use the terminal opened by the live session. To install from the live ISO, run:
 
