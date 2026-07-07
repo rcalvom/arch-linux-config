@@ -7,6 +7,7 @@ PROFILE_SOURCE="$REPO_ROOT/live"
 OUT_DIR="$REPO_ROOT/out"
 WORK_DIR="$REPO_ROOT/work/archiso"
 CLEAN=0
+FAST=0
 
 usage() {
   cat <<'USAGE'
@@ -16,6 +17,7 @@ Options:
   --out-dir <path>      ISO output directory. Default: ./out.
   --work-dir <path>     mkarchiso work directory. Default: ./work/archiso.
   --clean               Remove work/output directories before building.
+  --fast                Use faster rootfs compression for local test builds.
   --help                Print this help.
 
 The ISO includes the committed repository tree at /opt/arch-linux-config and
@@ -64,6 +66,10 @@ parse_args() {
         CLEAN=1
         shift
         ;;
+      --fast)
+        FAST=1
+        shift
+        ;;
       --help)
         usage
         exit 0
@@ -73,6 +79,36 @@ parse_args() {
         ;;
     esac
   done
+}
+
+detect_worker_count() {
+  local workers
+
+  if command -v nproc >/dev/null 2>&1; then
+    workers=$(nproc 2>/dev/null || printf '1')
+  else
+    workers=$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '1')
+  fi
+
+  if [[ ! "$workers" =~ ^[0-9]+$ || "$workers" -lt 1 ]]; then
+    workers=1
+  fi
+
+  printf '%s\n' "$workers"
+}
+
+apply_fast_build_options() {
+  local profile_dir=$1
+  local profiledef="$profile_dir/profiledef.sh"
+  local workers
+
+  workers=$(detect_worker_count)
+  log_info "Using fast rootfs compression: erofs zstd level 3 with $workers workers"
+
+  {
+    printf '\n# Added by scripts/build-iso.sh --fast for iterative local builds.\n'
+    printf "airootfs_image_tool_options=('-zzstd,level=3' '--workers=%s' -E 'ztailpacking,fragments,dedupe')\n" "$workers"
+  } >>"$profiledef"
 }
 
 enable_system_service_in_profile() {
@@ -116,6 +152,9 @@ prepare_profile() {
 
   log_info "Preparing temporary archiso profile"
   cp -a "$PROFILE_SOURCE/." "$profile_copy"
+  if [[ "$FAST" -eq 1 ]]; then
+    apply_fast_build_options "$profile_copy"
+  fi
   copy_grub_theme_to_profile "$profile_copy"
 
   rm -rf "$bundled_repo"

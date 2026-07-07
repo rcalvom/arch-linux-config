@@ -18,6 +18,14 @@ Build the ISO:
 sudo ./scripts/build-iso.sh --clean
 ```
 
+For faster local iteration, use the fast build mode:
+
+```bash
+sudo ./scripts/build-iso.sh --clean --fast
+```
+
+Fast mode keeps the EROFS root filesystem but switches the temporary build profile to `zstd` compression and uses the detected CPU worker count. The ISO can be larger than the default build.
+
 The output is written to `out/`.
 
 The build script copies the committed Git tree into the ISO and applies the repository GRUB theme to the live boot menu. Commit changes before building if you want those changes included.
