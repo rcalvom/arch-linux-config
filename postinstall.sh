@@ -7,6 +7,7 @@ INSTALL_HOSTNAME="archlinux"
 INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
 REPO_DIR="$SCRIPT_DIR"
+ENABLE_AUR=0
 
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
@@ -14,6 +15,8 @@ source "$SCRIPT_DIR/lib/log.sh"
 source "$SCRIPT_DIR/lib/validate.sh"
 # shellcheck source=scripts/packages.sh
 source "$SCRIPT_DIR/scripts/packages.sh"
+# shellcheck source=scripts/aur.sh
+source "$SCRIPT_DIR/scripts/aur.sh"
 # shellcheck source=scripts/users.sh
 source "$SCRIPT_DIR/scripts/users.sh"
 # shellcheck source=scripts/services.sh
@@ -33,6 +36,7 @@ Options:
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
   --repo-dir <path>     Repository path inside the target system.
+  --aur                 Install optional AUR packages for the selected profile.
   --help                Print this help.
 USAGE
 }
@@ -73,6 +77,10 @@ parse_postinstall_args() {
         require_postinstall_value "$1" "${2-}"
         REPO_DIR=$2
         shift 2
+        ;;
+      --aur)
+        ENABLE_AUR=1
+        shift
         ;;
       --help)
         usage
@@ -122,11 +130,28 @@ configure_hostname() {
 HOSTS
 }
 
+install_grub_theme() {
+  local repo_dir=$1
+  local theme_dir=/usr/share/grub/themes/arch
+
+  [[ -f "$repo_dir/grub/grub" ]] || die "Missing GRUB defaults: $repo_dir/grub/grub"
+  [[ -d "$repo_dir/grub/theme" ]] || die "Missing GRUB theme: $repo_dir/grub/theme"
+
+  log_info "Installing GRUB defaults and theme"
+  install -Dm644 "$repo_dir/grub/grub" /etc/default/grub
+  rm -rf "$theme_dir"
+  install -dm755 "$theme_dir"
+  cp -a "$repo_dir/grub/theme/." "$theme_dir/"
+}
+
 configure_bootloader() {
+  local repo_dir=$1
+
   log_info "Installing GRUB for UEFI"
   [[ -d /sys/firmware/efi/efivars ]] || die "UEFI firmware variables are not available in chroot"
   mountpoint -q /boot || die "/boot must be mounted to the EFI System Partition"
 
+  install_grub_theme "$repo_dir"
   grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=ArchLinux --recheck
   grub-mkconfig -o /boot/grub/grub.cfg
 }
@@ -151,8 +176,9 @@ main() {
   configure_locale
   configure_hostname "$INSTALL_HOSTNAME"
   install_packages_for_profile "$PROFILE" "$REPO_DIR"
-  configure_bootloader
+  configure_bootloader "$REPO_DIR"
   configure_initial_user "$INSTALL_USERNAME"
+  install_aur_packages_for_profile "$PROFILE" "$REPO_DIR" "$INSTALL_USERNAME" "$ENABLE_AUR"
 
   if profile_has_desktop "$PROFILE"; then
     install_wayland_dotfiles "$REPO_DIR" "$INSTALL_USERNAME"

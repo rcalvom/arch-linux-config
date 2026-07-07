@@ -20,7 +20,7 @@ sudo ./scripts/build-iso.sh --clean
 
 The output is written to `out/`.
 
-The build script copies the committed Git tree into the ISO. Commit changes before building if you want those changes included.
+The build script copies the committed Git tree into the ISO and applies the repository GRUB theme to the live boot menu. Commit changes before building if you want those changes included.
 
 ## Test In VirtualBox
 
@@ -30,7 +30,7 @@ Use a UEFI VM:
 Settings > System > Motherboard > Enable EFI
 ```
 
-Boot the generated ISO. It should log in as the `live` user and start Hyprland automatically using the repository configs.
+Boot the generated ISO. It should log in as the `live` user and start Hyprland automatically using the repository configs, including Alacritty and Neovim under `~/.config`.
 
 Open a terminal with `SUPER + Return`, or use the terminal opened by the live session. To install from the live ISO, run:
 
@@ -57,4 +57,4 @@ archcfg_nowayland
 - UEFI installer target only.
 - Live ISO includes Hyprland/Waybar/Mako/Wofi plus required installer disk/network tools.
 - The installed system is still produced by `install.sh`.
-- No AUR helper, graphical installer, or independent distribution layer yet.
+- Optional AUR installation is available from the installer with `--aur`; no graphical installer or independent distribution layer yet.

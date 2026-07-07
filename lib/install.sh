@@ -90,12 +90,20 @@ run_postinstall() {
   local hostname=$4
   local username=$5
   local timezone=$6
+  local enable_aur=$7
+  local postinstall_args=(
+    "$repo_dest/postinstall.sh"
+    --profile "$profile"
+    --hostname "$hostname"
+    --username "$username"
+    --timezone "$timezone"
+    --repo-dir "$repo_dest"
+  )
+
+  if [[ "$enable_aur" -eq 1 ]]; then
+    postinstall_args+=(--aur)
+  fi
 
   log_info "Entering chroot"
-  arch-chroot "$target" "$repo_dest/postinstall.sh" \
-    --profile "$profile" \
-    --hostname "$hostname" \
-    --username "$username" \
-    --timezone "$timezone" \
-    --repo-dir "$repo_dest"
+  arch-chroot "$target" "${postinstall_args[@]}"
 }

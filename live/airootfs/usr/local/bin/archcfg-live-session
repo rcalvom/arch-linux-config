@@ -22,6 +22,59 @@ install_live_file() {
   install -Dm"$mode" "$src" "$dest"
 }
 
+install_live_tree() {
+  local src_dir=$1
+  local dest_dir=$2
+  local mode=$3
+  local file
+  local relative
+
+  [[ -d "$src_dir" ]] || return 0
+  src_dir=$(cd -- "$src_dir" && pwd -P)
+
+  while IFS= read -r -d '' file; do
+    [[ "$(basename -- "$file")" == "files.conf" ]] && continue
+    relative=${file#"$src_dir"/}
+    install -Dm"$mode" "$file" "$dest_dir/$relative"
+  done < <(find "$src_dir" -type f -print0)
+}
+
+apply_live_package_config_manifest() {
+  local manifest=$1
+  local package_dir
+  local kind
+  local mode
+  local source
+  local destination
+
+  package_dir=$(cd -- "$(dirname -- "$manifest")" && pwd -P)
+
+  while IFS='|' read -r kind mode source destination || [[ -n "$kind" ]]; do
+    [[ -z "$kind" || "$kind" == \#* ]] && continue
+    [[ -n "$mode" && -n "$source" && -n "$destination" ]] || return 1
+
+    case "$kind" in
+      user_file)
+        install_live_file "$package_dir/$source" "$LIVE_HOME/$destination" "$mode"
+        ;;
+      user_tree)
+        install_live_tree "$package_dir/$source" "$LIVE_HOME/$destination" "$mode"
+        ;;
+    esac
+  done < "$manifest"
+}
+
+install_live_package_configs() {
+  local manifests=("$REPO_DIR"/packages/*/files.conf)
+  local manifest
+
+  [[ -e "${manifests[0]}" ]] || return 0
+
+  for manifest in "${manifests[@]}"; do
+    apply_live_package_config_manifest "$manifest"
+  done
+}
+
 install_live_configs() {
   local unit
   local hypr_config="$LIVE_HOME/.config/hypr/hyprland.conf"
@@ -33,6 +86,7 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
   install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
+  install_live_package_configs
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-set" "$LIVE_HOME/.local/bin/hyprsunset-set" 0755
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-apply-current" "$LIVE_HOME/.local/bin/hyprsunset-apply-current" 0755
 

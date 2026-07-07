@@ -17,4 +17,4 @@ Current expectation:
 
 - UEFI only.
 - EFI System Partition mounted at `/mnt/boot`.
-- Hyprland/Wayland desktop with `greetd` + ReGreet for `desktop`, `developer`, and `virtualbox` profiles.
+- Hyprland/Wayland desktop with `greetd` + `tuigreet` for `desktop`, `developer`, and `virtualbox` profiles.

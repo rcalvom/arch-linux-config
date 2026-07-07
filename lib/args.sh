@@ -6,6 +6,7 @@ PROFILE="developer"
 VM_MODE=0
 DISK=""
 YES=0
+ENABLE_AUR=0
 INSTALL_HOSTNAME="archlinux"
 INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
@@ -21,6 +22,7 @@ Options:
   --vm                  Enable automatic VM/disk installation mode.
   --disk <device>       Disk to wipe and install to in VM mode.
   --yes                 Skip disk erase confirmation. Only valid with --vm.
+  --aur                 Install optional AUR packages for the selected profile.
   --hostname <name>     Hostname. Default: archlinux.
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
@@ -66,6 +68,10 @@ parse_args() {
         ;;
       --yes)
         YES=1
+        shift
+        ;;
+      --aur)
+        ENABLE_AUR=1
         shift
         ;;
       --hostname)

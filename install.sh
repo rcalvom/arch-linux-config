@@ -62,7 +62,7 @@ main() {
   generate_fstab "$TARGET"
   copy_repo_to_target "$SCRIPT_DIR" "$TARGET" "$REPO_DEST"
   write_user_password_file "$TARGET" "$INSTALL_USERNAME"
-  run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE"
+  run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE" "$ENABLE_AUR"
 
   if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]]; then
     log_info "Unmounting $TARGET"

@@ -5,7 +5,6 @@ bluez
 bluez-utils
 brightnessctl
 btop
-cage
 cliphist
 dosfstools
 e2fsprogs
@@ -15,7 +14,7 @@ fzf
 gcc
 git
 greetd
-greetd-regreet
+greetd-tuigreet
 grim
 grub
 hyprland
@@ -30,6 +29,8 @@ mesa
 nano
 network-manager-applet
 networkmanager
+neovim
+npm
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji

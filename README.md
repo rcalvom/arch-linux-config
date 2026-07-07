@@ -36,6 +36,12 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
 
 Available profiles: `minimal`, `desktop`, `developer`, `virtualbox`.
 
+Optional AUR packages for developer-style profiles are opt-in:
+
+```bash
+sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
+```
+
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
 
 ---
@@ -68,18 +74,6 @@ Build documentation: `docs/live-iso.md`.
 
 ---
 
-### `lightdm-greeter/`
-Contains legacy configuration for a custom **LightDM greeter**.
-
-This includes:
-- Theme configuration
-- Branding, layout, and visual customization
-- Behavior and authentication presentation settings
-
-The new Hyprland installer path uses `greetd` with ReGreet instead of LightDM.
-
----
-
 ### `wayland/`
 Contains the active Hyprland/Wayland desktop configuration.
 
@@ -91,6 +85,9 @@ This directory includes:
 - Waybar configuration
 - Fontconfig fallback for Ubuntu + Noto
 - Package notes for Wayland-related tools
+
+### `packages/alacritty/` and `packages/nvim/`
+Contain the active terminal and editor configuration. Package folders can include `files.conf` manifests so the installer and live session copy configs into the correct `~/.config` locations automatically.
 
 ### `qtile/`
 Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.

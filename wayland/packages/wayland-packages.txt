@@ -31,6 +31,7 @@ network-manager-applet
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 greetd
+greetd-tuigreet
 pipewire
 pipewire-pulse
 wireplumber

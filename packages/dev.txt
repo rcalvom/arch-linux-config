@@ -1,9 +1,11 @@
-# Personal developer tools from official repositories only.
+# Personal developer tools from official repositories.
 base-devel
 openssh
 wget
 unzip
 zsh
+neovim
 btop
 python-pip
 gcc
+npm

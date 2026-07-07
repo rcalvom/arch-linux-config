@@ -84,6 +84,15 @@ enable_system_service_in_profile() {
   ln -sfn "/usr/lib/systemd/system/$service" "$wants_dir/$service"
 }
 
+copy_grub_theme_to_profile() {
+  local profile_dir=$1
+  local theme_dest="$profile_dir/grub/themes/arch"
+
+  rm -rf "$theme_dest"
+  install -dm755 "$theme_dest"
+  cp -a "$REPO_ROOT/grub/theme/." "$theme_dest/"
+}
+
 copy_committed_repo_tree() {
   local destination=$1
 
@@ -107,6 +116,7 @@ prepare_profile() {
 
   log_info "Preparing temporary archiso profile"
   cp -a "$PROFILE_SOURCE/." "$profile_copy"
+  copy_grub_theme_to_profile "$profile_copy"
 
   rm -rf "$bundled_repo"
   copy_committed_repo_tree "$bundled_repo"

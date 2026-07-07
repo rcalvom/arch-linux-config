@@ -1,0 +1,3 @@
+# Optional AUR packages. These are installed only when install.sh receives --aur.
+opencode-bin
+openclaw

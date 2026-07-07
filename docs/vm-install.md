@@ -23,6 +23,12 @@ For repeated VM testing after you are sure the disk is disposable:
 sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
 ```
 
+Optional AUR packages such as `opencode-bin` and `openclaw` are opt-in:
+
+```bash
+sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
+```
+
 The installer prints `lsblk` before destructive operations and requires typing `ERASE` unless `--yes` is passed.
 
 ## Retry After A Failed Run
@@ -55,6 +61,6 @@ Current limitations:
 
 - UEFI only.
 - Simple layout: `/boot` EFI partition plus ext4 root.
-- Official repository packages only. AUR packages are intentionally skipped.
-- Hyprland/Wayland is installed with `greetd` + ReGreet; Qtile is not installed by this path.
+- AUR packages are skipped unless `--aur` is explicitly passed.
+- Hyprland/Wayland is installed with `greetd` + `tuigreet`; Qtile is not installed by this path.
 - The `virtualbox` profile allows software rendering for Wayland because VirtualBox often boots without usable 3D/EGL acceleration.
