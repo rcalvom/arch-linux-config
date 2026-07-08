@@ -3,6 +3,7 @@ base
 base-devel
 bluez
 bluez-utils
+bluetui
 brightnessctl
 btop
 cliphist
@@ -21,6 +22,8 @@ hyprland
 hyprlock
 hyprpaper
 hyprsunset
+impala
+jdk-openjdk
 libreoffice-fresh
 linux
 linux-firmware

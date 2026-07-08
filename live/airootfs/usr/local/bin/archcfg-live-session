@@ -75,6 +75,19 @@ install_live_package_configs() {
   done
 }
 
+chown_live_path() {
+  local path=$1
+
+  [[ -e "$path" ]] || return 0
+  chown -R "$LIVE_USER:$LIVE_USER" "$path"
+}
+
+create_xdg_user_dirs() {
+  if command -v xdg-user-dirs-update >/dev/null 2>&1; then
+    HOME="$LIVE_HOME" XDG_CONFIG_HOME="$LIVE_HOME/.config" xdg-user-dirs-update
+  fi
+}
+
 install_live_configs() {
   local unit
   local hypr_config="$LIVE_HOME/.config/hypr/hyprland.conf"
@@ -82,6 +95,7 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/hypr/hyprland.conf" "$hypr_config" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprlock.conf" "$LIVE_HOME/.config/hypr/hyprlock.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprpaper.conf" "$LIVE_HOME/.config/hypr/hyprpaper.conf" 0644
+  install_live_file "$REPO_DIR/wayland/wallpapers/wallpaper.png" "$LIVE_HOME/.config/hypr/wallpaper.png" 0644
   install_live_file "$REPO_DIR/wayland/waybar/config.jsonc" "$LIVE_HOME/.config/waybar/config.jsonc" 0644
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
@@ -98,11 +112,15 @@ install_live_configs() {
     cat >> "$hypr_config" <<'HYPRLIVE'
 
 # Arch Config Live terminal
-exec-once = alacritty -e zsh -lc 'cat /etc/motd; exec zsh'
+exec-once = alacritty -e zsh -lc 'cat /etc/motd; exec zsh -i'
 HYPRLIVE
   fi
 
-  chown -R "$LIVE_USER:$LIVE_USER" "$LIVE_HOME/.config" "$LIVE_HOME/.local"
+  create_xdg_user_dirs
+  chown_live_path "$LIVE_HOME/.config"
+  chown_live_path "$LIVE_HOME/.local"
+  chown_live_path "$LIVE_HOME/.oh-my-zsh"
+  chown_live_path "$LIVE_HOME/.zshrc"
 }
 
 prepare_runtime() {

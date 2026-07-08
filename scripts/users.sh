@@ -4,6 +4,7 @@ set -euo pipefail
 configure_initial_user() {
   local username=$1
   local password_file="/root/.archcfg-user-password"
+  local home_dir
   local zsh_path
 
   log_info "Configuring user: $username"
@@ -17,6 +18,11 @@ configure_initial_user() {
   zsh_path=$(command -v zsh || true)
   if [[ -n "$zsh_path" ]]; then
     chsh -s "$zsh_path" "$username"
+  fi
+
+  home_dir=$(getent passwd "$username" | cut -d: -f6)
+  if [[ -n "$home_dir" && -x /usr/bin/xdg-user-dirs-update ]]; then
+    runuser -u "$username" -- env HOME="$home_dir" XDG_CONFIG_HOME="$home_dir/.config" xdg-user-dirs-update
   fi
 
   install -dm755 /etc/sudoers.d

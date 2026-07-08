@@ -3,4 +3,5 @@ wheel:x:998:live
 video:x:985:live
 audio:x:996:live
 input:x:97:live
+greeter:x:970:
 live:x:1000:

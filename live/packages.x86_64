@@ -4,6 +4,7 @@ base
 bash-completion
 bluez
 bluez-utils
+bluetui
 brightnessctl
 cliphist
 cloud-init
@@ -26,7 +27,9 @@ hyprpaper
 hyprsunset
 hyperv
 iputils
+impala
 iwd
+jdk-openjdk
 less
 linux
 linux-firmware

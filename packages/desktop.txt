@@ -26,6 +26,8 @@ wireplumber
 pavucontrol
 bluez
 bluez-utils
+bluetui
+impala
 brightnessctl
 playerctl
 polkit-kde-agent

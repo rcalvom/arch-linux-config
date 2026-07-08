@@ -7,4 +7,5 @@ neovim
 btop
 python-pip
 gcc
+jdk-openjdk
 npm

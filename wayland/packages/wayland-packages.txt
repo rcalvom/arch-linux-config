@@ -16,6 +16,8 @@ yazi
 poppler
 ripgrep
 fzf
+impala
+bluetui
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji

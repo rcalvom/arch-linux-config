@@ -8,7 +8,6 @@ This folder groups configuration files and package lists for common tools.
 - `nvim/` contains the active Neovim Lua config copied into `~/.config/nvim`.
 - `oh-my-zsh/` stores `.zshrc` and the `ginger` theme copied into the user's home.
 - `pacman/` keeps package lists and a helper script for updating them.
-- `xorg/` holds legacy Xorg session settings (`.xprofile`).
 
 ## Config Manifests
 

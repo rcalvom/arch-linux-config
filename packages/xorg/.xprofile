@@ -1,3 +1,0 @@
-setxkbmap latam &
-export PATH=$HOME/.local/bin:$PATH &
-picom -I 1.0 -O 1.0 -b -m 1.0

@@ -111,6 +111,15 @@ apply_fast_build_options() {
   } >>"$profiledef"
 }
 
+disable_system_service_in_profile() {
+  local profile_dir=$1
+  local service=$2
+  local service_path="$profile_dir/airootfs/etc/systemd/system/$service"
+
+  install -dm755 "$(dirname -- "$service_path")"
+  ln -sfn /dev/null "$service_path"
+}
+
 enable_system_service_in_profile() {
   local profile_dir=$1
   local service=$2
@@ -166,6 +175,9 @@ prepare_profile() {
     "$bundled_repo/scripts/build-iso.sh"
 
   enable_system_service_in_profile "$profile_copy" NetworkManager.service
+  enable_system_service_in_profile "$profile_copy" bluetooth.service
+  enable_system_service_in_profile "$profile_copy" greetd.service
+  disable_system_service_in_profile "$profile_copy" getty@tty1.service
 }
 
 main() {

@@ -42,6 +42,8 @@ Important packages added/used:
 - `grim` / `slurp`
 - `brightnessctl`
 - `playerctl`
+- `impala`
+- `bluetui`
 - `polkit-kde-agent`
 - `network-manager-applet`
 - `xdg-desktop-portal-hyprland`
@@ -165,9 +167,10 @@ Snapshot:
 
 ```text
 wayland/hypr/hyprpaper.conf
+wayland/wallpapers/wallpaper.png
 ```
 
-Current config is minimal/default-like. Wallpaper lines are commented and `splash = false`.
+The wallpaper is copied to `~/.config/hypr/wallpaper.png` and loaded through Hyprpaper with `fit_mode = cover`.
 
 ## Hyprlock
 
