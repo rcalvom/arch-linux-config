@@ -21,6 +21,7 @@ file_permissions=(
   ["/etc/greetd/config.toml"]="0:0:644"
   ["/etc/greetd/environments"]="0:0:644"
   ["/etc/sudoers.d/10-live"]="0:0:440"
+  ["/var/lib/greetd"]="970:970:755"
   ["/root/.bash_profile"]="0:0:644"
   ["/home/live"]="1000:1000:755"
   ["/home/live/.bash_profile"]="1000:1000:644"
