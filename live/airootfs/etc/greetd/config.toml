@@ -2,5 +2,5 @@
 vt = 1
 
 [default_session]
-command = "tuigreet --time --remember --asterisks --cmd /usr/local/bin/archcfg-live-session"
+command = "tuigreet --time --time-format '%d/%m/%Y - %I:%M %p' --greeting 'Arch Config Live ISO' --theme 'border=blue;text=cyan;prompt=lightblue;time=lightcyan;action=blue;button=cyan;container=black;input=lightcyan;greet=lightblue;title=cyan' --width 72 --window-padding 2 --container-padding 2 --prompt-padding 1 --greet-align center --user-menu --user-menu-min-uid 1000 --user-menu-max-uid 1000 --remember --asterisks --cmd /usr/local/bin/archcfg-live-session"
 user = "greeter"
