@@ -12,6 +12,8 @@ wl-clipboard
 cliphist
 alacritty
 wofi
+hyprlauncher
+rofi
 yazi
 poppler
 ripgrep

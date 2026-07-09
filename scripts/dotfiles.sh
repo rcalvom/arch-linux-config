@@ -100,11 +100,15 @@ install_wayland_dotfiles() {
 
   install_user_file "$repo_dir/wayland/hypr/hyprland.conf" "$home_dir/.config/hypr/hyprland.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprland.lua" "$home_dir/.config/hypr/hyprland.lua" "$username" 0644
+  install_user_file "$repo_dir/wayland/hypr/hyprtoolkit.conf" "$home_dir/.config/hypr/hyprtoolkit.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprlock.conf" "$home_dir/.config/hypr/hyprlock.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprpaper.conf" "$home_dir/.config/hypr/hyprpaper.conf" "$username" 0644
-  install_user_file "$repo_dir/wayland/wallpapers/wallpaper.png" "$home_dir/.config/hypr/wallpaper.png" "$username" 0644
+  install_user_file "$repo_dir/wayland/wallpapers/wallpaper.png" "$home_dir/Pictures/wallpaper2.png" "$username" 0644
   install_user_file "$repo_dir/wayland/waybar/config.jsonc" "$home_dir/.config/waybar/config.jsonc" "$username" 0644
   install_user_file "$repo_dir/wayland/waybar/style.css" "$home_dir/.config/waybar/style.css" "$username" 0644
+  install_user_file "$repo_dir/wayland/rofi/config.rasi" "$home_dir/.config/rofi/config.rasi" "$username" 0644
+  install_user_file "$repo_dir/wayland/wofi/config" "$home_dir/.config/wofi/config" "$username" 0644
+  install_user_file "$repo_dir/wayland/wofi/style.css" "$home_dir/.config/wofi/style.css" "$username" 0644
   install_user_file "$repo_dir/wayland/mako/config" "$home_dir/.config/mako/config" "$username" 0644
   install_user_file "$repo_dir/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$home_dir/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" "$username" 0644
   install_package_dotfiles "$repo_dir" "$username" "$home_dir"
@@ -118,5 +122,5 @@ install_wayland_dotfiles() {
   install -dm755 "$home_dir/.config/systemd/user/timers.target.wants"
   ln -sfn ../hyprsunset-day.timer "$home_dir/.config/systemd/user/timers.target.wants/hyprsunset-day.timer"
   ln -sfn ../hyprsunset-night.timer "$home_dir/.config/systemd/user/timers.target.wants/hyprsunset-night.timer"
-  chown -R "$username:$username" "$home_dir/.config" "$home_dir/.local"
+  chown -R "$username:$username" "$home_dir/.config" "$home_dir/.local" "$home_dir/Pictures"
 }

@@ -93,11 +93,15 @@ install_live_configs() {
   local hypr_config="$LIVE_HOME/.config/hypr/hyprland.conf"
 
   install_live_file "$REPO_DIR/wayland/hypr/hyprland.conf" "$hypr_config" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/hyprtoolkit.conf" "$LIVE_HOME/.config/hypr/hyprtoolkit.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprlock.conf" "$LIVE_HOME/.config/hypr/hyprlock.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprpaper.conf" "$LIVE_HOME/.config/hypr/hyprpaper.conf" 0644
-  install_live_file "$REPO_DIR/wayland/wallpapers/wallpaper.png" "$LIVE_HOME/.config/hypr/wallpaper.png" 0644
+  install_live_file "$REPO_DIR/wayland/wallpapers/wallpaper.png" "$LIVE_HOME/Pictures/wallpaper2.png" 0644
   install_live_file "$REPO_DIR/wayland/waybar/config.jsonc" "$LIVE_HOME/.config/waybar/config.jsonc" 0644
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
+  install_live_file "$REPO_DIR/wayland/rofi/config.rasi" "$LIVE_HOME/.config/rofi/config.rasi" 0644
+  install_live_file "$REPO_DIR/wayland/wofi/config" "$LIVE_HOME/.config/wofi/config" 0644
+  install_live_file "$REPO_DIR/wayland/wofi/style.css" "$LIVE_HOME/.config/wofi/style.css" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
   install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
   install_live_package_configs
@@ -119,6 +123,7 @@ HYPRLIVE
   create_xdg_user_dirs
   chown_live_path "$LIVE_HOME/.config"
   chown_live_path "$LIVE_HOME/.local"
+  chown_live_path "$LIVE_HOME/Pictures"
   chown_live_path "$LIVE_HOME/.oh-my-zsh"
   chown_live_path "$LIVE_HOME/.zshrc"
 }

@@ -1,0 +1,105 @@
+//@theme "/usr/share/rofi/themes/Arc-Dark.rasi"
+
+// https://github.com/davatorium/rofi/blob/next/doc/rofi-theme.5.markdown
+
+configuration {
+    modes: [window, drun, run];
+    show-icons: true;
+    icon-theme: "Adwaita";
+    application-fallback-icon: "application-x-executable";
+    drun-use-desktop-cache: true;
+    drun-reload-desktop-cache: false;
+}
+
+* {
+    foreground: rgba(241, 255, 255, 1);
+    border-color: rgba(3, 62, 140, 0.8);
+    background: rgba(0, 0, 0, 0.8);
+    selected-normal-background: rgba(3, 62, 140, 0.8);
+    selected-normal-foreground:  rgba(241, 255, 255, 0.8);
+    selected-active-background: rgba(3, 62, 140, 0.8);
+    selected-active-foreground: rgba(4, 173, 191, 0.8);
+    active-foreground: rgba(4, 173, 191, 0.8);
+    alternate-normal-background: Transparent;
+    normal-background: Transparent;
+}
+
+window {
+    font: "UbuntuMono Nerd Font 14";
+    padding: 0.75em;
+    border: 2px;
+    border-radius: 0;
+}
+
+mainbox {
+    children: [inputbar, message, listview, mode-switcher];
+}
+
+inputbar {
+    padding: 0.75em;
+    border: 2px;
+    border-radius: 0;
+    children: [prompt, textbox-prompt-colon, entry, num-filtered-rows, textbox-num-sep, num-rows, case-indicator];
+}
+
+prompt {
+    color: rgba(3, 62, 140, 1);
+}
+
+textbox-prompt-colon {
+    color: rgba(3, 62, 140, 1);
+}
+
+entry {
+    placeholder: "Input...";
+    blink: true;
+}
+
+listview {
+    border: 0;
+    spacing: 0;
+    padding: 0.75em 0 0.75em 0;
+}
+
+scrollbar {
+    border: 2px;
+    border-radius: 0;
+    handle-color: rgba(3, 62, 140, 0.8);
+}
+
+element {
+    children: [ element-icon, element-text ];
+    padding: 0.375em;
+    spacing: 1.5em;
+    margin: 0 0.75em 0 0;
+}
+
+element selected.normal {
+    border: 2px;
+    border-radius: 0;
+}
+
+element selected.active {
+    border: 2px;
+    border-radius: 0;
+}
+
+
+element-text {
+    vertical-align: 0.5;
+}
+
+element-icon {
+    padding: 0 0 0 0.375em;
+    size: 1.5em;
+}
+
+button selected.normal{
+    border: 2px;
+    border-radius: 0;
+}
+
+handle {
+    border: 2px;
+    border-radius: 0;
+}

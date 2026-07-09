@@ -1,0 +1,14 @@
+show=drun
+prompt=Input...
+width=640
+height=420
+location=center
+allow_images=true
+image_size=24
+insensitive=true
+matching=fuzzy
+term=alacritty
+gtk_dark=true
+hide_scroll=false
+no_actions=true
+columns=1

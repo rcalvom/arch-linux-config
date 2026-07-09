@@ -23,6 +23,7 @@ gptfdisk
 grub
 hyprland
 hyprlock
+hyprlauncher
 hyprpaper
 hyprsunset
 hyperv
@@ -58,6 +59,7 @@ pv
 qemu-guest-agent
 reflector
 ripgrep
+rofi
 slurp
 syslinux
 ttf-nerd-fonts-symbols

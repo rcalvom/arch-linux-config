@@ -12,6 +12,9 @@ Its purpose is to document, version, and automate system setup across installati
 
 The active installer target is a UEFI Arch Linux system with a Hyprland/Wayland desktop. Qtile files are kept only as legacy reference and are not installed by the new installer path.
 
+The installed display manager is `greetd` with `tuigreet`. It starts Hyprland by default and exposes the system session menu from `/usr/share/wayland-sessions` and `/usr/share/xsessions`, so an existing Qtile session remains selectable when Qtile is installed separately.
+Greeter theming notes live in `docs/greeter.md`.
+
 ---
 
 ## Quick Start
