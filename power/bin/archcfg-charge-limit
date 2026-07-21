@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE=${ARCHCFG_CHARGE_LIMIT_CONFIG:-/etc/archcfg/charge-limit.conf}
+DRY_RUN=0
+
+die() {
+  printf 'archcfg-charge-limit: %s\n' "$*" >&2
+  exit 1
+}
+
+validate_threshold() {
+  local value=$1
+
+  [[ "$value" =~ ^([0-9]|[1-9][0-9]|100)$ ]] || die "invalid threshold: $value"
+}
+
+mains_online() {
+  local supply
+  local type
+  local online
+
+  for supply in /sys/class/power_supply/*; do
+    [[ -r "$supply/type" && -r "$supply/online" ]] || continue
+    type=$(<"$supply/type")
+    online=$(<"$supply/online")
+    [[ "$type" == "Mains" && "$online" == "1" ]] && return 0
+  done
+
+  return 1
+}
+
+dock_product() {
+  local product_file
+  local product
+  local pattern=${DOCK_PRODUCT_PATTERN,,}
+
+  for product_file in /sys/bus/usb/devices/*/product; do
+    [[ -r "$product_file" ]] || continue
+    product=$(<"$product_file")
+    if [[ "${product,,}" == *"$pattern"* ]]; then
+      printf '%s\n' "$product"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+write_threshold() {
+  local path=$1
+  local value=$2
+  local current
+
+  current=$(<"$path")
+  [[ "$current" == "$value" ]] && return 0
+
+  if (( DRY_RUN )); then
+    printf 'Would set %s to %s\n' "$path" "$value"
+  else
+    printf '%s\n' "$value" > "$path"
+    printf 'Set %s to %s\n' "$path" "$value"
+  fi
+}
+
+apply_thresholds() {
+  local end_threshold=$1
+  local source=$2
+  local battery
+  local start_path
+  local end_path
+  local managed=0
+
+  for battery in /sys/class/power_supply/*; do
+    start_path="$battery/charge_control_start_threshold"
+    end_path="$battery/charge_control_end_threshold"
+    [[ -e "$start_path" && -e "$end_path" ]] || continue
+
+    managed=1
+    write_threshold "$start_path" "$CHARGE_START_THRESHOLD"
+    write_threshold "$end_path" "$end_threshold"
+  done
+
+  if (( ! managed )); then
+    printf 'No battery exposes charge-control thresholds; nothing to apply\n'
+    return 0
+  fi
+
+  printf 'Charge limit source: %s; start=%s%% end=%s%%\n' \
+    "$source" "$CHARGE_START_THRESHOLD" "$end_threshold"
+}
+
+main() {
+  case "${1:-}" in
+    "")
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    *)
+      die "usage: archcfg-charge-limit [--dry-run]"
+      ;;
+  esac
+
+  [[ -r "$CONFIG_FILE" ]] || die "missing configuration: $CONFIG_FILE"
+  # shellcheck source=/etc/archcfg/charge-limit.conf
+  source "$CONFIG_FILE"
+
+  validate_threshold "$CHARGE_START_THRESHOLD"
+  validate_threshold "$DOCK_CHARGE_END_THRESHOLD"
+  validate_threshold "$AC_CHARGE_END_THRESHOLD"
+  (( CHARGE_START_THRESHOLD <= DOCK_CHARGE_END_THRESHOLD )) || die "dock end threshold is below start threshold"
+  (( CHARGE_START_THRESHOLD <= AC_CHARGE_END_THRESHOLD )) || die "AC end threshold is below start threshold"
+  [[ -n "$DOCK_PRODUCT_PATTERN" ]] || die "dock product pattern is empty"
+
+  local dock
+  if mains_online && dock=$(dock_product); then
+    apply_thresholds "$DOCK_CHARGE_END_THRESHOLD" "dock ($dock)"
+  else
+    apply_thresholds "$AC_CHARGE_END_THRESHOLD" "direct AC or battery"
+  fi
+}
+
+main "$@"

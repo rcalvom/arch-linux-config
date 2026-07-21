@@ -5,8 +5,12 @@ This folder groups configuration files and package lists for common tools.
 - `base.txt`, `desktop.txt`, `dev.txt`, and `vm.txt` are official repository package profiles.
 - `aur.txt` lists optional AUR packages installed only when `install.sh` receives `--aur`.
 - `alacritty/` contains the Alacritty terminal config (`alacritty.toml`).
+- `calcurse/` contains the calendar configuration and keymap.
+- `firefox/` and `thunderbird/` contain launchers and profile templates.
 - `nvim/` contains the active Neovim Lua config copied into `~/.config/nvim`.
+- `yazi/` contains the file manager configuration copied into `~/.config/yazi`.
 - `oh-my-zsh/` stores `.zshrc` and the `ginger` theme copied into the user's home.
+- `vscode/` contains VS Code and VS Code R settings.
 - `pacman/` keeps package lists and a helper script for updating them.
 
 ## Config Manifests

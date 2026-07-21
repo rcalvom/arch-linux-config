@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_root="$HOME/.thunderbird"
+template_root="$HOME/.local/share/archcfg/thunderbird-template"
+profiles_ini="$config_root/profiles.ini"
+managed_profile=0
+profile_path=""
+
+if [[ -f "$profiles_ini" ]]; then
+  profile_path=$(awk -F= '
+    /^\[Install/ { in_install = 1; next }
+    /^\[/ { in_install = 0 }
+    in_install && $1 == "Default" { print $2; exit }
+  ' "$profiles_ini")
+fi
+
+if [[ -n "$profile_path" ]]; then
+  if [[ "$profile_path" != /* ]]; then
+    profile_path="$config_root/$profile_path"
+  fi
+else
+  profile_path="$config_root/archcfg.default-release"
+  managed_profile=1
+fi
+
+[[ -f "$template_root/user.js" ]] || {
+  printf 'Missing Thunderbird profile template: %s\n' "$template_root" >&2
+  exit 1
+}
+
+install -dm700 "$profile_path/chrome"
+install -m644 "$template_root/user.js" "$profile_path/user.js"
+install -m644 "$template_root/chrome/userChrome.css" "$profile_path/chrome/userChrome.css"
+
+if [[ "$managed_profile" -eq 1 && ! -e "$profiles_ini" ]]; then
+  install -dm700 "$config_root"
+  printf '%s\n' \
+    '[Profile0]' \
+    'Name=archcfg' \
+    'IsRelative=1' \
+    'Path=archcfg.default-release' \
+    'Default=1' \
+    '' \
+    '[General]' \
+    'StartWithLastProfile=1' \
+    'Version=2' >"$profiles_ini"
+fi
+
+if [[ "$managed_profile" -eq 1 ]]; then
+  exec /usr/bin/thunderbird --profile "$profile_path" "$@"
+fi
+
+exec /usr/bin/thunderbird "$@"

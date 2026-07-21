@@ -1,6 +1,6 @@
 # Wayland / Hyprland Notes
 
-**Last updated:** 2026-05-15
+**Last updated:** 2026-07-17
 
 This folder records the active Wayland/Hyprland setup used by the installer. Qtile remains only as a legacy reference outside this path.
 
@@ -8,17 +8,16 @@ This folder records the active Wayland/Hyprland setup used by the installer. Qti
 
 - Hyprland session as the primary desktop target.
 - Waybar as the status bar.
-- Wofi as the app launcher for the reproducible installer path.
+- Rofi as the app launcher.
+- Calcurse as the terminal calendar.
+- Wdisplays for one-off graphical output adjustments.
+- Firefox and Thunderbird with square browser chrome.
 - Yazi as terminal file manager.
 - Ubuntu as the preferred UI font, with Noto fallback for missing glyphs.
 
 ## Installed packages
 
-See:
-
-```text
-wayland/packages/wayland-packages.txt
-```
+See `packages/desktop.txt`.
 
 Important packages added/used:
 
@@ -26,11 +25,14 @@ Important packages added/used:
 - `hyprpaper`
 - `hyprlock`
 - `hyprsunset`
+- `fprintd`
 - `waybar`
 - `mako`
+- `wdisplays`
 - `wl-clipboard`
-- `cliphist`
-- `wofi`
+- `rofi`
+- `calcurse`
+- `thunderbird`
 - `yazi`
 - `noto-fonts`
 - `noto-fonts-cjk`
@@ -40,6 +42,7 @@ Important packages added/used:
 - `ttf-ubuntu-mono-nerd`
 - `ttf-nerd-fonts-symbols`
 - `grim` / `slurp`
+- `python`
 - `brightnessctl`
 - `playerctl`
 - `impala`
@@ -50,46 +53,53 @@ Important packages added/used:
 
 ## Hyprland
 
-Config snapshots:
+Hyprland 0.55+ uses the Lua configuration:
 
 ```text
-wayland/hypr/hyprland.conf
 wayland/hypr/hyprland.lua
 ```
 
 Live locations:
 
 ```text
-~/.config/hypr/hyprland.conf
 ~/.config/hypr/hyprland.lua
 ```
 
 Notes:
 
-- The installer uses the standard `hyprland.conf` config so a fresh official Hyprland package can load it without extra tooling.
-- The Lua-style config is kept as a personal snapshot and reference.
-- Program commands are centralized near the top of both configs.
+- `hyprland.lua` is the single deployed source of session behavior.
+- `hyprland.conf` remains only as a legacy Hyprland 0.54-and-older reference.
+- Program commands are centralized near the top of the Lua config.
 
 Current important program variables:
 
 ```lua
 local terminal    = "alacritty"
 local fileManager = "alacritty -e yazi"
-local menu        = "wofi --show drun"
-local browser     = "firefox"
+local menu        = "rofi -show drun"
+local browser     = "$HOME/.local/bin/archcfg-firefox"
 ```
 
 Important bindings:
 
 ```text
 SUPER + Return -> Alacritty
-SUPER + D      -> Wofi launcher
-SUPER + R      -> Wofi launcher
+SUPER + M/D    -> Rofi launcher
 SUPER + B      -> Firefox
 SUPER + E      -> Alacritty running Yazi
-SUPER + Q      -> close active window
+SUPER + C      -> Alacritty running Calcurse
+SUPER + W/Q    -> close active window
+SUPER + L      -> Hyprlock
+SUPER + Tab / SUPER + Shift+Tab -> toggle Monocle / Master layout
+ALT + Tab / ALT + Shift+Tab -> next / previous window in the current layout
+CTRL + Tab / CTRL + Shift+Tab -> application tabs, including Firefox
+SUPER + CTRL + Tab / SUPER + CTRL + Shift+Tab -> next / previous window in the current layout
+SUPER + R      -> Hyprsunset 3500K
+SUPER + Shift+R -> disable Hyprsunset manually
 SUPER + Shift+Q -> exit Hyprland
-SUPER + Escape -> hyprlock
+SUPER + Escape -> Hyprlock
+ALT + 1..9     -> bring the selected workspace to the focused monitor
+ALT + Ctrl+1..9 -> move the active window without following it
 ```
 
 Yazi is terminal-based, so the file manager command is:
@@ -98,18 +108,48 @@ Yazi is terminal-based, so the file manager command is:
 alacritty -e yazi
 ```
 
-## Autostart / session helpers
+## Application profiles
 
-The `hyprland.conf` config includes these session helpers:
+Firefox and Thunderbird use versioned profile templates under `packages/`. Their `archcfg-*` launchers first update an existing default profile, or create a deterministic profile for a new user. This keeps userChrome customizations independent from browser package updates.
+
+Firefox starts through `archcfg-firefox` from the `SUPER + B` binding. Its browser chrome hides client window controls and the Tab List button, with square tabs, controls, and panels. Thunderbird applies the equivalent titlebar customization through `archcfg-thunderbird`.
+
+Calcurse and VS Code settings are also versioned under `packages/`. VS Code remains an optional AUR application and is not included in the live ISO.
+
+## Monitor layout
+
+`hypr-display-layout` reacts to Hyprland monitor add/remove and configuration-reload events. It matches the laptop panel and the two Dell displays by their physical descriptions, so dock connector names such as `DP-10` can change without breaking the layout.
 
 ```text
-exec-once = waybar
-exec-once = mako
-exec-once = hyprpaper
-exec-once = wl-paste --type text --watch cliphist store
-exec-once = wl-paste --type image --watch cliphist store
-exec-once = /usr/lib/polkit-kde-authentication-agent-1
-exec-once = nm-applet --indicator
+[ Dell P2419H ][ Dell P2422H ]
+     [ Lenovo laptop panel ]
+```
+
+The laptop panel is centered below the two external displays. With only the laptop connected, it is placed at `0x0`; with one Dell attached, that display is placed above it. Manual changes through Wdisplays remain in effect until the next monitor hotplug event, configuration reload, or Hyprland session start.
+
+Snapshot:
+
+```text
+wayland/bin/hypr-display-layout
+```
+
+Live location:
+
+```text
+~/.local/bin/hypr-display-layout
+```
+
+## Autostart / session helpers
+
+The Lua config starts these session helpers:
+
+```text
+waybar
+mako
+hyprpaper
+hypr-display-layout
+polkit-kde-authentication-agent-1
+nm-applet --indicator
 ```
 
 The installer config starts `waybar` and also bootstraps the Hyprsunset schedule at session start.
@@ -117,6 +157,12 @@ The installer config starts `waybar` and also bootstraps the Hyprsunset schedule
 ## Hyprsunset / redshift equivalent
 
 Wayland does not use classic `redshift` here. The current equivalent is **Hyprsunset**.
+
+If Redshift was previously enabled for a legacy X11 session, disable its user service before using Hyprsunset:
+
+```bash
+systemctl --user disable --now redshift.service
+```
 
 Config/script snapshots:
 
@@ -161,6 +207,15 @@ systemctl --user start hyprsunset.service
 ~/.local/bin/hyprsunset-apply-current
 ```
 
+`hyprsunset-set` waits for Hyprsunset's IPC socket before it sends a color request; it does not use a fixed service-start delay.
+
+Manual controls:
+
+```text
+SUPER + R       -> warm filter, 3500K
+SUPER + Shift + R -> identity / no filter
+```
+
 ## Hyprpaper / wallpaper
 
 Snapshot:
@@ -170,7 +225,7 @@ wayland/hypr/hyprpaper.conf
 wayland/wallpapers/wallpaper.png
 ```
 
-The wallpaper is copied to `~/.config/hypr/wallpaper.png` and loaded through Hyprpaper with `fit_mode = cover`.
+The wallpaper is copied to `~/Pictures/wallpaper2.png` and loaded through Hyprpaper with `fit_mode = cover`.
 
 ## Hyprlock
 
@@ -180,10 +235,12 @@ Snapshot:
 wayland/hypr/hyprlock.conf
 ```
 
+Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained. Locking is intentionally manual; no idle-lock daemon is started.
+
 Bound in Hyprland as:
 
 ```text
-SUPER + Escape -> hyprlock
+SUPER + L / SUPER + Escape -> hyprlock
 ```
 
 ## Mako notifications
@@ -197,28 +254,22 @@ wayland/mako/config
 Current styling:
 
 ```text
+font=UbuntuMono Nerd Font 12
 default-timeout=5000
+output=eDP-1
 border-size=2
-border-color=#89b4fa
-background-color=#1e1e2eee
-text-color=#cdd6f4
+border-color=#033e8c
+background-color=#000000cc
+text-color=#d6d6d6
+progress-color=#20a5ba
 ```
 
-## Clipboard history
+## Calendar
 
-Uses `wl-clipboard` + `cliphist`.
-
-Startup watchers in `hyprland.conf` snapshot:
+Calcurse opens in Alacritty through the familiar binding:
 
 ```text
-wl-paste --type text --watch cliphist store
-wl-paste --type image --watch cliphist store
-```
-
-Binding in Lua config:
-
-```text
-SUPER + C -> cliphist list | wofi --dmenu | cliphist decode | wl-copy
+SUPER + C -> alacritty -e calcurse
 ```
 
 ## Screenshots
@@ -234,6 +285,23 @@ Shift + Print        -> select area and save to ~/Pictures/screenshots
 Ctrl + Shift + Print -> select area and copy to clipboard
 ```
 
+## Screen sharing
+
+`xdg-desktop-portal-hyprland` remains the ScreenCast backend. Its default Qt picker is replaced with `hypr-share-picker`, a Rofi-based custom picker that preserves screen, window, and region selection while using the desktop launcher theme.
+
+Snapshots:
+
+```text
+wayland/hypr/xdph.conf
+wayland/bin/hypr-share-picker
+wayland/rofi/share-picker.rasi
+wayland/rofi/share-picker-icons/
+wayland/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf
+```
+
+The service drop-in adds `~/.local/bin` to the portal backend's PATH so the picker is resolved without hard-coding a username.
+`share-picker.rasi` imports the normal Rofi theme, but makes only the share picker compact. Its rows use white SVG icons for screens and regions. Window rows resolve their application icon from desktop-entry metadata and fall back to the white window icon when no match exists.
+
 ## Waybar
 
 Config snapshots:
@@ -241,6 +309,7 @@ Config snapshots:
 ```text
 wayland/waybar/config.jsonc
 wayland/waybar/style.css
+wayland/bin/hypr-waybar-start
 ```
 
 Live locations:
@@ -248,6 +317,7 @@ Live locations:
 ```text
 ~/.config/waybar/config.jsonc
 ~/.config/waybar/style.css
+~/.local/bin/hypr-waybar-start
 ```
 
 Current Waybar settings:
@@ -257,14 +327,19 @@ Current Waybar settings:
 ```
 
 ```css
-font-size: 12px;
+font-size: 14px;
 ```
 
 Current modules:
 
-- left: Hyprland workspaces
-- center: active Hyprland window
-- right: pulseaudio, network, battery, clock, tray
+- left: nine Qtile-style workspaces and the active window for that output
+- right: volume, backlight, network SSID, battery, clock, tray
+
+`hypr-waybar-start` waits for the Wayland socket and a non-empty Hyprland monitor list before it starts Waybar. This avoids an output-readiness race without relying on a fixed delay.
+
+The nine workspaces are visible on every output. Their custom Waybar buttons use Hyprland's Lua dispatcher, because the native Waybar module emits incompatible legacy dispatcher syntax for this session. A single event watcher updates cached workspace state before signaling the buttons, so a refresh needs two Hyprland queries rather than eighteen. Clicking one or pressing Alt/Super+1..9 brings it to the focused monitor and swaps visible workspaces when needed. Their order is Console, Agents, Firefox, Development, File Explorer, Mail, Messages, Entertainment, and Others. The focused workspace is blue, visible workspaces use the secondary background, and occupied workspaces use the active text color.
+
+The clock shows the localized textual date (`%A, %d %B %Y`) and refreshes every second so its seconds stay current.
 
 To reload Waybar manually:
 
@@ -272,26 +347,12 @@ To reload Waybar manually:
 pkill waybar && waybar &
 ```
 
-## Wofi
+## Rofi
 
-Installed from the official Arch repository:
-
-```bash
-sudo pacman -S --needed wofi
-```
-
-Run manually:
+Rofi is the application launcher and preserves the Qtile `SUPER + M` workflow:
 
 ```bash
-wofi --show drun
-```
-
-The current Hyprland config uses `wofi --show drun` as the menu command.
-
-Clipboard history uses Wofi as a dmenu-compatible picker:
-
-```bash
-cliphist list | wofi --dmenu | cliphist decode | wl-copy
+rofi -show drun
 ```
 
 ## Yazi
@@ -309,13 +370,35 @@ Binary locations:
 /usr/bin/ya
 ```
 
-User config location, if customized later:
+Config snapshot:
+
+```text
+packages/yazi/
+```
+
+Live location:
 
 ```text
 ~/.config/yazi/
 ```
 
-At the time of this note, no custom Yazi config was created; it is using its defaults.
+Yazi uses a three-pane layout, natural sorting with directories first, and the desktop's black/blue color palette. Text files open in Neovim; PDFs and media open in Evince and mpv. Image previews are disabled while browsing; press Enter on an image to render it with Chafa in the current terminal, then press any key to return to Yazi. Its built-in previewers use `ffmpeg`, `7zip`, `jq`, `poppler`, `resvg`, ImageMagick, and Ueberzug++ to show video, archive, JSON, PDF, SVG, and font previews in Alacritty under Hyprland.
+
+Useful bindings:
+
+```text
+g h          -> Home
+g d / g D    -> Documents / Downloads
+g p / g m    -> Pictures / Music
+g v          -> Videos
+g c          -> ~/.config
+g r / g a    -> repositories / this Arch configuration repository
+g t          -> /tmp
+g f          -> find files, including hidden files except .git
+g /          -> search file contents with ripgrep
+```
+
+The `y` Zsh function starts Yazi and changes the parent shell into the directory selected on exit. Use `yazi` directly when that directory change is not needed.
 
 ## Font fallback
 

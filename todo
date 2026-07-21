@@ -1,0 +1,20 @@
+Usar tuigreet para el greeter, me interesa un greeter en la terminal
+
+- Preguntarle al agente como hago para aceptar las sugerencias que salen en el menu de sugerencias porque le doy enter y no funciona, quizas es algo que falta de los bindings, me gustaria que funcione con enter
+- Quiero que lo que tengo aqui de grub tambien se aplique para el live iso y para el script de configuracion que estoy pensando, esos ajustes graficos, tambien quiero ver como puedo mejorar eso de la fuente porque recuerdo que no se ve muy nitida que digamos y esa fuente me gusta muchisimo.
+- Me gustaria que el script de instalación instele muchas cosas y me gustaría hacerlo muy general, que en packages/ este una carpeta por cada cosa que quiero configurar mas o menos esta asi, y que el script vaya por cada carpeta y aplique las configuraciones ahi, no se si un archivo json o toml o algo similar sea bueno para describir donde se debe copiar la configuracion y que comando ejecutar para instalarla
+- Entre las cosas que menciono ahi y me gustaría configurar un poco mejor está lo de no utilizar nada de lo de Qtile, ya que es python y quiero mantenerme en lenguajes mas eficientes, asi que quitar el lightdm en la configuracion del todo y dejar solo el utulizado por wayland e hyrland que son mas con la politica que a mi me gusta
+-(later) Quiero crear una herramienta en ncourses o alguna otra tecnologia que me permita configurar pantallas, como, que posiciones dejarlas, cuando hacer mirror, resolicones, siento que es un poco complicado hacer esa configuracion con el estado actual de la confuguracion
+- (later) QUiero configurar hyrland muy pero muy minimalista, lo cual require quitar las animaciones de tracisiones ya que mi ideologia para eso es muy "eso quita tiempo, quiero algo inmediato, full enfocado a la productividad"
+- Quiero agregarle openclaw y opencode, intentaré instalarlos usando pacman, se que no son C y Rust pero son tecnologias que uso mucho y enfocadas a la productividad que me gusta tanto
+- Para openclaw me gustaria guardar en su respectiva carpeta la confuguracion de los sandboxes con docker asi como lo tengo en este momento, eso es muy importante para mi
+- Descubri spotatui como visor de audio, parece que se necesita premium de spotify, es algo dificil de usar por lo que require muchos atajos del teclado pero me gusta que sea tui para reproducir musica! osea super coool
+- Con Control e tengo en Qtile un gestion de explorador de archivos, me gustaría dejarlo al estilo uqe las otras cosas de este projecto personal
+- Para instalar steam tuve que hacer lo siguiente,
+-- Activar multilib en /etc/pacman.conf
+-- Descomentar [multilib]
+Include = /etc/pacman.d/mirrorlis
+-- Instalar vulcan sudo pacman -S --needed vulkan-tools vulkan-icd-loader lib32-vulkan-icd-loader
+-- instalar los drivers sudo pacman -S --needed mesa vulkan-radeon lib32-vulkan-radeon
+- Impala me gustó mucho para gestoinar la red wifi
+- por otro lado bluetui me gusto muhco para cosas bluetooth

@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Place the known dock displays above the laptop panel."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+
+
+LAPTOP = "Lenovo Group Limited 0x41B5"
+LEFT_DISPLAY = "Dell Inc. DELL P2419H 3B0FPD3"
+RIGHT_DISPLAY = "Dell Inc. DELL P2422H 8V9K8T3"
+
+
+def monitor_with_description(monitors: list[dict], description: str) -> dict | None:
+    return next(
+        (
+            monitor
+            for monitor in monitors
+            if monitor.get("description", "").startswith(description)
+        ),
+        None,
+    )
+
+
+def logical_size(monitor: dict) -> tuple[int, int]:
+    scale = float(monitor.get("scale", 1)) or 1
+    return round(monitor["width"] / scale), round(monitor["height"] / scale)
+
+
+def configure(monitor: dict, x: int, y: int) -> bool:
+    scale = float(monitor.get("scale", 1)) or 1
+    code = (
+        "hl.monitor({ "
+        f"output = {json.dumps(monitor['name'])}, "
+        'mode = "preferred", '
+        f'position = "{x}x{y}", '
+        f"scale = {scale:g} "
+        "})"
+    )
+    result = subprocess.run(
+        ["hyprctl", "eval", code],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode or result.stdout.strip() != "ok":
+        print(result.stderr.strip() or result.stdout.strip(), file=sys.stderr)
+        return False
+    return True
+
+
+def main() -> int:
+    try:
+        result = subprocess.run(
+            ["hyprctl", "-j", "monitors"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        monitors = json.loads(result.stdout)
+    except (json.JSONDecodeError, OSError, subprocess.CalledProcessError):
+        return 1
+
+    laptop = monitor_with_description(monitors, LAPTOP)
+    left = monitor_with_description(monitors, LEFT_DISPLAY)
+    right = monitor_with_description(monitors, RIGHT_DISPLAY)
+    positions: list[tuple[dict, int, int]] = []
+
+    if left and right:
+        left_width, left_height = logical_size(left)
+        right_width, right_height = logical_size(right)
+        positions.extend(((left, 0, 0), (right, left_width, 0)))
+        if laptop:
+            laptop_width, _ = logical_size(laptop)
+            positions.append(
+                (laptop, (left_width + right_width - laptop_width) // 2, max(left_height, right_height))
+            )
+    elif left or right:
+        external = left or right
+        external_width, external_height = logical_size(external)
+        positions.append((external, 0, 0))
+        if laptop:
+            laptop_width, _ = logical_size(laptop)
+            positions.append((laptop, max(0, (external_width - laptop_width) // 2), external_height))
+    elif laptop:
+        positions.append((laptop, 0, 0))
+
+    return 0 if all(configure(*position) for position in positions) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

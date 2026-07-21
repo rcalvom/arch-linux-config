@@ -4,8 +4,6 @@ set -euo pipefail
 configure_wayland_desktop() {
   local profile=${1:-developer}
   local repo_dir=${2:-/opt/arch-linux-config}
-  local greeter_theme="border=lightblue;text=white;prompt=cyan;time=lightblue;action=blue;button=lightcyan;container=black;input=lightcyan;greet=lightblue;title=lightcyan"
-  local greeter_command="tuigreet --time --time-format '%d/%m/%Y - %I:%M %p' --greeting 'Arch Linux' --theme '$greeter_theme' --width 72 --window-padding 2 --container-padding 2 --prompt-padding 1 --greet-align center --remember --remember-session --asterisks --user-menu --user-menu-min-uid 1000 --sessions /usr/share/wayland-sessions --xsessions /usr/share/xsessions --cmd Hyprland"
 
   log_info "Configuring Wayland desktop"
 
@@ -17,20 +15,21 @@ configure_wayland_desktop() {
 
   [[ -f "$repo_dir/greetd/vtrgb" ]] || die "Missing greetd console palette: $repo_dir/greetd/vtrgb"
   [[ -f "$repo_dir/greetd/greetd-vtrgb.conf" ]] || die "Missing greetd systemd drop-in: $repo_dir/greetd/greetd-vtrgb.conf"
+  [[ -f "$repo_dir/greetd/vconsole.conf" ]] || die "Missing greetd console configuration: $repo_dir/greetd/vconsole.conf"
+  [[ -f "$repo_dir/greetd/config.toml" ]] || die "Missing greetd configuration: $repo_dir/greetd/config.toml"
+  [[ -f "$repo_dir/greetd/archcfg-xsession-wrapper" ]] || die "Missing greetd X11 session wrapper"
+  [[ -f "$repo_dir/modules-load.d/nvidia-utils.conf" ]] || die "Missing NVIDIA modules-load override"
   install -Dm644 "$repo_dir/greetd/vtrgb" /etc/vtrgb
   install -Dm644 "$repo_dir/greetd/greetd-vtrgb.conf" /etc/systemd/system/greetd.service.d/10-vtrgb.conf
+  install -Dm644 "$repo_dir/greetd/vconsole.conf" /etc/vconsole.conf
+  install -Dm644 "$repo_dir/greetd/config.toml" /etc/greetd/config.toml
+  install -Dm755 "$repo_dir/greetd/archcfg-xsession-wrapper" /usr/local/libexec/archcfg-xsession-wrapper
 
-  install -dm755 /etc/greetd
-  cat > /etc/greetd/config.toml <<'GREETD'
-[terminal]
-vt = 1
-
-[default_session]
-GREETD
-  printf 'command = "%s"\n' "$greeter_command" >> /etc/greetd/config.toml
-  cat >> /etc/greetd/config.toml <<'GREETD'
-user = "greeter"
-GREETD
+  if ! lspci -nn | grep -qi nvidia; then
+    install -Dm644 "$repo_dir/modules-load.d/nvidia-utils.conf" /etc/modules-load.d/nvidia-utils.conf
+  fi
+  log_info "Rebuilding initramfs with greeter console font"
+  mkinitcpio -P
 
   cat > /etc/greetd/environments <<'ENVIRONMENTS'
 Hyprland

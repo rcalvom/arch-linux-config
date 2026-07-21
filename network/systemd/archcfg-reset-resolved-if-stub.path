@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch resolv.conf for systemd-resolved restoration
+
+[Path]
+PathChanged=/etc/resolv.conf
+Unit=archcfg-reset-resolved-if-stub.service
+
+[Install]
+WantedBy=multi-user.target

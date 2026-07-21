@@ -8,7 +8,8 @@ configuration {
     icon-theme: "Adwaita";
     application-fallback-icon: "application-x-executable";
     drun-use-desktop-cache: true;
-    drun-reload-desktop-cache: false;
+    // Include desktop entries installed after the previous Rofi launch.
+    drun-reload-desktop-cache: true;
 }
 
 * {

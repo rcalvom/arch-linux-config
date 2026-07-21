@@ -36,34 +36,6 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   end,
 })
 
-local function autosave()
-  local buf = vim.api.nvim_get_current_buf()
-
-  if not vim.bo[buf].modified then
-    return
-  end
-
-  if not vim.bo[buf].modifiable then
-    return
-  end
-
-  if vim.bo[buf].buftype ~= "" then
-    return
-  end
-
-  if vim.api.nvim_buf_get_name(buf) == "" then
-    return
-  end
-
-  ensure_parent_dir(vim.api.nvim_buf_get_name(buf))
-  vim.cmd("silent write")
-end
-
-vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave", "FocusLost", "BufLeave" }, {
-  group = augroup,
-  callback = autosave,
-})
-
 vim.api.nvim_create_autocmd("VimEnter", {
   group = augroup,
   callback = function()

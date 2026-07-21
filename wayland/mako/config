@@ -1,5 +1,10 @@
+# Match Alacritty's typography and Hyprland's active border.
+font=UbuntuMono Nerd Font 12
 default-timeout=5000
+# Keep notifications on the laptop panel regardless of focused output.
+output=eDP-1
 border-size=2
-border-color=#89b4fa
-background-color=#1e1e2eee
-text-color=#cdd6f4
+border-color=#033e8c
+background-color=#000000cc
+text-color=#d6d6d6
+progress-color=#20a5ba

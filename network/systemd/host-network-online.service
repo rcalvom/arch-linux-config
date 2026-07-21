@@ -1,0 +1,14 @@
+[Unit]
+Description=Wait for a usable network route and DNS
+Wants=NetworkManager.service iwd.service systemd-resolved.service
+After=NetworkManager.service iwd.service systemd-resolved.service
+Before=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/archcfg-wait-network-online
+TimeoutStartSec=65
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network-online.target

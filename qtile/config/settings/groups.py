@@ -2,7 +2,7 @@
 
 # Qtile
 from libqtile.config import Key, Group
-from libqtile.command import lazy
+from libqtile.lazy import lazy
 
 # Configuration
 from .keys import alt, control, keys
@@ -10,9 +10,11 @@ from .keys import alt, control, keys
 # List of Groups in the layout
 groups = [
     Group(name="Console", label=""),
+    Group(name="Agents", label="󰚩"),
     Group(name="Firefox", label=" "),
     Group(name="Development", label=" "),
     Group(name="File explorer", label=" "),
+    Group(name="Mail", label="󰇮"),
     Group(name="Messages", label=" "),
     Group(name="Entertainment", label="磊 "),
     Group(name="Others", label="")

@@ -1,0 +1,28 @@
+// Restore Rofi's base widgets before importing the launcher styling.
+@theme "default"
+@import "config.rasi"
+
+window {
+    width: 30em;
+}
+
+inputbar {
+    padding: 0.5em;
+}
+
+listview {
+    lines: 5;
+    fixed-height: false;
+    scrollbar: false;
+    padding: 0.5em 0;
+}
+
+element {
+    padding: 0.25em;
+    spacing: 0.75em;
+    margin: 0 0.5em 0 0;
+}
+
+element-icon {
+    size: 1.25em;
+}

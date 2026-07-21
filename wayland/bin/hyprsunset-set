@@ -2,7 +2,7 @@
 # Usage:
 #   hyprsunset-set temperature 3500
 #   hyprsunset-set identity
-set -u
+set -euo pipefail
 
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
@@ -19,8 +19,20 @@ fi
 # Make Wayland vars visible to systemd user services started from timers.
 systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP 2>/dev/null || true
 
-# Ensure the hyprsunset daemon is available.
-systemctl --user start hyprsunset.service 2>/dev/null || true
-sleep 0.2
+# Wait for Hyprsunset's IPC socket rather than relying on a fixed startup delay.
+systemctl --user start hyprsunset.service
+[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || {
+  printf 'Hyprland instance signature is unavailable\n' >&2
+  exit 1
+}
+
+hyprsunset_socket="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.hyprsunset.sock"
+while [[ ! -S "$hyprsunset_socket" ]]; do
+  systemctl --user is-active --quiet hyprsunset.service || {
+    printf 'Hyprsunset service did not become active\n' >&2
+    exit 1
+  }
+  sleep 0.05
+done
 
 exec hyprctl hyprsunset "$@"

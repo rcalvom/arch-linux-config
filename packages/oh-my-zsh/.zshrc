@@ -31,13 +31,9 @@ ZSH_THEME="ginger"
 # Case-sensitive completion must be off. _ and - will be interchangeable.
 # HYPHEN_INSENSITIVE="true"
 
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
-
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
+# Update Oh My Zsh automatically every 13 days without prompting.
+zstyle ':omz:update' mode auto
+zstyle ':omz:update' frequency 13
 
 # Uncomment the following line if pasting URLs and other text is messed up.
 # DISABLE_MAGIC_FUNCTIONS="true"
@@ -117,15 +113,52 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-#cmatrix -C blue -s
-#neofetch
+# Local customizations
+
+# cmatrix -C blue -s
+# neofetch
+
+# PATH
+
+# De-duplicate PATH entries while preserving first occurrence.
+typeset -U path PATH
+
+# Prepend user-level bins.
+path=(
+  "$HOME/.npm-global/bin"
+  "$HOME/.opencode/bin"
+  "$HOME/.local/bin"
+  $path
+)
+
+# Append tool-specific bins.
+path+=(
+  "$HOME/Android/Sdk/emulator"
+  "$HOME/.pub-cache/bin"
+  "$HOME/go/bin"
+)
+
+export PATH
+
+# Node (nvm)
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"  # Loads nvm
+[[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"  # Loads nvm bash_completion
 
-export PATH=$PATH:~/Android/Sdk/emulator
-export PATH=$PATH:~/.pub-cache/bin
+# Completions
 
+# OpenClaw completion
+[[ -s "$HOME/.openclaw/completions/openclaw.zsh" ]] && source "$HOME/.openclaw/completions/openclaw.zsh"
 
-export PATH=$HOME/.local/bin:$PATH
+# Keep the shell in the directory selected when Yazi exits.
+function y() {
+  local tmp cwd
+
+  tmp=$(mktemp -t "yazi-cwd.XXXXXX") || return
+  yazi "$@" --cwd-file="$tmp"
+  cwd=$(<"$tmp")
+  rm -f -- "$tmp"
+
+  [[ -n "$cwd" && "$cwd" != "$PWD" ]] && builtin cd -- "$cwd"
+}

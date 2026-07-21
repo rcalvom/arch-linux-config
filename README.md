@@ -1,7 +1,7 @@
 # Arch Linux Configuration Repository
 
 **Author:** Ricardo Andres Calvo Mendez  
-**Last Updated:** 2026-07-03
+**Last Updated:** 2026-07-17
 
 ---
 
@@ -46,6 +46,8 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
 ```
 
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
+
+Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
 
 ---
 
@@ -92,8 +94,15 @@ This directory includes:
 ### `packages/alacritty/` and `packages/nvim/`
 Contain the active terminal, editor, and shell configuration. Package folders can include `files.conf` manifests so the installer and live session copy configs into the correct home-directory locations automatically.
 
+### `server-bootstrap/`
+Contains a portable, user-level Bash bootstrap for remote Linux servers. It installs terminal development tools when possible and deploys the Ginger Zsh, Neovim, OpenCode, and tmux configuration without touching system or hardware-specific settings. See [server-bootstrap/README.md](server-bootstrap/README.md).
+
 ### `qtile/`
 Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.
+
+Automatic Redshift and GeoClue setup for the legacy Qtile/X11 session is documented in [docs/redshift.md](docs/redshift.md).
+
+Dock-aware battery charge limits are documented in [docs/charge-limits.md](docs/charge-limits.md).
 
 ---
 

@@ -2,7 +2,7 @@
 
 # Qtile
 from libqtile.config import Drag, Click
-from libqtile.command import lazy
+from libqtile.lazy import lazy
 
 # Configuration
 from .keys import mod

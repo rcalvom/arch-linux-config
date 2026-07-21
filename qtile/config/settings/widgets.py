@@ -86,11 +86,6 @@ primary_widgets = [
         format='{down} ↓↑ {up}',
         padding=theme['widgets']['net']['padding']
     ),
-    widget.CurrentLayoutIcon(
-        foreground=theme['colors']['text'],
-        background=theme['colors']['color1'],
-        scale=theme['widgets']['current_layout_icon']['scale']
-    ),
     widget.CurrentLayout(
         foreground=theme['colors']['text'],
         background=theme['colors']['color1'],

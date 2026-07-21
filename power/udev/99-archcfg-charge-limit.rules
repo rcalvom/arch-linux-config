@@ -1,0 +1,3 @@
+# Re-evaluate thresholds when AC state or a USB dock changes.
+ACTION=="add|change|remove", SUBSYSTEM=="power_supply", TAG+="systemd", ENV{SYSTEMD_WANTS}+="archcfg-charge-limit.service"
+ACTION=="add|remove", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", TAG+="systemd", ENV{SYSTEMD_WANTS}+="archcfg-charge-limit.service"

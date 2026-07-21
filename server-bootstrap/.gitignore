@@ -1,0 +1,8 @@
+# Local test homes or scratch copies must never be published.
+test-home/
+
+# Do not place credentials or runtime state in this portable payload.
+.env
+.env.*
+.opencode/
+.openclaw/

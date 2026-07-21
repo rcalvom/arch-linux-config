@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+"""Focus a workspace on the current monitor through Hyprland's Lua API."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+
+
+def main() -> int:
+    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
+        print("Usage: hypr-workspace-swap <workspace-number>", file=sys.stderr)
+        return 2
+
+    workspace_id = int(sys.argv[1])
+    if not 1 <= workspace_id <= 9:
+        print("Workspace must be between 1 and 9", file=sys.stderr)
+        return 2
+
+    expression = (
+        'hl.dsp.focus({ workspace = "'
+        + str(workspace_id)
+        + '", on_current_monitor = true })'
+    )
+    subprocess.run(["hyprctl", "dispatch", expression], check=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

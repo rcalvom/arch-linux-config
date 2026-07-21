@@ -3,34 +3,102 @@
   "position": "top",
   "height": 28,
   "spacing": 0,
+  "fixed-center": true,
 
-  "modules-left": ["hyprland/workspaces", "hyprland/window"],
-  "modules-center": [],
-  "modules-right": [
-    "pulseaudio",
-    "backlight",
-    "network",
-    "battery",
-    "clock",
-    "tray"
+  "modules-left": [
+    "custom/workspace-1",
+    "custom/workspace-2",
+    "custom/workspace-3",
+    "custom/workspace-4",
+    "custom/workspace-5",
+    "custom/workspace-6",
+    "custom/workspace-7",
+    "custom/workspace-8",
+    "custom/workspace-9"
   ],
+  "modules-center": ["hyprland/window"],
+  "modules-right": ["pulseaudio#icon", "pulseaudio#volume", "backlight", "network", "battery", "clock", "tray"],
 
-  "hyprland/workspaces": {
-    "format": "{icon}",
-    "sort-by-number": true,
-    "persistent-workspaces": {
-      "*": 7
-    },
-    "format-icons": {
-      "1": "",
-      "2": " ",
-      "3": " ",
-      "4": " ",
-      "5": "󰵅 ",
-      "6": " ",
-      "7": "󰍻 ",
-      "default": ""
-    }
+  "custom/workspace-1": {
+    "exec": "~/.local/bin/hypr-workspace-status 1",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\", on_current_monitor = true })'"
+  },
+  "custom/workspace-2": {
+    "exec": "~/.local/bin/hypr-workspace-status 2",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\", on_current_monitor = true })'"
+  },
+  "custom/workspace-3": {
+    "exec": "~/.local/bin/hypr-workspace-status 3",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\", on_current_monitor = true })'"
+  },
+  "custom/workspace-4": {
+    "exec": "~/.local/bin/hypr-workspace-status 4",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\", on_current_monitor = true })'"
+  },
+  "custom/workspace-5": {
+    "exec": "~/.local/bin/hypr-workspace-status 5",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\", on_current_monitor = true })'"
+  },
+  "custom/workspace-6": {
+    "exec": "~/.local/bin/hypr-workspace-status 6",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\", on_current_monitor = true })'"
+  },
+  "custom/workspace-7": {
+    "exec": "~/.local/bin/hypr-workspace-status 7",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\", on_current_monitor = true })'"
+  },
+  "custom/workspace-8": {
+    "exec": "~/.local/bin/hypr-workspace-status 8",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\", on_current_monitor = true })'"
+  },
+  "custom/workspace-9": {
+    "exec": "~/.local/bin/hypr-workspace-status 9",
+    "return-type": "json",
+    "align": 0.475,
+    "justify": "center",
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\", on_current_monitor = true })'"
   },
 
   "hyprland/window": {
@@ -39,44 +107,49 @@
     "separate-outputs": true
   },
 
-  "pulseaudio": {
-    "format": "{icon} {volume}%",
-    "format-muted": " Muted",
+  "pulseaudio#icon": {
+    "format": "{icon}",
+    "format-muted": "",
     "format-icons": {
       "default": ["", "", ""]
     },
     "scroll-step": 10,
-    "max-volume": 100,
-    "on-click": "pavucontrol"
+    "max-volume": 100
   },
-
+  "pulseaudio#volume": {
+    "format": "{volume}%",
+    "format-muted": "Muted",
+    "scroll-step": 10,
+    "max-volume": 100
+  },
   "backlight": {
-    "format": "{icon} {percent}%",
-    "format-icons": ["󰃞", "󰃟", "󰃠"],
-    "interval": 1
+    "device": "amdgpu_bl1",
+    "interval": 1,
+    "format": "{icon}  {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"]
   },
-
   "network": {
-    "interval": 2,
-    "format-wifi": "{icon} {essid}",
-    "format-ethernet": "  Using ethernet",
+    "interval": 1,
+    "format-wifi": "{icon}  {essid}",
+    "format-ethernet": "  Wired",
     "format-disconnected": "  Disconnected",
     "format-icons": ["󰤯", "󰤟", "󰤥", "󰤨"],
     "tooltip-format-wifi": "{ifname}: {essid} ({signalStrength}%)",
     "tooltip-format-ethernet": "{ifname}: wired"
   },
-
   "battery": {
     "bat": "BAT0",
     "interval": 15,
     "format": "{icon} {capacity}%",
     "format-charging": "{icon}󱐋 {capacity}%",
     "format-plugged": "{icon} {capacity}%",
+    "format-not-charging": "{icon} {capacity}%",
     "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂"]
   },
 
   "clock": {
-    "format": "  {:%d/%m/%Y - %I:%M:%S %p}",
+    "interval": 1,
+    "format": "  {:%A, %d %B %Y - %I:%M:%S %p}",
     "tooltip-format": "{:%A, %d %B %Y}"
   },
 

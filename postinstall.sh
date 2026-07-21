@@ -185,6 +185,8 @@ main() {
     configure_wayland_desktop "$PROFILE" "$REPO_DIR"
   fi
 
+  configure_iwd_networking "$PROFILE" "$REPO_DIR"
+  configure_charge_limits "$REPO_DIR"
   enable_core_services "$PROFILE"
   log_info "Post-install configuration finished"
 }

@@ -193,18 +193,19 @@ require("lazy").setup({
   {
     "nvim-treesitter/nvim-treesitter",
     lazy = false,
+    build = ":TSUpdate",
     config = function()
       local treesitter = require("nvim-treesitter")
 
       treesitter.setup()
+      treesitter.install(languages.treesitter)
 
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("RicardoTreesitter", { clear = true }),
         pattern = languages.treesitter,
         callback = function()
-          if pcall(vim.treesitter.start) then
-            vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-          end
+          vim.treesitter.start()
+          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
         end,
       })
     end,
@@ -244,7 +245,6 @@ require("lazy").setup({
           ["<C-n>"] = cmp.mapping.select_next_item(),
           ["<C-p>"] = cmp.mapping.select_prev_item(),
           ["<C-y>"] = cmp.mapping.confirm({ select = true }),
-          ["<CR>"] = cmp.mapping.confirm({ select = true }),
         }),
         sources = cmp.config.sources({
           { name = "nvim_lsp" },

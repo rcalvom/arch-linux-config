@@ -75,6 +75,14 @@ install_live_package_configs() {
   done
 }
 
+initialize_live_browser_profile() {
+  local launcher=$1
+
+  [[ -x "$launcher" ]] || return 0
+  HOME="$LIVE_HOME" XDG_CONFIG_HOME="$LIVE_HOME/.config" "$launcher" --version >/dev/null 2>&1 || \
+    log_warn "Unable to initialize browser profile with $launcher"
+}
+
 chown_live_path() {
   local path=$1
 
@@ -90,9 +98,9 @@ create_xdg_user_dirs() {
 
 install_live_configs() {
   local unit
-  local hypr_config="$LIVE_HOME/.config/hypr/hyprland.conf"
+  local hypr_config="$LIVE_HOME/.config/hypr/hyprland.lua"
 
-  install_live_file "$REPO_DIR/wayland/hypr/hyprland.conf" "$hypr_config" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/hyprland.lua" "$hypr_config" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprtoolkit.conf" "$LIVE_HOME/.config/hypr/hyprtoolkit.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprlock.conf" "$LIVE_HOME/.config/hypr/hyprlock.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprpaper.conf" "$LIVE_HOME/.config/hypr/hyprpaper.conf" 0644
@@ -100,13 +108,22 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/waybar/config.jsonc" "$LIVE_HOME/.config/waybar/config.jsonc" 0644
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
   install_live_file "$REPO_DIR/wayland/rofi/config.rasi" "$LIVE_HOME/.config/rofi/config.rasi" 0644
-  install_live_file "$REPO_DIR/wayland/wofi/config" "$LIVE_HOME/.config/wofi/config" 0644
-  install_live_file "$REPO_DIR/wayland/wofi/style.css" "$LIVE_HOME/.config/wofi/style.css" 0644
+  install_live_file "$REPO_DIR/wayland/mimeapps.list" "$LIVE_HOME/.config/mimeapps.list" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
   install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
   install_live_package_configs
+  initialize_live_browser_profile "$LIVE_HOME/.local/bin/archcfg-firefox"
+  initialize_live_browser_profile "$LIVE_HOME/.local/bin/archcfg-thunderbird"
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-set" "$LIVE_HOME/.local/bin/hyprsunset-set" 0755
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-apply-current" "$LIVE_HOME/.local/bin/hyprsunset-apply-current" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-display-layout" "$LIVE_HOME/.local/bin/hypr-display-layout" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-layout-cycle" "$LIVE_HOME/.local/bin/hypr-layout-cycle" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-layout-name" "$LIVE_HOME/.local/bin/hypr-layout-name" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-swap" "$LIVE_HOME/.local/bin/hypr-workspace-swap" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-status" "$LIVE_HOME/.local/bin/hypr-workspace-status" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-state" "$LIVE_HOME/.local/bin/hypr-workspace-state" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-watch" "$LIVE_HOME/.local/bin/hypr-workspace-watch" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-waybar-start" "$LIVE_HOME/.local/bin/hypr-waybar-start" 0755
 
   for unit in hyprsunset-day.service hyprsunset-day.timer hyprsunset-night.service hyprsunset-night.timer; do
     install_live_file "$REPO_DIR/wayland/systemd/user/$unit" "$LIVE_HOME/.config/systemd/user/$unit" 0644
@@ -115,8 +132,10 @@ install_live_configs() {
   if [[ -f "$hypr_config" ]] && ! grep -q 'Arch Config Live terminal' "$hypr_config"; then
     cat >> "$hypr_config" <<'HYPRLIVE'
 
-# Arch Config Live terminal
-exec-once = alacritty -e zsh -lc 'cat /etc/motd; exec zsh -i'
+-- Arch Config Live terminal
+hl.on("hyprland.start", function()
+  hl.exec_cmd("alacritty -e zsh -lc 'cat /etc/motd; exec zsh -i'")
+end)
 HYPRLIVE
   fi
 

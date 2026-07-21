@@ -1,4 +1,6 @@
-Custom GRUB theme for this setup.
+Custom GRUB themes for this setup.
+
+The existing icon-based theme remains in `theme/`. The classic terminal alternative is in `classic/`; see `docs/grub.md` and use `scripts/apply-grub-profile.sh` to switch profiles safely.
 
 The `grub/grub` file in this folder is the exact configuration you should place at `/etc/default/grub`. That file is the base configuration used by `grub-mkconfig` to generate `/boot/grub/grub.cfg`.
 

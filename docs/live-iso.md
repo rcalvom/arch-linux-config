@@ -30,6 +30,8 @@ The output is written to `out/`.
 
 The build script copies the committed Git tree into the ISO and applies the repository GRUB theme to the live boot menu. Commit changes before building if you want those changes included.
 
+All live boot entries include `fbcon=nodefer` so the framebuffer console is bound before the TUI greeter draws.
+
 ## Test In VirtualBox
 
 Use a UEFI VM:
@@ -63,6 +65,8 @@ archcfg_nowayland
 ## Current Scope
 
 - UEFI installer target only.
-- Live ISO includes Hyprland/Waybar/Mako/Wofi plus required installer disk/network tools.
+- Live ISO includes Hyprland, Waybar, Mako, Rofi, Firefox, Thunderbird, and required installer disk/network tools.
+- The live session initializes the versioned Firefox and Thunderbird userChrome profiles before Hyprland starts.
+- VS Code settings are versioned for installed systems, but VS Code itself remains outside the live ISO because it is an optional AUR package.
 - The installed system is still produced by `install.sh`.
 - Optional AUR installation is available from the installer with `--aur`; no graphical installer or independent distribution layer yet.

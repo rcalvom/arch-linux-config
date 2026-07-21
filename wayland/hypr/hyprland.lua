@@ -1,430 +1,164 @@
--- This is an example Hyprland Lua config file.
--- Refer to the wiki for more information.
--- https://wiki.hypr.land/Configuring/Start/
+-- Canonical Hyprland 0.55+ configuration.
+-- Keep this file as the single source of session behavior; hyprland.conf is legacy.
 
--- Please note not all available settings / options are set here.
--- For a full list, see the wiki
+local terminal = "alacritty"
+local fileManager = "alacritty -e yazi"
+local menu = "rofi -show drun"
+local mainMod = "SUPER"
+local userBin = "$HOME/.local/bin"
+local browser = userBin .. "/archcfg-firefox"
+local screenshotDir = "$HOME/Pictures/screenshots"
+local displayLayout = userBin .. "/hypr-display-layout"
 
--- You can (and should!!) split this configuration into multiple files
--- Create your files separately and then require them like this:
--- require("myColors")
-
-
-------------------
----- MONITORS ----
-------------------
-
--- See https://wiki.hypr.land/Configuring/Basics/Monitors/
-hl.monitor({
-    output   = "eDP-1",
-    mode     = "1920x1200@60",
-    position = "960x1080",
-    scale    = "1",
-})
-hl.monitor({
-  output   = "DP-8",
-  mode     = "1920x1080@60",
-  position = "0x0",
-  scale    = "1",
-})
-hl.monitor({
-  output   = "DP-9",
-  mode     = "1920x1080@60",
-  position = "1920x0",
-  scale    = "1",
-})
 hl.monitor({
     output = "",
     mode = "preferred",
     position = "auto",
-    scale = "1"
+    scale = "1",
 })
-
-
----------------------
----- MY PROGRAMS ----
----------------------
-
--- Set programs that you use
-local terminal    = "alacritty"
-local fileManager = "alacritty -e yazi"
-local menu        = "rofi -show drun"
-local browser     = "firefox"
-
-
--------------------
----- AUTOSTART ----
--------------------
-
--- See https://wiki.hypr.land/Configuring/Basics/Autostart/
-
--- Autostart necessary processes (like notifications daemons, status bars, etc.)
--- Or execute your favorite apps at launch like this:
---
-hl.on("hyprland.start", function()
-    -- hl.exec_cmd(terminal)
-    -- hl.exec_cmd("nm-applet")
-    -- hl.exec_cmd("waybar & hyprpaper & firefox")
-    hl.exec_cmd("waybar")
-end)
-
-
--------------------------------
----- ENVIRONMENT VARIABLES ----
--------------------------------
-
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
+hl.env("XDG_SESSION_DESKTOP", "Hyprland")
+hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
 hl.env("GTK_THEME", "Adwaita-dark")
+hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 
-
------------------------
------ PERMISSIONS -----
------------------------
-
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Permissions/
--- Please note permission changes here require a Hyprland restart and are not applied on-the-fly
--- for security reasons
-
--- hl.config({
---   ecosystem = {
---     enforce_permissions = true,
---   },
--- })
-
--- hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
--- hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
--- hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
-
-
------------------------
----- LOOK AND FEEL ----
------------------------
-
--- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in          = 3,
-        gaps_out         = 3,
-
-        border_size      = 2,
-
-        col              = {
-            active_border   = "rgb(033e8c)",
+        gaps_in = 3,
+        gaps_out = 3,
+        border_size = 2,
+        col = {
+            active_border = "rgb(033e8c)",
             inactive_border = "rgba(595959aa)",
         },
-
-        -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
-        resize_on_border = false,
-
-        -- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
-        allow_tearing    = false,
-
-        layout           = "dwindle",
+        layout = "monocle",
     },
-
     decoration = {
-        rounding         = 0,
-        rounding_power   = 1,
-
-        -- Change transparency of focused and unfocused windows
-        active_opacity   = 1.0,
+        rounding = 0,
+        active_opacity = 1.0,
         inactive_opacity = 1.0,
-
-        shadow           = {
-            enabled = false
-        },
-
-        blur             = {
-            enabled = false
-        },
+        shadow = { enabled = false },
+        blur = { enabled = false },
     },
-
-    animations = {
-        enabled = false,
-    },
-})
-
--- Default curves and animations, see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
-hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
-hl.curve("easeInOutCubic", { type = "bezier", points = { { 0.65, 0.05 }, { 0.36, 1 } } })
-hl.curve("linear", { type = "bezier", points = { { 0, 0 }, { 1, 1 } } })
-hl.curve("almostLinear", { type = "bezier", points = { { 0.5, 0.5 }, { 0.75, 1 } } })
-hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
-
--- Default springs
-hl.curve("easy", { type = "spring", mass = 1, stiffness = 71.2633, dampening = 15.8273644 })
-
-hl.animation({ leaf = "global", enabled = false, speed = 10, bezier = "default" })
-hl.animation({ leaf = "border", enabled = false, speed = 5.39, bezier = "easeOutQuint" })
-hl.animation({ leaf = "windows", enabled = false, speed = 4.79, spring = "easy" })
-hl.animation({ leaf = "windowsIn", enabled = false, speed = 4.1, spring = "easy", style = "popin 87%" })
-hl.animation({ leaf = "windowsOut", enabled = false, speed = 1.49, bezier = "linear", style = "popin 87%" })
-hl.animation({ leaf = "fadeIn", enabled = false, speed = 1.73, bezier = "almostLinear" })
-hl.animation({ leaf = "fadeOut", enabled = false, speed = 1.46, bezier = "almostLinear" })
-hl.animation({ leaf = "fade", enabled = false, speed = 3.03, bezier = "quick" })
-hl.animation({ leaf = "layers", enabled = false, speed = 3.81, bezier = "easeOutQuint" })
-hl.animation({ leaf = "layersIn", enabled = false, speed = 4, bezier = "easeOutQuint", style = "fade" })
-hl.animation({ leaf = "layersOut", enabled = false, speed = 1.5, bezier = "linear", style = "fade" })
-hl.animation({ leaf = "fadeLayersIn", enabled = false, speed = 1.79, bezier = "almostLinear" })
-hl.animation({ leaf = "fadeLayersOut", enabled = false, speed = 1.39, bezier = "almostLinear" })
-hl.animation({ leaf = "workspaces", enabled = false, speed = 1.94, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "workspacesIn", enabled = false, speed = 1.21, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "workspacesOut", enabled = false, speed = 1.94, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "zoomFactor", enabled = false, speed = 7, bezier = "quick" })
-
--- Ref https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
--- "Smart gaps" / "No gaps when only"
--- uncomment all if you wish to use that.
--- hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
--- hl.workspace_rule({ workspace = "f[1]",   gaps_out = 0, gaps_in = 0 })
--- hl.window_rule({
---     name  = "no-gaps-wtv1",
---     match = { float = false, workspace = "w[tv1]" },
---     border_size = 0,
---     rounding    = 0,
--- })
--- hl.window_rule({
---     name  = "no-gaps-f1",
---     match = { float = false, workspace = "f[1]" },
---     border_size = 0,
---     rounding    = 0,
--- })
-
--- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/ for more
-hl.config({
-    dwindle = {
-        preserve_split = true, -- You probably want this
-    },
-})
-
--- See https://wiki.hypr.land/Configuring/Layouts/Master-Layout/ for more
-hl.config({
-    master = {
-        new_status = "master",
-    },
-})
-
--- See https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/ for more
-hl.config({
-    scrolling = {
-        fullscreen_on_one_column = true,
-    },
-})
-
-----------------
-----  MISC  ----
-----------------
-
-hl.config({
-    misc = {
-        force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
-    },
-})
-
-
----------------
----- INPUT ----
----------------
-
-hl.config({
+    animations = { enabled = false },
+    dwindle = { preserve_split = true },
+    master = { orientation = "left" },
     input = {
-        kb_layout          = "latam",
-        kb_variant         = "",
-        kb_model           = "",
-        kb_options         = "",
-        kb_rules           = "",
-
-        follow_mouse       = 2,
+        kb_layout = "latam",
+        follow_mouse = 2,
         numlock_by_default = true,
-        sensitivity        = 0, -- -1.0 - 1.0, 0 means no modification.
-
-        touchpad           = {
-            natural_scroll = true,
-        },
+        touchpad = { natural_scroll = false },
+    },
+    cursor = { no_warps = true },
+    misc = {
+        force_default_wallpaper = -1,
+        disable_hyprland_logo = true,
     },
 })
 
--- hl.gesture({
---     fingers = 3,
---     direction = "horizontal",
---     action = "workspace"
--- })
-
--- Example per-device config
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Devices/ for more
-hl.device({
-    name        = "epic-mouse-v1",
-    sensitivity = -0.5,
-})
-
-
----------------------
----- KEYBINDINGS ----
----------------------
-
-local mainMod = "SUPER" -- Sets "Windows" key as main modifier
-
--- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
--- Disabled by Ginger: SUPER+Q should close windows, not open terminal
--- hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
--- Disabled by Ginger: SUPER+C is clipboard history; SUPER+Q closes windows
--- local closeWindowBind = hl.bind(mainMod .. " + C", hl.dsp.window.close())
--- closeWindowBind:set_enabled(false)
--- Disabled by Ginger: no SUPER+M logout binding for now
--- hl.bind(mainMod .. " + M", hl.dsp.exit())
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit")) -- dwindle only
-
--- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
-
--- Switch workspaces with mainMod + [0-9]
--- Move active window to a workspace with mainMod + SHIFT + [0-9]
-for i = 1, 10 do
-    local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+for workspace = 1, 9 do
+    hl.workspace_rule({ workspace = tostring(workspace), persistent = true })
 end
 
--- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+local function applyDisplayLayout()
+    hl.exec_cmd(displayLayout)
+end
 
--- Scroll through existing workspaces with mainMod + scroll
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
+hl.on("hyprland.start", function()
+    applyDisplayLayout()
+    hl.exec_cmd(userBin .. "/hypr-waybar-start")
+    hl.exec_cmd(userBin .. "/hypr-workspace-watch")
+    hl.exec_cmd("mako")
+    hl.exec_cmd("hyprpaper")
+    hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
+    hl.exec_cmd("nm-applet --indicator")
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("systemctl --user start hyprsunset.service")
+    hl.exec_cmd(userBin .. "/hyprsunset-apply-current")
+end)
 
--- Move/resize windows with mainMod + LMB/RMB and dragging
+hl.on("monitor.added", applyDisplayLayout)
+hl.on("monitor.removed", applyDisplayLayout)
+hl.on("config.reloaded", applyDisplayLayout)
+
+local function command(keys, value, options)
+    hl.bind(keys, hl.dsp.exec_cmd(value), options)
+end
+
+-- Keep the familiar Qtile application and session bindings.
+command(mainMod .. " + Return", terminal)
+command(mainMod .. " + M", menu)
+command(mainMod .. " + D", menu)
+command(mainMod .. " + B", browser)
+command(mainMod .. " + E", fileManager)
+hl.bind(mainMod .. " + W", hl.dsp.window.close())
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind("ALT + F4", hl.dsp.window.close())
+command(mainMod .. " + L", "hyprlock")
+command(mainMod .. " + Escape", "hyprlock")
+command(mainMod .. " + SHIFT + L", "hyprctl reload")
+hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.exit())
+
+-- Native layout cycling keeps the visible Monocle window synchronized with focus.
+hl.bind("ALT + Tab", hl.dsp.layout("cyclenext"))
+hl.bind("ALT + SHIFT + Tab", hl.dsp.layout("cycleprev"))
+-- Keep Ctrl+Tab for application tabs, especially browsers such as Firefox.
+hl.bind(mainMod .. " + CTRL + Tab", hl.dsp.layout("cyclenext"))
+hl.bind(mainMod .. " + CTRL + SHIFT + Tab", hl.dsp.layout("cycleprev"))
+hl.bind("ALT + Up", hl.dsp.window.resize({ x = 0, y = -50, relative = true }))
+hl.bind("ALT + Down", hl.dsp.window.resize({ x = 0, y = 50, relative = true }))
+hl.bind("ALT + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind("ALT + SHIFT + Up", hl.dsp.window.move({ direction = "up" }))
+hl.bind("ALT + SHIFT + Down", hl.dsp.window.move({ direction = "down" }))
+command(mainMod .. " + Tab", userBin .. "/hypr-layout-cycle")
+command(mainMod .. " + SHIFT + Tab", userBin .. "/hypr-layout-cycle")
+hl.bind(mainMod .. " + comma", hl.dsp.focus({ monitor = "-1" }))
+hl.bind(mainMod .. " + period", hl.dsp.focus({ monitor = "+1" }))
+
+-- Preserve the useful directional Hyprland bindings without taking Super+L from locking.
+hl.bind(mainMod .. " + Left", hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + Right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + Up", hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + Down", hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + T", hl.dsp.layout("togglesplit"))
+
+-- Nine global workspaces mirror the Qtile group model.
+for workspace = 1, 9 do
+    local workspaceName = tostring(workspace)
+    hl.bind("ALT + " .. workspace, hl.dsp.focus({ workspace = workspaceName, on_current_monitor = true }))
+    hl.bind("ALT + CTRL + " .. workspace, hl.dsp.window.move({ workspace = workspaceName, follow = false }))
+    hl.bind(mainMod .. " + " .. workspace, hl.dsp.focus({ workspace = workspaceName, on_current_monitor = true }))
+    hl.bind(mainMod .. " + SHIFT + " .. workspace, hl.dsp.window.move({ workspace = workspaceName, follow = false }))
+end
+
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"),
     { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
     { locked = true, repeating = true })
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
-    { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-    { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
-
--- Requires playerctl
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
+-- Hyprsunset is the Wayland-native Redshift replacement.
+command(mainMod .. " + R", userBin .. "/hyprsunset-set temperature 3500")
+command(mainMod .. " + SHIFT + R", userBin .. "/hyprsunset-set identity")
 
---------------------------------
----- WINDOWS AND WORKSPACES ----
---------------------------------
-
--- See https://wiki.hypr.land/Configuring/Basics/Window-Rules/
--- and https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
-
--- Example window rules that are useful
-
-local suppressMaximizeRule = hl.window_rule({
-    -- Ignore maximize requests from all apps. You'll probably like this.
-    name           = "suppress-maximize-events",
-    match          = { class = ".*" },
-
-    suppress_event = "maximize",
-})
--- suppressMaximizeRule:set_enabled(false)
-
-hl.window_rule({
-    -- Fix some dragging issues with XWayland
-    name     = "fix-xwayland-drags",
-    match    = {
-        class      = "^$",
-        title      = "^$",
-        xwayland   = true,
-        float      = true,
-        fullscreen = false,
-        pin        = false,
-    },
-
-    no_focus = true,
-})
-
--- Layer rules also return a handle.
--- local overlayLayerRule = hl.layer_rule({
---     name  = "no-anim-overlay",
---     match = { namespace = "^my-overlay$" },
---     no_anim = true,
--- })
--- overlayLayerRule:set_enabled(false)
-
--- Hyprland-run windowrule
-hl.window_rule({
-    name  = "move-hyprland-run",
-    match = { class = "hyprland-run" },
-
-    move  = "20 monitor_h-120",
-    float = true,
-})
-
-------------------------------------------------------------
--- Custom app/session bindings
--- Program commands are centralized in MY PROGRAMS above.
-------------------------------------------------------------
-hl.bind("SUPER + Return", hl.dsp.exec_cmd(terminal))
-hl.bind("SUPER + D", hl.dsp.exec_cmd(menu))
-hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
-hl.bind("SUPER + Q", hl.dsp.window.close())
-hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
-hl.bind("SUPER + Escape", hl.dsp.exec_cmd("hyprlock"))
-
--- Familiar focus movement
-hl.bind("SUPER + H", hl.dsp.focus({ direction = "left" }))
-hl.bind("SUPER + L", hl.dsp.focus({ direction = "right" }))
-hl.bind("SUPER + K", hl.dsp.focus({ direction = "up" }))
-hl.bind("SUPER + J", hl.dsp.focus({ direction = "down" }))
-
--- Familiar window movement
-hl.bind("SUPER + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
-hl.bind("SUPER + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
-hl.bind("SUPER + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
-hl.bind("SUPER + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
-
--- Familiar utility bindings
-hl.bind("SUPER + C", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
-
--- Screenshots, equivalent to old Qtile maim/xclip setup but Wayland-native:
--- Print              -> save full screenshot
--- CTRL + Print       -> copy full screenshot to clipboard
--- SHIFT + Print      -> save selected region/snippet
--- CTRL + SHIFT + Print -> copy selected region/snippet to clipboard
-local screenshotDir = "$HOME/Pictures/screenshots"
-local screenshotName = "screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
-hl.bind("Print", hl.dsp.exec_cmd("mkdir -p " .. screenshotDir .. " && grim " .. screenshotDir .. "/" .. screenshotName))
-hl.bind("CTRL + Print", hl.dsp.exec_cmd("grim - | wl-copy --type image/png"))
-hl.bind("SHIFT + Print",
-    hl.dsp.exec_cmd("mkdir -p " .. screenshotDir .. " && grim -g \"$(slurp)\" " .. screenshotDir .. "/" .. screenshotName))
-hl.bind("CTRL + SHIFT + Print", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
-
-
-------------------------------------------------------------
--- Hyprsunset schedule bootstrap
--- Strong warm filter: 18:30-07:30 at 3500K, identity during day.
-------------------------------------------------------------
-hl.on("hyprland.start", function()
-    hl.exec_cmd(
-        "systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
-    hl.exec_cmd("systemctl --user start hyprsunset.service")
-    hl.exec_cmd("~/.local/bin/hyprsunset-apply-current")
-end)
+command(mainMod .. " + C", terminal .. " -e calcurse")
+command("Print", "mkdir -p " .. screenshotDir .. " && grim " .. screenshotDir .. "/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png")
+command("CTRL + Print", "grim - | wl-copy --type image/png")
+command("SHIFT + Print", "mkdir -p " .. screenshotDir .. " && grim -g \"$(slurp)\" " .. screenshotDir .. "/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png")
+command("CTRL + SHIFT + Print", "grim -g \"$(slurp)\" - | wl-copy --type image/png")
