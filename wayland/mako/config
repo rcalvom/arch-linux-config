@@ -1,8 +1,7 @@
 # Match Alacritty's typography and Hyprland's active border.
 font=UbuntuMono Nerd Font 12
 default-timeout=5000
-# Keep notifications on the laptop panel regardless of focused output.
-output=eDP-1
+# Let Mako choose an enabled output so external-only profiles retain notifications.
 border-size=2
 border-color=#033e8c
 background-color=#000000cc

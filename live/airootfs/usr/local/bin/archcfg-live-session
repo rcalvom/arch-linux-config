@@ -108,6 +108,7 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/waybar/config.jsonc" "$LIVE_HOME/.config/waybar/config.jsonc" 0644
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
   install_live_file "$REPO_DIR/wayland/rofi/config.rasi" "$LIVE_HOME/.config/rofi/config.rasi" 0644
+  install_live_file "$REPO_DIR/wayland/rofi/share-picker.rasi" "$LIVE_HOME/.config/rofi/share-picker.rasi" 0644
   install_live_file "$REPO_DIR/wayland/mimeapps.list" "$LIVE_HOME/.config/mimeapps.list" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
   install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
@@ -116,7 +117,9 @@ install_live_configs() {
   initialize_live_browser_profile "$LIVE_HOME/.local/bin/archcfg-thunderbird"
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-set" "$LIVE_HOME/.local/bin/hyprsunset-set" 0755
   install_live_file "$REPO_DIR/wayland/bin/hyprsunset-apply-current" "$LIVE_HOME/.local/bin/hyprsunset-apply-current" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-audio-selector" "$LIVE_HOME/.local/bin/hypr-audio-selector" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-display-layout" "$LIVE_HOME/.local/bin/hypr-display-layout" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-display-menu" "$LIVE_HOME/.local/bin/hypr-display-menu" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-layout-cycle" "$LIVE_HOME/.local/bin/hypr-layout-cycle" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-layout-name" "$LIVE_HOME/.local/bin/hypr-layout-name" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-swap" "$LIVE_HOME/.local/bin/hypr-workspace-swap" 0755

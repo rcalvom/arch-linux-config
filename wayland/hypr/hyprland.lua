@@ -9,6 +9,8 @@ local userBin = "$HOME/.local/bin"
 local browser = userBin .. "/archcfg-firefox"
 local screenshotDir = "$HOME/Pictures/screenshots"
 local displayLayout = userBin .. "/hypr-display-layout"
+local displayMenu = userBin .. "/hypr-display-menu"
+local audioSelector = userBin .. "/hypr-audio-selector"
 
 hl.monitor({
     output = "",
@@ -95,6 +97,7 @@ command(mainMod .. " + M", menu)
 command(mainMod .. " + D", menu)
 command(mainMod .. " + B", browser)
 command(mainMod .. " + E", fileManager)
+command(mainMod .. " + A", audioSelector)
 hl.bind(mainMod .. " + W", hl.dsp.window.close())
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind("ALT + F4", hl.dsp.window.close())
@@ -125,7 +128,9 @@ hl.bind(mainMod .. " + Right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + Up", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + Down", hl.dsp.focus({ direction = "down" }))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+-- Keep pseudo-tiling available while using the conventional display-menu binding.
+command(mainMod .. " + P", displayMenu)
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + T", hl.dsp.layout("togglesplit"))
 
 -- Nine global workspaces mirror the Qtile group model.

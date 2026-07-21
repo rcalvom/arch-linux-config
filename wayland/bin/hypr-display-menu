@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for command in jq rofi; do
+  command -v "$command" >/dev/null 2>&1 || {
+    printf 'Missing required command: %s\n' "$command" >&2
+    exit 1
+  }
+done
+
+controller=${HYPR_DISPLAY_LAYOUT:-"$HOME/.local/bin/hypr-display-layout"}
+theme=$HOME/.config/rofi/share-picker.rasi
+[[ -x $controller ]] || {
+  printf 'Display controller is not executable: %s\n' "$controller" >&2
+  exit 1
+}
+
+choose_index() {
+  local prompt=$1
+  local choices=$2
+  local count index
+
+  count=$(jq 'length' <<< "$choices")
+  (( count > 0 )) || return 1
+
+  index=$(
+    jq -r '.[] | "\(.label)\u0000icon\u001f\(.icon // "video-display")"' <<< "$choices" |
+      rofi -dmenu -i -no-custom -show-icons -format i -p "$prompt" -theme "$theme" \
+        -theme-str 'entry { placeholder: "Choose display"; }'
+  ) || return 1
+
+  [[ $index =~ ^[0-9]+$ ]] || return 1
+  (( index < count )) || return 1
+  printf '%s\n' "$index"
+}
+
+pick_monitor() {
+  local prompt=$1
+  local excluded=${2:-}
+  local monitors choices index
+
+  monitors=$("$controller" monitors) || return 1
+  choices=$(jq --arg excluded "$excluded" '[.[] | select(.id != $excluded) | . + {icon: "video-display"}]' <<< "$monitors")
+  index=$(choose_index "$prompt" "$choices") || return 1
+  jq --argjson index "$index" -r '.[$index].id' <<< "$choices"
+}
+
+pick_mirror_target() {
+  local source=$1
+  local monitors targets choices index selection
+
+  monitors=$("$controller" monitors) || return 1
+  targets=$(jq --arg source "$source" '[.[] | select(.id != $source) | . + {icon: "video-display"}]' <<< "$monitors")
+  (( $(jq 'length' <<< "$targets") > 0 )) || return 1
+  choices=$(jq '[{id: "all", label: "All other connected displays", icon: "video-display"}] + .' <<< "$targets")
+  index=$(choose_index "Mirror target" "$choices") || return 1
+  selection=$(jq --argjson index "$index" -r '.[$index].id' <<< "$choices")
+
+  if [[ $selection == all ]]; then
+    jq -r '.[].id' <<< "$targets"
+  else
+    printf '%s\n' "$selection"
+  fi
+}
+
+single_picker() {
+  local output
+  output=$(pick_monitor "Single monitor") || return 0
+  "$controller" single -- "$output"
+}
+
+mirror_picker() {
+  local source
+  local targets=()
+
+  source=$(pick_monitor "Mirror source") || return 0
+  mapfile -t targets < <(pick_mirror_target "$source")
+  (( ${#targets[@]} > 0 )) || return 0
+  "$controller" mirror -- "$source" "${targets[@]}"
+}
+
+launch_background() {
+  "$@" >/dev/null 2>&1 &
+}
+
+print_header() {
+  printf '\0prompt\x1f%s\n' "$1"
+  printf '\0no-custom\x1ftrue\n'
+}
+
+mode=${1:-}
+case $mode in
+  '')
+    script_path=${BASH_SOURCE[0]}
+    rofi -show Modes \
+      -modes "Modes:$script_path modes,Profiles:$script_path profiles" \
+      -sidebar-mode \
+      -show-icons \
+      -theme "$theme" \
+      -theme-str 'entry { placeholder: "Choose display option"; }'
+    exit
+    ;;
+  modes)
+    if [[ ${ROFI_RETV:-0} == 0 ]]; then
+      print_header "Display"
+      printf 'Single monitor\0icon\x1fvideo-display\x1finfo\x1fsingle\n'
+      printf 'Extend displays\0icon\x1fvideo-display\x1finfo\x1fextend\n'
+      printf 'Mirror / Duplicate\0icon\x1fvideo-display\x1finfo\x1fmirror\n'
+      exit
+    fi
+
+    case ${ROFI_INFO:-} in
+      single) launch_background single_picker ;;
+      extend) launch_background "$controller" extend ;;
+      mirror) launch_background mirror_picker ;;
+    esac
+    exit
+    ;;
+  profiles)
+    if [[ ${ROFI_RETV:-0} == 0 ]]; then
+      print_header "Profiles"
+      "$controller" profiles | jq -r '.[] | "\(.label)\u0000icon\u001fvideo-display\u001finfo\u001f\(.id)"'
+      exit
+    fi
+
+    [[ -n ${ROFI_INFO:-} ]] && launch_background "$controller" profile "$ROFI_INFO"
+    exit
+    ;;
+  *) exit 1 ;;
+esac

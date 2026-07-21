@@ -116,7 +116,9 @@ install_wayland_dotfiles() {
   install_user_file "$repo_dir/wayland/bin/hyprsunset-set" "$home_dir/.local/bin/hyprsunset-set" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hyprsunset-apply-current" "$home_dir/.local/bin/hyprsunset-apply-current" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-share-picker" "$home_dir/.local/bin/hypr-share-picker" "$username" 0755
+  install_user_file "$repo_dir/wayland/bin/hypr-audio-selector" "$home_dir/.local/bin/hypr-audio-selector" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-display-layout" "$home_dir/.local/bin/hypr-display-layout" "$username" 0755
+  install_user_file "$repo_dir/wayland/bin/hypr-display-menu" "$home_dir/.local/bin/hypr-display-menu" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-layout-cycle" "$home_dir/.local/bin/hypr-layout-cycle" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-layout-name" "$home_dir/.local/bin/hypr-layout-name" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-workspace-swap" "$home_dir/.local/bin/hypr-workspace-swap" "$username" 0755

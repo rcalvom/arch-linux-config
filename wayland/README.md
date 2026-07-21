@@ -78,6 +78,8 @@ local terminal    = "alacritty"
 local fileManager = "alacritty -e yazi"
 local menu        = "rofi -show drun"
 local browser     = "$HOME/.local/bin/archcfg-firefox"
+local displayMenu = "$HOME/.local/bin/hypr-display-menu"
+local audioSelector = "$HOME/.local/bin/hypr-audio-selector"
 ```
 
 Important bindings:
@@ -87,6 +89,9 @@ SUPER + Return -> Alacritty
 SUPER + M/D    -> Rofi launcher
 SUPER + B      -> Firefox
 SUPER + E      -> Alacritty running Yazi
+SUPER + A      -> Rofi audio input/output selector
+SUPER + P      -> Rofi display mode/profile selector
+SUPER + Shift+P -> pseudo-tile active window
 SUPER + C      -> Alacritty running Calcurse
 SUPER + W/Q    -> close active window
 SUPER + L      -> Hyprlock
@@ -118,25 +123,38 @@ Calcurse and VS Code settings are also versioned under `packages/`. VS Code rema
 
 ## Monitor layout
 
-`hypr-display-layout` reacts to Hyprland monitor add/remove and configuration-reload events. It matches the laptop panel and the two Dell displays by their physical descriptions, so dock connector names such as `DP-10` can change without breaking the layout.
+`hypr-display-layout` reacts to Hyprland monitor add/remove and configuration-reload events. It matches the laptop panel and the two Dell displays by their physical descriptions, so dock connector names such as `DP-10` can change without breaking the layout. The selected mode/profile is stored in `~/.local/state/archcfg/display-layout.json` and reconciled after those events.
 
 ```text
 [ Dell P2419H ][ Dell P2422H ]
      [ Lenovo laptop panel ]
 ```
 
-The laptop panel is centered below the two external displays. With only the laptop connected, it is placed at `0x0`; with one Dell attached, that display is placed above it. Manual changes through Wdisplays remain in effect until the next monitor hotplug event, configuration reload, or Hyprland session start.
+The laptop panel is centered below the two external displays. With only the laptop connected, it is placed at `0x0`; with one Dell attached, that display is placed above it. The controller also extends unknown connected displays to the right of the known dock outputs.
+
+`SUPER + P` opens a compact Rofi picker with two tabs:
+
+```text
+Modes    -> Single monitor, Extend displays, Mirror / Duplicate
+Profiles -> Dock - 3 displays
+```
+
+Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. The `Dock - 3 displays` profile restores the layout shown above.
+
+Manual changes through Wdisplays remain in effect until the next display-menu action, monitor hotplug event, configuration reload, or Hyprland session start.
 
 Snapshot:
 
 ```text
 wayland/bin/hypr-display-layout
+wayland/bin/hypr-display-menu
 ```
 
 Live location:
 
 ```text
 ~/.local/bin/hypr-display-layout
+~/.local/bin/hypr-display-menu
 ```
 
 ## Autostart / session helpers
@@ -354,6 +372,8 @@ Rofi is the application launcher and preserves the Qtile `SUPER + M` workflow:
 ```bash
 rofi -show drun
 ```
+
+`SUPER + A` opens `hypr-audio-selector` with the same compact Rofi theme as the screen-share picker. Its bottom mode switcher exposes Output and Input in one picker, so switching categories does not open a second dialog. It queries `pactl` when opened, so a TV or HDMI output appears as soon as WirePlumber exposes it, while unavailable analog jacks stay hidden. Selecting an item changes only the corresponding default device; active application streams are not moved.
 
 ## Yazi
 

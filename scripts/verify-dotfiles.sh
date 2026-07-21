@@ -179,6 +179,7 @@ wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png
 wayland/waybar/config.jsonc|.config/waybar/config.jsonc
 wayland/waybar/style.css|.config/waybar/style.css
 wayland/rofi/config.rasi|.config/rofi/config.rasi
+wayland/rofi/share-picker.rasi|.config/rofi/share-picker.rasi
 wayland/mako/config|.config/mako/config
 wayland/fontconfig/conf.d/99-ubuntu-fallback.conf|.config/fontconfig/conf.d/99-ubuntu-fallback.conf
 EOF

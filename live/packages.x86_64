@@ -63,6 +63,7 @@ playerctl
 polkit-kde-agent
 poppler
 pv
+python
 qemu-guest-agent
 reflector
 ripgrep

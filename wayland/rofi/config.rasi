@@ -20,7 +20,11 @@ configuration {
     selected-normal-foreground:  rgba(241, 255, 255, 0.8);
     selected-active-background: rgba(3, 62, 140, 0.8);
     selected-active-foreground: rgba(4, 173, 191, 0.8);
+    // Active rows identify the current window or default device, not the cursor.
+    active-background: Transparent;
     active-foreground: rgba(4, 173, 191, 0.8);
+    alternate-active-background: Transparent;
+    alternate-active-foreground: rgba(4, 173, 191, 0.8);
     alternate-normal-background: Transparent;
     normal-background: Transparent;
 }

@@ -1,93 +1,620 @@
 #!/usr/bin/env python3
-"""Place the known dock displays above the laptop panel."""
+"""Apply persistent Hyprland display modes and named monitor profiles."""
 
 from __future__ import annotations
 
+import argparse
+import base64
+import fcntl
 import json
+import os
+from pathlib import Path
+import re
 import subprocess
 import sys
-
+import time
+from typing import Any
 
 LAPTOP = "Lenovo Group Limited 0x41B5"
 LEFT_DISPLAY = "Dell Inc. DELL P2419H 3B0FPD3"
 RIGHT_DISPLAY = "Dell Inc. DELL P2422H 8V9K8T3"
+HYPRCTL = os.environ.get("HYPRCTL", "hyprctl")
+MODE_PATTERN = re.compile(r"^(\d+)x(\d+)@([0-9.]+)Hz$")
+DEFAULT_STATE = {"version": 1, "kind": "extend"}
+CONNECTOR_ID = "connector:"
+DESCRIPTION_ID = "description:"
+
+PROFILES = {
+    "dock-three-screen": {
+        "label": "Dock - 3 displays",
+        "description": "Dell P2419H + Dell P2422H + Lenovo laptop panel",
+    },
+}
 
 
-def monitor_with_description(monitors: list[dict], description: str) -> dict | None:
+class MonitorTopologyChanged(RuntimeError):
+    """A hotplug event invalidated the operation currently being applied."""
+
+
+def xdg_path(variable: str, fallback: Path) -> Path:
+    value = os.environ.get(variable)
+    candidate = Path(value) if value else fallback
+    return candidate if candidate.is_absolute() else fallback
+
+
+def state_path() -> Path:
+    root = xdg_path("XDG_STATE_HOME", Path.home() / ".local" / "state")
+    return root / "archcfg" / "display-layout.json"
+
+
+def lock_path() -> Path:
+    root = xdg_path("XDG_RUNTIME_DIR", state_path().parent)
+    try:
+        if root.is_dir() and root.stat().st_uid == os.getuid():
+            return root / "archcfg-display-layout.lock"
+    except OSError:
+        pass
+    return state_path().parent / "display-layout.lock"
+
+
+def monitor_description(monitor: dict[str, Any]) -> str:
+    return str(monitor.get("description") or "")
+
+
+def monitor_identity(monitor: dict[str, Any], monitors: list[dict[str, Any]]) -> str:
+    description = monitor_description(monitor)
+    if description and sum(monitor_description(other) == description for other in monitors) == 1:
+        return f"{DESCRIPTION_ID}{description}"
+    return f"{CONNECTOR_ID}{monitor['name']}"
+
+
+def monitor_with_description(monitors: list[dict[str, Any]], description: str) -> dict[str, Any] | None:
     return next(
         (
             monitor
             for monitor in monitors
-            if monitor.get("description", "").startswith(description)
+            if str(monitor.get("description", "")).startswith(description)
         ),
         None,
     )
 
 
-def logical_size(monitor: dict) -> tuple[int, int]:
-    scale = float(monitor.get("scale", 1)) or 1
-    return round(monitor["width"] / scale), round(monitor["height"] / scale)
+def monitor_by_identity(monitors: list[dict[str, Any]], identity: str) -> dict[str, Any] | None:
+    if identity.startswith(CONNECTOR_ID):
+        connector = identity.removeprefix(CONNECTOR_ID)
+        return next((monitor for monitor in monitors if monitor["name"] == connector), None)
+    if identity.startswith(DESCRIPTION_ID):
+        description = identity.removeprefix(DESCRIPTION_ID)
+        matches = [monitor for monitor in monitors if monitor_description(monitor) == description]
+        return matches[0] if len(matches) == 1 else None
+
+    # Accept old state files while refusing to guess between duplicate EDIDs.
+    connector = next((monitor for monitor in monitors if monitor["name"] == identity), None)
+    if connector:
+        return connector
+    matches = [monitor for monitor in monitors if monitor_description(monitor) == identity]
+    return matches[0] if len(matches) == 1 else None
 
 
-def configure(monitor: dict, x: int, y: int) -> bool:
-    scale = float(monitor.get("scale", 1)) or 1
-    code = (
-        "hl.monitor({ "
-        f"output = {json.dumps(monitor['name'])}, "
-        'mode = "preferred", '
-        f'position = "{x}x{y}", '
-        f"scale = {scale:g} "
-        "})"
-    )
+def sanitize_label(value: str) -> str:
+    return re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()
+
+
+def output_token(output: str) -> str:
+    encoded = base64.urlsafe_b64encode(output.encode("utf-8")).decode("ascii").rstrip("=")
+    return f"output:{encoded}"
+
+
+def output_from_token(value: str) -> str:
+    if not value.startswith("output:"):
+        return value
+    encoded = value.removeprefix("output:")
+    try:
+        padded = encoded + "=" * (-len(encoded) % 4)
+        return base64.b64decode(padded, altchars=b"-_", validate=True).decode("utf-8")
+    except (UnicodeDecodeError, ValueError) as error:
+        raise RuntimeError("invalid display output identifier") from error
+
+
+def monitor_label(monitor: dict[str, Any]) -> str:
+    description = str(monitor.get("description", ""))
+    if description.startswith(LAPTOP):
+        label = f"Laptop panel ({monitor['name']})"
+    elif description.startswith(LEFT_DISPLAY):
+        label = f"Dell P2419H ({monitor['name']})"
+    elif description.startswith(RIGHT_DISPLAY):
+        label = f"Dell P2422H ({monitor['name']})"
+    else:
+        label = f"{description or monitor['name']} ({monitor['name']})"
+    return sanitize_label(label)
+
+
+def query_monitors() -> list[dict[str, Any]]:
     result = subprocess.run(
-        ["hyprctl", "eval", code],
+        [HYPRCTL, "-j", "monitors", "all"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "hyprctl monitors failed")
+    try:
+        monitors = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("hyprctl returned invalid monitor JSON") from error
+    if not isinstance(monitors, list):
+        raise RuntimeError("hyprctl did not return a monitor list")
+    return [monitor for monitor in monitors if isinstance(monitor, dict) and monitor.get("name")]
+
+
+def parsed_modes(monitor: dict[str, Any]) -> list[tuple[int, int, float, str]]:
+    modes: list[tuple[int, int, float, str]] = []
+    for mode in monitor.get("availableModes", []):
+        match = MODE_PATTERN.fullmatch(str(mode))
+        if match:
+            modes.append((int(match.group(1)), int(match.group(2)), float(match.group(3)), str(mode)))
+    return modes
+
+
+def logical_size(monitor: dict[str, Any]) -> tuple[int, int]:
+    width = int(monitor.get("width") or 0)
+    height = int(monitor.get("height") or 0)
+    if width <= 0 or height <= 0:
+        modes = parsed_modes(monitor)
+        if modes:
+            width, height, _, _ = max(modes, key=lambda mode: (mode[0] * mode[1], mode[2]))
+    if int(monitor.get("transform") or 0) % 2:
+        width, height = height, width
+    scale = float(monitor.get("scale", 1)) or 1
+    return max(1, round(width / scale)), max(1, round(height / scale))
+
+
+def monitor_scale(monitor: dict[str, Any]) -> float:
+    return float(monitor.get("scale", 1)) or 1
+
+
+def ordered_externals(monitors: list[dict[str, Any]], laptop: dict[str, Any] | None) -> list[dict[str, Any]]:
+    externals = [monitor for monitor in monitors if monitor is not laptop]
+    ordered: list[dict[str, Any]] = []
+    for description in (LEFT_DISPLAY, RIGHT_DISPLAY):
+        monitor = monitor_with_description(externals, description)
+        if monitor:
+            ordered.append(monitor)
+    return ordered + sorted(
+        [monitor for monitor in externals if monitor not in ordered],
+        key=lambda monitor: monitor_identity(monitor, monitors).lower(),
+    )
+
+
+def extend_positions(monitors: list[dict[str, Any]]) -> list[tuple[dict[str, Any], int, int]]:
+    laptop = monitor_with_description(monitors, LAPTOP)
+    externals = ordered_externals(monitors, laptop)
+    positions: list[tuple[dict[str, Any], int, int]] = []
+    if externals:
+        x = 0
+        external_height = 0
+        for monitor in externals:
+            width, height = logical_size(monitor)
+            positions.append((monitor, x, 0))
+            x += width
+            external_height = max(external_height, height)
+        if laptop:
+            laptop_width, _ = logical_size(laptop)
+            positions.append((laptop, max(0, (x - laptop_width) // 2), external_height))
+    elif laptop:
+        positions.append((laptop, 0, 0))
+    elif monitors:
+        positions.append((monitors[0], 0, 0))
+    return positions
+
+
+def enable_operation(
+    monitor: dict[str, Any],
+    x: int,
+    y: int,
+    *,
+    mode: str = "preferred",
+    mirror: str = "",
+) -> dict[str, Any]:
+    return {
+        "action": "enable",
+        "output": monitor["name"],
+        "mode": mode,
+        "position": f"{x}x{y}",
+        "scale": monitor_scale(monitor),
+        "mirror": mirror,
+        "disabled": False,
+        "transform": int(monitor.get("transform") or 0),
+    }
+
+
+def disable_operation(monitor: dict[str, Any]) -> dict[str, Any]:
+    return {"action": "disable", "output": monitor["name"]}
+
+
+def extend_operations(monitors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [enable_operation(monitor, x, y) for monitor, x, y in extend_positions(monitors)]
+
+
+def single_operations(monitors: list[dict[str, Any]], target: dict[str, Any]) -> list[dict[str, Any]]:
+    return [enable_operation(target, 0, 0)] + [
+        disable_operation(monitor) for monitor in monitors if monitor is not target
+    ]
+
+
+def dock_operations(monitors: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
+    laptop = monitor_with_description(monitors, LAPTOP)
+    left = monitor_with_description(monitors, LEFT_DISPLAY)
+    right = monitor_with_description(monitors, RIGHT_DISPLAY)
+    if not (laptop and left and right):
+        return None
+    left_width, left_height = logical_size(left)
+    right_width, right_height = logical_size(right)
+    laptop_width, _ = logical_size(laptop)
+    enabled = {left["name"], right["name"], laptop["name"]}
+    operations = [
+        enable_operation(left, 0, 0),
+        enable_operation(right, left_width, 0),
+        enable_operation(
+            laptop,
+            max(0, (left_width + right_width - laptop_width) // 2),
+            max(left_height, right_height),
+        ),
+    ]
+    operations.extend(disable_operation(monitor) for monitor in monitors if monitor["name"] not in enabled)
+    return operations
+
+
+def common_modes(monitors: list[dict[str, Any]]) -> dict[str, str] | None:
+    source, *targets = monitors
+    candidates = sorted(parsed_modes(source), key=lambda mode: (mode[0] * mode[1], mode[2]), reverse=True)
+    for width, height, refresh, source_mode in candidates:
+        selected = {source["name"]: source_mode}
+        for target in targets:
+            compatible = [
+                mode
+                for mode in parsed_modes(target)
+                if mode[0] == width and mode[1] == height and abs(mode[2] - refresh) <= 0.2
+            ]
+            if not compatible:
+                break
+            selected[target["name"]] = min(compatible, key=lambda mode: abs(mode[2] - refresh))[3]
+        else:
+            return selected
+    return None
+
+
+def mirror_operations(
+    monitors: list[dict[str, Any]], source: dict[str, Any], targets: list[dict[str, Any]]
+) -> list[dict[str, Any]] | None:
+    modes = common_modes([source, *targets])
+    if not modes:
+        return None
+    enabled = {source["name"], *(target["name"] for target in targets)}
+    operations = [enable_operation(source, 0, 0, mode=modes[source["name"]])]
+    operations.extend(
+        enable_operation(target, 0, 0, mode=modes[target["name"]], mirror=source["name"])
+        for target in targets
+    )
+    operations.extend(disable_operation(monitor) for monitor in monitors if monitor["name"] not in enabled)
+    return operations
+
+
+def normalized_state(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return dict(DEFAULT_STATE)
+    kind = value.get("kind")
+    if kind == "single" and isinstance(value.get("output"), str):
+        return {"version": 1, "kind": kind, "output": value["output"]}
+    if kind == "mirror" and isinstance(value.get("source"), str) and isinstance(value.get("targets"), list):
+        targets = [target for target in value["targets"] if isinstance(target, str)]
+        if targets:
+            return {"version": 1, "kind": kind, "source": value["source"], "targets": targets}
+    if kind == "profile" and value.get("profile") in PROFILES:
+        return {"version": 1, "kind": kind, "profile": value["profile"]}
+    return dict(DEFAULT_STATE)
+
+
+def read_state() -> dict[str, Any]:
+    try:
+        return normalized_state(json.loads(state_path().read_text(encoding="utf-8")))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return dict(DEFAULT_STATE)
+
+
+def write_state(state: dict[str, Any]) -> None:
+    destination = state_path()
+    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    temporary.chmod(0o600)
+    temporary.replace(destination)
+
+
+def fallback_extend(state: dict[str, Any], monitors: list[dict[str, Any]], reason: str) -> dict[str, Any]:
+    return {"state": state, "operations": extend_operations(monitors), "fallback": reason}
+
+
+def plan_for_state(state: dict[str, Any], monitors: list[dict[str, Any]]) -> dict[str, Any]:
+    if not monitors:
+        raise RuntimeError("no connected monitors found")
+    kind = state["kind"]
+    if kind == "extend":
+        return {"state": state, "operations": extend_operations(monitors)}
+    if kind == "single":
+        target = monitor_by_identity(monitors, state["output"])
+        if target:
+            return {"state": state, "operations": single_operations(monitors, target)}
+        fallback = monitor_with_description(monitors, LAPTOP) or monitors[0]
+        return {
+            "state": state,
+            "operations": single_operations(monitors, fallback),
+            "fallback": "selected output is unavailable",
+        }
+    if kind == "mirror":
+        source = monitor_by_identity(monitors, state["source"])
+        targets = [
+            target
+            for identity in state["targets"]
+            if (target := monitor_by_identity(monitors, identity)) and target is not source
+        ]
+        if not source or not targets:
+            return fallback_extend(state, monitors, "mirror source or target is unavailable")
+        operations = mirror_operations(monitors, source, targets)
+        if operations:
+            return {"state": state, "operations": operations}
+        return fallback_extend(state, monitors, "no common mirror mode is available")
+    if kind == "profile" and state["profile"] == "dock-three-screen":
+        operations = dock_operations(monitors)
+        if operations:
+            return {"state": state, "operations": operations}
+        return fallback_extend(state, monitors, "dock profile outputs are unavailable")
+    return {"state": dict(DEFAULT_STATE), "operations": extend_operations(monitors)}
+
+
+def lua_for_operation(operation: dict[str, Any]) -> str:
+    fields = [f"output = {json.dumps(operation['output'])}"]
+    if operation["action"] == "disable":
+        fields.append("disabled = true")
+    else:
+        fields.extend(
+            (
+                "disabled = false",
+                f"mode = {json.dumps(operation['mode'])}",
+                f"position = {json.dumps(operation['position'])}",
+                f"scale = {operation['scale']:g}",
+                f"transform = {operation['transform']}",
+                f"mirror = {json.dumps(operation['mirror'])}",
+            )
+        )
+    return "hl.monitor({ " + ", ".join(fields) + " })"
+
+
+def run_operation(operation: dict[str, Any]) -> None:
+    result = subprocess.run(
+        [HYPRCTL, "eval", lua_for_operation(operation)],
         capture_output=True,
         text=True,
         check=False,
     )
     if result.returncode or result.stdout.strip() != "ok":
-        print(result.stderr.strip() or result.stdout.strip(), file=sys.stderr)
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "monitor configuration failed")
+
+
+def mirror_value(monitor: dict[str, Any]) -> str:
+    value = monitor.get("mirrorOf")
+    return "" if value is None else str(value)
+
+
+def monitor_matches_operation(
+    monitor: dict[str, Any], operation: dict[str, Any], monitors: dict[str, dict[str, Any]]
+) -> bool:
+    if operation["action"] == "disable":
+        return bool(monitor.get("disabled"))
+    if monitor.get("disabled"):
         return False
+    if int(monitor.get("transform") or 0) != operation["transform"]:
+        return False
+    if abs(monitor_scale(monitor) - operation["scale"]) > 0.01:
+        return False
+    if operation["mirror"]:
+        source = monitors.get(operation["mirror"])
+        source_ids = {operation["mirror"]}
+        if source and source.get("id") is not None:
+            source_ids.add(str(source["id"]))
+        if mirror_value(monitor) not in source_ids:
+            return False
+    if not operation["mirror"]:
+        if mirror_value(monitor) not in ("", "none"):
+            return False
+        x, y = (int(value) for value in operation["position"].split("x", maxsplit=1))
+        if int(monitor.get("x") or 0) != x or int(monitor.get("y") or 0) != y:
+            return False
+    if operation["mode"] != "preferred":
+        match = MODE_PATTERN.fullmatch(operation["mode"])
+        if not match:
+            return False
+        width, height, refresh = int(match[1]), int(match[2]), float(match[3])
+        if int(monitor.get("width") or 0) != width or int(monitor.get("height") or 0) != height:
+            return False
+        if abs(float(monitor.get("refreshRate") or 0) - refresh) > 0.2:
+            return False
     return True
 
 
-def main() -> int:
+def wait_for_operations(operations: list[dict[str, Any]]) -> None:
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        monitors = {monitor["name"]: monitor for monitor in query_monitors()}
+        missing = [operation["output"] for operation in operations if operation["output"] not in monitors]
+        if missing:
+            raise MonitorTopologyChanged(f"output disappeared while applying layout: {', '.join(missing)}")
+        if all(
+            monitor_matches_operation(monitors[operation["output"]], operation, monitors)
+            for operation in operations
+        ):
+            return
+        time.sleep(0.05)
+    raise RuntimeError("monitor state did not converge")
+
+
+def apply_operations(operations: list[dict[str, Any]]) -> None:
+    enabled = [operation for operation in operations if operation["action"] == "enable"]
+    disabled = [operation for operation in operations if operation["action"] == "disable"]
+
+    # Always verify a usable output before disabling anything else.
+    for operation in enabled:
+        run_operation(operation)
+    if enabled:
+        wait_for_operations(enabled)
+
+    for operation in disabled:
+        run_operation(operation)
+    if disabled:
+        wait_for_operations(disabled)
+
+
+def apply_state(state: dict[str, Any]) -> dict[str, Any]:
+    for _ in range(2):
+        initial_monitors = query_monitors()
+        initial_outputs = {monitor["name"] for monitor in initial_monitors}
+        try:
+            initial = plan_for_state(state, initial_monitors)
+            initial_enable = [operation for operation in initial["operations"] if operation["action"] == "enable"]
+            if initial_enable:
+                apply_operations(initial_enable)
+
+            # Preferred-mode changes can alter logical sizes, so calculate placement again.
+            refreshed_monitors = query_monitors()
+            if {monitor["name"] for monitor in refreshed_monitors} != initial_outputs:
+                continue
+            refreshed = plan_for_state(state, refreshed_monitors)
+            apply_operations(refreshed["operations"])
+            if {monitor["name"] for monitor in query_monitors()} == initial_outputs:
+                return refreshed
+        except MonitorTopologyChanged:
+            continue
+    raise RuntimeError("monitor topology changed before the layout converged")
+
+
+def acquire_lock(blocking: bool) -> Any | None:
+    path = lock_path()
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    handle = path.open("w", encoding="utf-8")
+    flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
     try:
-        result = subprocess.run(
-            ["hyprctl", "-j", "monitors"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        monitors = json.loads(result.stdout)
-    except (json.JSONDecodeError, OSError, subprocess.CalledProcessError):
+        fcntl.flock(handle.fileno(), flags)
+    except BlockingIOError:
+        handle.close()
+        return None
+    return handle
+
+
+def acquire_reconcile_lock() -> Any | None:
+    for _ in range(5):
+        lock = acquire_lock(blocking=False)
+        if lock:
+            return lock
+        time.sleep(0.2)
+    return None
+
+
+def menu_monitors(monitors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": output_token(str(monitor["name"])),
+            "name": sanitize_label(str(monitor["name"])),
+            "label": monitor_label(monitor),
+            "disabled": bool(monitor.get("disabled")),
+        }
+        for monitor in monitors
+    ]
+
+
+def canonical_identity(value: str, monitors: list[dict[str, Any]]) -> str:
+    identity = output_from_token(value)
+    monitor = monitor_by_identity(monitors, identity)
+    if not monitor:
+        raise RuntimeError(f"unknown output: {value}")
+    return monitor_identity(monitor, monitors)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dry-run", action="store_true", help="print planned monitor operations")
+    commands = parser.add_subparsers(dest="command")
+    commands.add_parser("reconcile", help="reapply the persisted selection")
+    commands.add_parser("extend", help="enable and arrange all connected outputs")
+    single = commands.add_parser("single", help="enable only one output")
+    single.add_argument("output")
+    mirror = commands.add_parser("mirror", help="mirror one output to one or more targets")
+    mirror.add_argument("source")
+    mirror.add_argument("targets", nargs="+")
+    profile = commands.add_parser("profile", help="apply a named display profile")
+    profile.add_argument("name", choices=sorted(PROFILES))
+    commands.add_parser("monitors", help="print connected outputs as JSON")
+    commands.add_parser("profiles", help="print named profiles as JSON")
+    commands.add_parser("state", help="print the persisted selection as JSON")
+    return parser
+
+
+def requested_state(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
+    if args.command in (None, "reconcile"):
+        return read_state(), False
+    if args.command == "extend":
+        return dict(DEFAULT_STATE), True
+    if args.command == "single":
+        monitors = query_monitors()
+        return {"version": 1, "kind": "single", "output": canonical_identity(args.output, monitors)}, True
+    if args.command == "mirror":
+        monitors = query_monitors()
+        source = canonical_identity(args.source, monitors)
+        targets = [canonical_identity(target, monitors) for target in args.targets]
+        if source in targets:
+            raise RuntimeError("mirror source cannot also be a target")
+        if len(set(targets)) != len(targets):
+            raise RuntimeError("mirror targets must be unique")
+        return {"version": 1, "kind": "mirror", "source": source, "targets": targets}, True
+    if args.command == "profile":
+        return {"version": 1, "kind": "profile", "profile": args.name}, True
+    raise RuntimeError(f"unsupported command: {args.command}")
+
+
+def print_json(value: Any) -> None:
+    print(json.dumps(value, indent=2))
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        if args.command == "state":
+            print_json(read_state())
+            return 0
+        if args.command == "profiles":
+            print_json([{"id": profile_id, **profile} for profile_id, profile in PROFILES.items()])
+            return 0
+        if args.command == "monitors":
+            print_json(menu_monitors(query_monitors()))
+            return 0
+
+        state, persist = requested_state(args)
+        if args.dry_run:
+            print_json(plan_for_state(state, query_monitors()))
+            return 0
+
+        lock = acquire_lock(blocking=True) if persist else acquire_reconcile_lock()
+        if lock is None:
+            return 0
+        try:
+            apply_state(state)
+            if persist:
+                write_state(state)
+        finally:
+            lock.close()
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        print(f"[ERROR] {error}", file=sys.stderr)
         return 1
-
-    laptop = monitor_with_description(monitors, LAPTOP)
-    left = monitor_with_description(monitors, LEFT_DISPLAY)
-    right = monitor_with_description(monitors, RIGHT_DISPLAY)
-    positions: list[tuple[dict, int, int]] = []
-
-    if left and right:
-        left_width, left_height = logical_size(left)
-        right_width, right_height = logical_size(right)
-        positions.extend(((left, 0, 0), (right, left_width, 0)))
-        if laptop:
-            laptop_width, _ = logical_size(laptop)
-            positions.append(
-                (laptop, (left_width + right_width - laptop_width) // 2, max(left_height, right_height))
-            )
-    elif left or right:
-        external = left or right
-        external_width, external_height = logical_size(external)
-        positions.append((external, 0, 0))
-        if laptop:
-            laptop_width, _ = logical_size(laptop)
-            positions.append((laptop, max(0, (external_width - laptop_width) // 2), external_height))
-    elif laptop:
-        positions.append((laptop, 0, 0))
-
-    return 0 if all(configure(*position) for position in positions) else 1
+    return 0
 
 
 if __name__ == "__main__":
