@@ -173,6 +173,7 @@ while IFS='|' read -r source destination; do
 done <<'EOF'
 wayland/hypr/hyprland.lua|.config/hypr/hyprland.lua
 wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf
+wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf
 wayland/hypr/hyprlock.conf|.config/hypr/hyprlock.conf
 wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf
 wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png
@@ -183,6 +184,8 @@ wayland/rofi/share-picker.rasi|.config/rofi/share-picker.rasi
 wayland/mako/config|.config/mako/config
 wayland/fontconfig/conf.d/99-ubuntu-fallback.conf|.config/fontconfig/conf.d/99-ubuntu-fallback.conf
 EOF
+
+compare_tree "$repo_dir/wayland/rofi/share-picker-icons" "$home_dir/.config/rofi/share-picker-icons"
 
 for source in "$repo_dir"/wayland/bin/*; do
   [[ -f "$source" ]] || continue

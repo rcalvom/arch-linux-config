@@ -11,6 +11,7 @@ local screenshotDir = "$HOME/Pictures/screenshots"
 local displayLayout = userBin .. "/hypr-display-layout"
 local displayMenu = userBin .. "/hypr-display-menu"
 local audioSelector = userBin .. "/hypr-audio-selector"
+local sessionMenu = userBin .. "/hypr-session-menu"
 
 hl.monitor({
     output = "",
@@ -74,6 +75,7 @@ hl.on("hyprland.start", function()
     applyDisplayLayout()
     hl.exec_cmd(userBin .. "/hypr-waybar-start")
     hl.exec_cmd(userBin .. "/hypr-workspace-watch")
+    hl.exec_cmd("hypridle")
     hl.exec_cmd("mako")
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
@@ -104,6 +106,7 @@ hl.bind("ALT + F4", hl.dsp.window.close())
 command(mainMod .. " + L", "hyprlock")
 command(mainMod .. " + Escape", "hyprlock")
 command(mainMod .. " + SHIFT + L", "hyprctl reload")
+command("CTRL + ALT + Delete", sessionMenu)
 hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.exit())
 
 -- Native layout cycling keeps the visible Monocle window synchronized with focus.

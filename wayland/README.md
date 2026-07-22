@@ -95,6 +95,7 @@ SUPER + Shift+P -> pseudo-tile active window
 SUPER + C      -> Alacritty running Calcurse
 SUPER + W/Q    -> close active window
 SUPER + L      -> Hyprlock
+CTRL + ALT + Delete -> Rofi session menu
 SUPER + Tab / SUPER + Shift+Tab -> toggle Monocle / Master layout
 ALT + Tab / ALT + Shift+Tab -> next / previous window in the current layout
 CTRL + Tab / CTRL + Shift+Tab -> application tabs, including Firefox
@@ -166,6 +167,7 @@ waybar
 mako
 hyprpaper
 hypr-display-layout
+hypridle
 polkit-kde-authentication-agent-1
 nm-applet --indicator
 ```
@@ -253,13 +255,16 @@ Snapshot:
 wayland/hypr/hyprlock.conf
 ```
 
-Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained. Locking is intentionally manual; no idle-lock daemon is started.
+Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained.
 
 Bound in Hyprland as:
 
 ```text
 SUPER + L / SUPER + Escape -> hyprlock
+CTRL + ALT + Delete -> lock screen, suspend, log out, or power off
 ```
+
+Hypridle turns displays off after five minutes of inactivity and requests a Hyprlock session lock after ten minutes. It honors D-Bus, systemd, and Wayland idle inhibitors, so supported video playback does not trigger either timeout. It does not suspend the system for ordinary idle time; it only delays system sleep until Hyprlock confirms the Wayland session is locked, covering the Suspend menu action and closing the laptop lid. The Suspend menu row uses a local moon icon so it remains visible without relying on the installed icon theme.
 
 ## Mako notifications
 

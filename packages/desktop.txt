@@ -1,6 +1,7 @@
 # Wayland / Hyprland desktop profile. Qtile is intentionally not installed.
 hyprland
 hyprpaper
+hypridle
 hyprlock
 hyprsunset
 fprintd

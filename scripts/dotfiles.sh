@@ -101,6 +101,7 @@ install_wayland_dotfiles() {
   install_user_file "$repo_dir/wayland/hypr/hyprland.lua" "$home_dir/.config/hypr/hyprland.lua" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/xdph.conf" "$home_dir/.config/hypr/xdph.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprtoolkit.conf" "$home_dir/.config/hypr/hyprtoolkit.conf" "$username" 0644
+  install_user_file "$repo_dir/wayland/hypr/hypridle.conf" "$home_dir/.config/hypr/hypridle.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprlock.conf" "$home_dir/.config/hypr/hyprlock.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprpaper.conf" "$home_dir/.config/hypr/hyprpaper.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/wallpapers/wallpaper.png" "$home_dir/Pictures/wallpaper2.png" "$username" 0644
@@ -119,6 +120,7 @@ install_wayland_dotfiles() {
   install_user_file "$repo_dir/wayland/bin/hypr-audio-selector" "$home_dir/.local/bin/hypr-audio-selector" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-display-layout" "$home_dir/.local/bin/hypr-display-layout" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-display-menu" "$home_dir/.local/bin/hypr-display-menu" "$username" 0755
+  install_user_file "$repo_dir/wayland/bin/hypr-session-menu" "$home_dir/.local/bin/hypr-session-menu" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-layout-cycle" "$home_dir/.local/bin/hypr-layout-cycle" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-layout-name" "$home_dir/.local/bin/hypr-layout-name" "$username" 0755
   install_user_file "$repo_dir/wayland/bin/hypr-workspace-swap" "$home_dir/.local/bin/hypr-workspace-swap" "$username" 0755
