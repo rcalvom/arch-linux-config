@@ -103,8 +103,14 @@ tooltip {
 }
 
 #pulseaudio.muted,
-#network.disconnected,
-#battery.warning,
-#battery.critical {
+#network.disconnected {
   color: #4c566a;
+}
+
+#battery.discharging.warning {
+  color: #f9c74f;
+}
+
+#battery.discharging.critical {
+  color: #f94144;
 }

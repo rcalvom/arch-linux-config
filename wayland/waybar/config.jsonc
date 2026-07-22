@@ -140,6 +140,14 @@
   "battery": {
     "bat": "BAT0",
     "interval": 15,
+    "states": {
+      "warning": 20,
+      "critical": 10
+    },
+    "events": {
+      "on-discharging-warning": "notify-send --app-name=archcfg-battery --urgency=normal --expire-time=5000 'Battery low' '20% remaining'",
+      "on-discharging-critical": "notify-send --app-name=archcfg-battery --urgency=critical --expire-time=5000 'Battery critical' '10% remaining'"
+    },
     "format": "{icon} {capacity}%",
     "format-charging": "{icon}󱐋 {capacity}%",
     "format-plugged": "{icon} {capacity}%",

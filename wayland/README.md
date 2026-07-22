@@ -364,6 +364,8 @@ The nine workspaces are visible on every output. Their custom Waybar buttons use
 
 The clock shows the localized textual date (`%A, %d %B %Y`) and refreshes every second so its seconds stay current.
 
+The `BAT0` module checks battery state every 15 seconds. While discharging, it turns yellow at 20% or below and red at 10% or below. Waybar sends a normal `Battery low` notification at 20% and a critical `Battery critical` notification at 10%; both expire after five seconds. The events re-arm after charging or plugging in, while restarting Waybar below a threshold can send that threshold's notification again. `libnotify` provides `notify-send` and Mako displays the notifications.
+
 To reload Waybar manually:
 
 ```bash

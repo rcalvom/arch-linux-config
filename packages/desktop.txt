@@ -9,6 +9,7 @@ xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 waybar
 mako
+libnotify
 rofi
 wdisplays
 wl-clipboard
