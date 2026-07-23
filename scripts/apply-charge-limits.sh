@@ -28,10 +28,12 @@ backup_path() {
 
 main() {
   require_root
+  command -v upower >/dev/null 2>&1 || die "Install upower before applying the critical battery policy"
   require_file "$REPO_DIR/power/charge-limit.conf"
   require_file "$REPO_DIR/power/bin/archcfg-charge-limit"
   require_file "$REPO_DIR/power/systemd/archcfg-charge-limit.service"
   require_file "$REPO_DIR/power/udev/99-archcfg-charge-limit.rules"
+  require_file "$REPO_DIR/power/upower/90-archcfg-critical-battery.conf"
 
   BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%dT%H%M%S)"
   install -dm700 "$BACKUP_DIR"
@@ -39,12 +41,14 @@ main() {
   backup_path /etc/systemd/system/battery-thresholds.service
   backup_path /etc/systemd/system/battery-thresholds.timer
   backup_path /usr/local/bin/battery_thresholds.sh
+  backup_path /etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf
 
-  log_info "Installing dock-aware charge limit service"
+  log_info "Installing battery charge and critical-power policies"
   install -Dm644 "$REPO_DIR/power/charge-limit.conf" /etc/archcfg/charge-limit.conf
   install -Dm755 "$REPO_DIR/power/bin/archcfg-charge-limit" /usr/local/libexec/archcfg-charge-limit
   install -Dm644 "$REPO_DIR/power/systemd/archcfg-charge-limit.service" /etc/systemd/system/archcfg-charge-limit.service
   install -Dm644 "$REPO_DIR/power/udev/99-archcfg-charge-limit.rules" /etc/udev/rules.d/99-archcfg-charge-limit.rules
+  install -Dm644 "$REPO_DIR/power/upower/90-archcfg-critical-battery.conf" /etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf
 
   if [[ -f /etc/systemd/system/battery-thresholds.timer ]]; then
     systemctl disable --now battery-thresholds.timer
@@ -60,9 +64,12 @@ main() {
   udevadm control --reload-rules
   systemctl enable --now archcfg-charge-limit.service
   systemctl is-enabled --quiet archcfg-charge-limit.service || die "Charge limit service was not enabled"
+  if systemctl is-active --quiet upower.service; then
+    systemctl restart upower.service
+  fi
   /usr/local/libexec/archcfg-charge-limit --dry-run
 
-  log_info "Charge limit service installed; legacy timer backup: $BACKUP_DIR"
+  log_info "Battery policies installed; legacy timer backup: $BACKUP_DIR"
 }
 
 main "$@"

@@ -3,16 +3,30 @@ set -euo pipefail
 
 configure_initial_user() {
   local username=$1
+  local profile=${2:-}
   local password_file="/root/.archcfg-user-password"
   local home_dir
   local zsh_path
+  local supplementary_groups=wheel,video,audio,storage,input
+  local user_exists=0
 
   log_info "Configuring user: $username"
 
   if id -u "$username" >/dev/null 2>&1; then
-    usermod -aG wheel,video,audio,storage,input "$username"
+    user_exists=1
+  fi
+
+  # Docker membership is root-equivalent, so only developer profiles receive it.
+  if [[ "$profile" == developer || "$profile" == virtualbox ]] && getent group docker >/dev/null; then
+    supplementary_groups+=",docker"
+  elif (( user_exists )) && getent group docker >/dev/null && [[ " $(id -nG "$username") " == *" docker "* ]]; then
+    gpasswd -d "$username" docker
+  fi
+
+  if (( user_exists )); then
+    usermod -aG "$supplementary_groups" "$username"
   else
-    useradd -m -G wheel,video,audio,storage,input "$username"
+    useradd -m -G "$supplementary_groups" "$username"
   fi
 
   zsh_path=$(command -v zsh || true)

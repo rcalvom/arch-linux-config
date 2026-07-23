@@ -1,0 +1,7 @@
+# Matches the midnight palette shared by Alacritty, Rofi, and Waybar.
+accent = "#04adbf"
+bright_fg = "#f1ffff"
+fg = "#d6d6d6"
+green = "#10a778"
+yellow = "#f3e430"
+red = "#fb007a"

@@ -26,6 +26,7 @@ grim
 gptfdisk
 grub
 hyprland
+hypridle
 hyprlock
 hyprlauncher
 hyprpaper
@@ -78,6 +79,7 @@ ttf-ubuntu-font-family
 ttf-ubuntu-mono-nerd
 ueberzugpp
 unzip
+upower
 virtualbox-guest-utils-nox
 waybar
 wget

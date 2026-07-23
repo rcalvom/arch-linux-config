@@ -86,7 +86,7 @@ Important bindings:
 
 ```text
 SUPER + Return -> Alacritty
-SUPER + M/D    -> Rofi launcher
+SUPER + Space   -> Rofi launcher
 SUPER + B      -> Firefox
 SUPER + E      -> Alacritty running Yazi
 SUPER + A      -> Rofi audio input/output selector
@@ -131,7 +131,7 @@ Calcurse and VS Code settings are also versioned under `packages/`. VS Code rema
      [ Lenovo laptop panel ]
 ```
 
-The laptop panel is centered below the two external displays. With only the laptop connected, it is placed at `0x0`; with one Dell attached, that display is placed above it. The controller also extends unknown connected displays to the right of the known dock outputs.
+Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays.
 
 `SUPER + P` opens a compact Rofi picker with two tabs:
 
@@ -140,7 +140,7 @@ Modes    -> Single monitor, Extend displays, Mirror / Duplicate
 Profiles -> Dock - 3 displays
 ```
 
-Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. The `Dock - 3 displays` profile restores the layout shown above.
+Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then selects and persists Extend displays. The `Dock - 3 displays` profile restores the layout shown above.
 
 Manual changes through Wdisplays remain in effect until the next display-menu action, monitor hotplug event, configuration reload, or Hyprland session start.
 
@@ -265,6 +265,10 @@ CTRL + ALT + Delete -> lock screen, suspend, log out, or power off
 ```
 
 Hypridle turns displays off after five minutes of inactivity and requests a Hyprlock session lock after ten minutes. It honors D-Bus, systemd, and Wayland idle inhibitors, so supported video playback does not trigger either timeout. It does not suspend the system for ordinary idle time; it only delays system sleep until Hyprlock confirms the Wayland session is locked, covering the Suspend menu action and closing the laptop lid. The Suspend menu row uses a local moon icon so it remains visible without relying on the installed icon theme.
+
+## Zoom
+
+Zoom runs through XWayland and opens separate top-level windows for meeting controls and dialogs. Hyprland floats and centers all windows whose initial class is `zoom`, preventing them from changing the tiling layout. Zoom's Mini Window is disabled in `~/.config/zoomus.conf`.
 
 ## Mako notifications
 

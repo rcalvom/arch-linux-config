@@ -45,6 +45,8 @@ Optional AUR packages for developer-style profiles are opt-in:
 sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
 ```
 
+`packages/aur.txt` pins each reviewed AUR repository revision. The installer builds those revisions as the regular user without granting temporary passwordless root access, then installs only the resulting local packages as root. Their reviewed official dependencies are declared in `packages/aur-deps.txt`; adding or updating an AUR package requires reviewing its PKGBUILD and `.SRCINFO`, then updating both files. Pinning improves reproducibility but does not make AUR source trusted.
+
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
@@ -126,6 +128,12 @@ The goal is to provide a visually consistent and predictable boot experience.
 - Clear separation of system concerns
 - Version-controlled configuration
 - Minimal reliance on ad-hoc manual steps
+
+---
+
+## Pending Hardware Maintenance
+
+The AMD laptop should eventually add `amd-ucode` to the package profile and `fwupd` for firmware update checks. This is intentionally documented but not installed or configured yet; review and apply those changes in a dedicated maintenance window.
 
 ---
 

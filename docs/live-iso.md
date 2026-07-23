@@ -69,4 +69,4 @@ archcfg_nowayland
 - The live session initializes the versioned Firefox and Thunderbird userChrome profiles before Hyprland starts.
 - VS Code settings are versioned for installed systems, but VS Code itself remains outside the live ISO because it is an optional AUR package.
 - The installed system is still produced by `install.sh`.
-- Optional AUR installation is available from the installer with `--aur`; no graphical installer or independent distribution layer yet.
+- Optional AUR installation is available from the installer with `--aur`; pinned package revisions build without passwordless root access for the build user.

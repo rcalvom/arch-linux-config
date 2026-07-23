@@ -31,17 +31,22 @@ To make those ANSI names match the Alacritty palette on the Linux virtual consol
 
 `fbcon=nodefer` in `grub/grub` disables deferred framebuffer-console takeover. AMD KMS is already ready before `greetd` starts, but without this parameter `fbcon` can bind only when `tuigreet` first draws, causing a temporary-resolution redraw. The `greetd` drop-in no longer uses a fixed sleep.
 
-## X11 Shutdown
+## Session Output
 
-When `poweroff` stops the X11 session, Xorg exits successfully and Qtile loses its X connection during teardown. Qtile can log `ConnectionException` messages at that point even though Xorg did not crash. `greetd/archcfg-xsession-wrapper` starts X11 sessions through `startx` and redirects their terminal output to `~/.local/state/arch-linux-config/xsession.log`, keeping expected teardown traces off the shutdown console.
+Session programs otherwise inherit the greeter's `tty1` output streams, so expected teardown messages can appear on the shutdown console. The tracked wrappers keep that output in the user's state directory instead:
 
-To add the wrapper to an existing host without restarting the current session:
+- `greetd/archcfg-xsession-wrapper` starts X11 sessions through `startx` and writes to `~/.local/state/arch-linux-config/xsession.log`.
+- `greetd/archcfg-wayland-session-wrapper` runs the selected Wayland command directly and writes to `~/.local/state/arch-linux-config/wayland-session.log`.
+
+`tuigreet` uses `--xsession-wrapper` for X11 sessions and `--session-wrapper` for Wayland sessions. The latter covers both the default `--cmd Hyprland` command and Wayland sessions selected from the session menu. Qtile can therefore log X connection teardown messages, while Hyprland or its session launcher can log Wayland teardown messages, without either writing directly to `tty1`.
+
+To add both wrappers to an existing host without restarting the current session:
 
 ```bash
 sudo ./scripts/apply-greeter-xsession-wrapper.sh
 ```
 
-The wrapper applies on the next greeter start, such as after a reboot.
+The wrappers apply on the next greeter start, such as after a reboot.
 
 ## Greeting
 

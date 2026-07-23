@@ -20,8 +20,8 @@ Do not commit credentials, browser profiles, application caches, shell history, 
 
 `scripts/dotfiles.sh` deploys the Wayland configuration:
 
-- Hyprland, Hyprlock, Hyprpaper, and Hyprtoolkit.
-- Waybar, Rofi, Mako, Fontconfig, wallpaper, and user systemd units.
+- Hyprland, the portal configuration, Hyprlock, Hyprpaper, and Hyprtoolkit.
+- Waybar, Rofi, Mako, Fontconfig, wallpaper, user systemd units, and their timer enablement links.
 - All helpers in `wayland/bin/`.
 - `wayland/mimeapps.list` as a baseline for a fresh account.
 
@@ -35,7 +35,15 @@ Run the read-only verifier against the active account:
 ./scripts/verify-dotfiles.sh --diff
 ```
 
-It compares managed source files with the active user configuration. It never installs, copies, changes services, reloads Hyprland, or changes any system state.
+Run the system verifier after an installation or a root-level configuration change:
+
+```bash
+sudo ./scripts/verify-system-config.sh --profile developer --diff
+```
+
+Use `--root /mnt` to inspect a mounted target, `--wifi-interface <name>` when its Wi-Fi adapter is not visible to the current host, and `--grub-profile graphical|classic` when automatic profile detection is not appropriate.
+
+Both verifiers only compare files, links, modes, and enabled-unit state. They never install, copy, change services, reload Hyprland, or change any system state.
 
 Exit status `1` means a managed file is missing or differs. Warnings identify expected local state, extra files, or a dirty Git tree. Review intended changes with Git and commit them before using a revision as a reconstruction point.
 
@@ -57,4 +65,4 @@ These locations are deliberately not copied wholesale into the repository:
 - OpenClaw state and `openclaw-gateway.service`, which can contain credentials or host-specific state. Only portable shell completion loading is managed.
 - Neovim backups, caches, plugin downloads, and lock updates that have not been deliberately reviewed.
 
-System-wide Greetd, GRUB, networking, and power configuration are source-backed separately under their respective repository directories. Generated `/etc` state must be verified through the relevant installer or documented apply script rather than copied back blindly.
+System-wide Greetd, GRUB, networking, and power configuration are source-backed separately under their respective repository directories and checked by `scripts/verify-system-config.sh`. Generated runtime state such as `grub.cfg`, initramfs images, `fstab`, and hardware charge values must not be copied back blindly.

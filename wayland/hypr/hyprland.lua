@@ -63,12 +63,25 @@ hl.config({
     },
 })
 
+-- Zoom creates several XWayland top-level windows for meeting controls and dialogs.
+hl.window_rule({
+    name = "float-zoom-xwayland",
+    match = { initial_class = "^zoom$", xwayland = true },
+    float = true,
+    center = true,
+})
+
 for workspace = 1, 9 do
     hl.workspace_rule({ workspace = tostring(workspace), persistent = true })
 end
 
 local function applyDisplayLayout()
     hl.exec_cmd(displayLayout)
+end
+
+local function extendDisplayLayout()
+    -- Give DRM time to finish modesetting a newly connected output.
+    hl.exec_cmd("/bin/sh -c 'sleep 2; exec " .. displayLayout .. " extend'")
 end
 
 hl.on("hyprland.start", function()
@@ -85,7 +98,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(userBin .. "/hyprsunset-apply-current")
 end)
 
-hl.on("monitor.added", applyDisplayLayout)
+hl.on("monitor.added", extendDisplayLayout)
 hl.on("monitor.removed", applyDisplayLayout)
 hl.on("config.reloaded", applyDisplayLayout)
 
@@ -95,8 +108,7 @@ end
 
 -- Keep the familiar Qtile application and session bindings.
 command(mainMod .. " + Return", terminal)
-command(mainMod .. " + M", menu)
-command(mainMod .. " + D", menu)
+command(mainMod .. " + SPACE", menu)
 command(mainMod .. " + B", browser)
 command(mainMod .. " + E", fileManager)
 command(mainMod .. " + A", audioSelector)

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=../lib/network.sh
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/lib/network.sh"
+
 enable_service_if_present() {
   local service=$1
 
@@ -28,9 +31,33 @@ enable_user_service_globally_if_present() {
   fi
 }
 
+restore_networkmanager_wifi() {
+  log_info "Restoring NetworkManager Wi-Fi ownership"
+
+  disable_service_if_present host-network-online.service
+  disable_service_if_present archcfg-reset-resolved-if-stub.path
+  disable_service_if_present iwd.service
+  rm -f /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
+  rm -f /etc/systemd/system/host-network-online.service
+  rm -f /etc/systemd/system/archcfg-reset-resolved-if-stub.service
+  rm -f /etc/systemd/system/archcfg-reset-resolved-if-stub.path
+  rm -f /usr/local/libexec/archcfg-wait-network-online
+  rm -f /usr/local/libexec/archcfg-reset-resolved-if-stub
+  systemctl daemon-reload
+  enable_service_if_present NetworkManager-wait-online.service
+}
+
 configure_iwd_networking() {
   local profile=$1
   local repo_dir=$2
+  local requested_interface=${3:-auto}
+  local wifi_interface
+  local selection_status
+
+  if [[ "$requested_interface" == none ]]; then
+    restore_networkmanager_wifi
+    return 0
+  fi
 
   case "$profile" in
     desktop | developer | virtualbox)
@@ -40,7 +67,33 @@ configure_iwd_networking() {
       ;;
   esac
 
-  [[ -f "$repo_dir/network/NetworkManager/10-iwd-wlan0.conf" ]] || die "Missing NetworkManager IWD configuration"
+  if wifi_interface=$(select_wifi_interface "$requested_interface"); then
+    :
+  else
+    selection_status=$?
+    case "$selection_status" in
+      1)
+        log_info "No Wi-Fi interface detected; leaving NetworkManager Wi-Fi ownership unchanged"
+        return 0
+        ;;
+      2)
+        log_warn "Multiple Wi-Fi interfaces detected; rerun with --wifi-interface <name> to select one"
+        return 0
+        ;;
+      4)
+        die "Wi-Fi interface $requested_interface is not wireless"
+        ;;
+      *)
+        die "Invalid Wi-Fi interface: $requested_interface"
+        ;;
+    esac
+  fi
+
+  if [[ "$wifi_interface" == "none" ]]; then
+    restore_networkmanager_wifi
+    return 0
+  fi
+
   [[ -f "$repo_dir/network/iwd/main.conf" ]] || die "Missing IWD configuration"
   [[ -f "$repo_dir/network/systemd/host-network-online.service" ]] || die "Missing network-online service"
   [[ -f "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.service" ]] || die "Missing resolver reset service"
@@ -48,8 +101,8 @@ configure_iwd_networking() {
   [[ -f "$repo_dir/network/bin/archcfg-wait-network-online" ]] || die "Missing network-online helper"
   [[ -f "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" ]] || die "Missing resolver reset helper"
 
-  log_info "Configuring IWD-owned Wi-Fi"
-  install -Dm644 "$repo_dir/network/NetworkManager/10-iwd-wlan0.conf" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
+  log_info "Configuring IWD-owned Wi-Fi on $wifi_interface"
+  write_iwd_networkmanager_config "$wifi_interface" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf || die "Could not write NetworkManager IWD configuration"
   install -Dm644 "$repo_dir/network/iwd/main.conf" /etc/iwd/main.conf
   install -Dm644 "$repo_dir/network/systemd/host-network-online.service" /etc/systemd/system/host-network-online.service
   install -Dm644 "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.service" /etc/systemd/system/archcfg-reset-resolved-if-stub.service
@@ -68,18 +121,24 @@ configure_iwd_networking() {
 configure_charge_limits() {
   local repo_dir=$1
 
+  command -v upower >/dev/null 2>&1 || die "UPower is required for the critical battery policy"
   [[ -f "$repo_dir/power/charge-limit.conf" ]] || die "Missing charge limit configuration"
   [[ -f "$repo_dir/power/bin/archcfg-charge-limit" ]] || die "Missing charge limit helper"
   [[ -f "$repo_dir/power/systemd/archcfg-charge-limit.service" ]] || die "Missing charge limit service"
   [[ -f "$repo_dir/power/udev/99-archcfg-charge-limit.rules" ]] || die "Missing charge limit udev rule"
+  [[ -f "$repo_dir/power/upower/90-archcfg-critical-battery.conf" ]] || die "Missing critical battery policy"
 
-  log_info "Installing dock-aware charge limit service"
+  log_info "Installing battery charge and critical-power policies"
   install -Dm644 "$repo_dir/power/charge-limit.conf" /etc/archcfg/charge-limit.conf
   install -Dm755 "$repo_dir/power/bin/archcfg-charge-limit" /usr/local/libexec/archcfg-charge-limit
   install -Dm644 "$repo_dir/power/systemd/archcfg-charge-limit.service" /etc/systemd/system/archcfg-charge-limit.service
   install -Dm644 "$repo_dir/power/udev/99-archcfg-charge-limit.rules" /etc/udev/rules.d/99-archcfg-charge-limit.rules
+  install -Dm644 "$repo_dir/power/upower/90-archcfg-critical-battery.conf" /etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf
 
   disable_service_if_present battery-thresholds.timer
+  rm -f /etc/systemd/system/battery-thresholds.service
+  rm -f /etc/systemd/system/battery-thresholds.timer
+  rm -f /usr/local/bin/battery_thresholds.sh
   systemctl daemon-reload
   enable_service_if_present archcfg-charge-limit.service
 }
@@ -96,6 +155,12 @@ enable_core_services() {
   case "$profile" in
     desktop | developer | virtualbox)
       enable_service_if_present greetd.service
+      ;;
+  esac
+
+  case "$profile" in
+    developer | virtualbox)
+      enable_service_if_present docker.service
       ;;
   esac
 

@@ -7,6 +7,7 @@ VM_MODE=0
 DISK=""
 YES=0
 ENABLE_AUR=0
+WIFI_INTERFACE="auto"
 INSTALL_HOSTNAME="archlinux"
 INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
@@ -23,6 +24,9 @@ Options:
   --disk <device>       Disk to wipe and install to in VM mode.
   --yes                 Skip disk erase confirmation. Only valid with --vm.
   --aur                 Install optional AUR packages for the selected profile.
+  --wifi-interface <value>
+                        Wi-Fi interface for IWD: auto, none, or an interface name.
+                        Default: auto.
   --hostname <name>     Hostname. Default: archlinux.
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
@@ -73,6 +77,11 @@ parse_args() {
       --aur)
         ENABLE_AUR=1
         shift
+        ;;
+      --wifi-interface)
+        require_arg_value "$1" "${2-}"
+        WIFI_INTERFACE=$2
+        shift 2
         ;;
       --hostname)
         require_arg_value "$1" "${2-}"

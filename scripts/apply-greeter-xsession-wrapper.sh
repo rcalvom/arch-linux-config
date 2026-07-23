@@ -15,11 +15,13 @@ main() {
   require_root
   [[ -f "$REPO_DIR/greetd/config.toml" ]] || die "Missing greetd configuration"
   [[ -f "$REPO_DIR/greetd/archcfg-xsession-wrapper" ]] || die "Missing greetd X11 session wrapper"
+  [[ -f "$REPO_DIR/greetd/archcfg-wayland-session-wrapper" ]] || die "Missing greetd Wayland session wrapper"
 
-  log_info "Installing the quiet X11 session wrapper"
+  log_info "Installing quiet X11 and Wayland session wrappers"
   install -Dm755 "$REPO_DIR/greetd/archcfg-xsession-wrapper" /usr/local/libexec/archcfg-xsession-wrapper
+  install -Dm755 "$REPO_DIR/greetd/archcfg-wayland-session-wrapper" /usr/local/libexec/archcfg-wayland-session-wrapper
   install -Dm644 "$REPO_DIR/greetd/config.toml" /etc/greetd/config.toml
-  log_info "The wrapper will be used the next time greetd starts"
+  log_info "The wrappers will be used the next time greetd starts"
 }
 
 main "$@"

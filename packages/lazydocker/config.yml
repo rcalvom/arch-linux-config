@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://json.schemastore.org/lazydocker.json
+gui:
+  border: single
+  scrollHeight: 2
+  sidePanelWidth: 0.333
+  wrapMainPanel: true
+  showBottomLine: true
+  containerStatusHealthStyle: short
+  theme:
+    activeBorderColor:
+      - cyan
+      - bold
+    inactiveBorderColor:
+      - blue
+    selectedLineBgColor:
+      - blue
+    optionsTextColor:
+      - cyan
+logs:
+  timestamps: true
+  since: "60m"
+  tail: ""
+commandTemplates:
+  dockerCompose: docker compose
+  openCommand: "xdg-open {{filename}} >/dev/null 2>&1"
+  openLinkCommand: "xdg-open {{link}} >/dev/null 2>&1"
+stats:
+  graphs:
+    - caption: CPU (%)
+      statPath: DerivedStats.CPUPercentage
+      color: cyan
+    - caption: Memory (%)
+      statPath: DerivedStats.MemoryPercentage
+      color: blue

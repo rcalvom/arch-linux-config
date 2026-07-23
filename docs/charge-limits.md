@@ -23,6 +23,12 @@ No periodic polling or fixed startup delay is used.
 
 The service runs after UPower so it overrides any static UPower hardware default with the selected dock-aware value.
 
+## Critical Battery Safeguard
+
+All install profiles include UPower and install `/etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf`. While discharging, UPower requests a system suspend at 3% battery. Hypridle receives the sleep request and locks the Wayland session before suspension on the Wayland desktop profiles.
+
+`Suspend` is explicitly enabled because UPower classifies it as risky at critical power. Hibernate is intentionally not selected: resume from swap is not configured or validated yet. Save work after the 20% and 10% Waybar warnings, and connect power before resuming from a 3% suspension.
+
 ## Configuration
 
 The installed configuration is `/etc/archcfg/charge-limit.conf`:
@@ -44,11 +50,13 @@ done
 
 ## Installation And Verification
 
-For an existing system, install the service and remove the legacy one-minute `battery-thresholds.timer` with:
+For an existing system, install the charge-limit service, the 3% critical-battery policy, and remove the legacy one-minute `battery-thresholds.timer` with:
 
 ```bash
 sudo ./scripts/apply-charge-limits.sh
 ```
+
+Install `upower` first when applying this migration to a system that was not created from these profiles.
 
 The migration stores replaced files under `/var/lib/arch-linux-config/charge-limit-backups/`.
 
@@ -64,4 +72,10 @@ Check the service and the active hardware values:
 systemctl status archcfg-charge-limit.service
 cat /sys/class/power_supply/BAT0/charge_control_start_threshold
 cat /sys/class/power_supply/BAT0/charge_control_end_threshold
+```
+
+Inspect the effective UPower policy with:
+
+```bash
+upower -d
 ```

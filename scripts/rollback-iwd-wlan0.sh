@@ -74,7 +74,7 @@ main() {
   [[ "$BACKUP_DIR" == "$BACKUP_ROOT"/* ]] || die "Backup must be under $BACKUP_ROOT"
   [[ -f "$BACKUP_DIR/absent-paths" ]] || die "Invalid backup directory: $BACKUP_DIR"
 
-  log_info "Restoring NetworkManager ownership of wlan0"
+  log_info "Restoring NetworkManager ownership of Wi-Fi"
   systemctl disable --now host-network-online.service
   if [[ -f /etc/systemd/system/archcfg-reset-resolved-if-stub.path || -f /usr/lib/systemd/system/archcfg-reset-resolved-if-stub.path ]]; then
     systemctl disable --now archcfg-reset-resolved-if-stub.path
@@ -109,7 +109,7 @@ main() {
     systemctl disable NetworkManager-wait-online.service
   fi
 
-  log_info "NetworkManager has been restored. It will reactivate wpa_supplicant for wlan0."
+  log_info "NetworkManager has been restored. It will reactivate its Wi-Fi backend."
 }
 
 main "$@"

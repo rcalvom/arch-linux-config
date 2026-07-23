@@ -188,23 +188,13 @@ def ordered_externals(monitors: list[dict[str, Any]], laptop: dict[str, Any] | N
 
 def extend_positions(monitors: list[dict[str, Any]]) -> list[tuple[dict[str, Any], int, int]]:
     laptop = monitor_with_description(monitors, LAPTOP)
-    externals = ordered_externals(monitors, laptop)
+    ordered = ([laptop] if laptop else []) + ordered_externals(monitors, laptop)
     positions: list[tuple[dict[str, Any], int, int]] = []
-    if externals:
-        x = 0
-        external_height = 0
-        for monitor in externals:
-            width, height = logical_size(monitor)
-            positions.append((monitor, x, 0))
-            x += width
-            external_height = max(external_height, height)
-        if laptop:
-            laptop_width, _ = logical_size(laptop)
-            positions.append((laptop, max(0, (x - laptop_width) // 2), external_height))
-    elif laptop:
-        positions.append((laptop, 0, 0))
-    elif monitors:
-        positions.append((monitors[0], 0, 0))
+    x = 0
+    for monitor in ordered:
+        width, _ = logical_size(monitor)
+        positions.append((monitor, x, 0))
+        x += width
     return positions
 
 

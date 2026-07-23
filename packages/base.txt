@@ -6,6 +6,7 @@ sudo
 nano
 git
 networkmanager
+upower
 zsh
 grub
 efibootmgr

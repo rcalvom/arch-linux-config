@@ -12,7 +12,7 @@ The live `~/.xprofile` mirrors `qtile/xprofile` in this repository. It starts on
 
 Do not use a static list of connector names such as `DP-8` and `DP-9`, and do not invoke `qtile reload_config` from `.xprofile`. Both run after Qtile has started and cause redundant screen reconfiguration and visible flicker.
 
-The temporary Qtile network widget must use the current interface name, `wlan0`. The historical `wlp2s0` value raises an exception on every widget poll.
+The legacy Qtile network widget remains host-specific and is not part of the current desktop profile. Do not use it as a reference for the portable IWD/NetworkManager configuration.
 
 ## Workspace Order
 

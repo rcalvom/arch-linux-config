@@ -4,9 +4,16 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 BACKUP_ROOT=/var/lib/arch-linux-config/network-backups
+WIFI_INTERFACE="auto"
 
 # shellcheck source=lib/log.sh
 source "$REPO_DIR/lib/log.sh"
+# shellcheck source=lib/network.sh
+source "$REPO_DIR/lib/network.sh"
+
+usage() {
+  printf '%s\n' "Usage: apply-iwd-wlan0.sh [--wifi-interface <auto|name>]"
+}
 
 require_root() {
   [[ $EUID -eq 0 ]] || die "Run this script with sudo"
@@ -38,9 +45,27 @@ save_enabled_state() {
 
 main() {
   local confirmation
+  local wifi_interface
+  local selection_status
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --wifi-interface)
+        [[ -n "${2-}" ]] || die "--wifi-interface requires a value"
+        WIFI_INTERFACE=$2
+        shift 2
+        ;;
+      --help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown argument: $1"
+        ;;
+    esac
+  done
 
   require_root
-  require_file "$REPO_DIR/network/NetworkManager/10-iwd-wlan0.conf"
   require_file "$REPO_DIR/network/iwd/main.conf"
   require_file "$REPO_DIR/network/systemd/host-network-online.service"
   require_file "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.service"
@@ -50,13 +75,25 @@ main() {
   command -v iwctl >/dev/null 2>&1 || die "Install iwd before migration"
   command -v impala >/dev/null 2>&1 || die "Install impala before migration"
   command -v resolvectl >/dev/null 2>&1 || die "systemd-resolved is required"
-  ip link show wlan0 >/dev/null 2>&1 || die "Wi-Fi interface wlan0 was not found"
+  if wifi_interface=$(select_wifi_interface "$WIFI_INTERFACE"); then
+    :
+  else
+    selection_status=$?
+    case "$selection_status" in
+      1) die "No Wi-Fi interface was detected" ;;
+      2) die "Multiple Wi-Fi interfaces were detected; pass --wifi-interface <name>" ;;
+      4) die "Wi-Fi interface $WIFI_INTERFACE is not wireless" ;;
+      *) die "Invalid Wi-Fi interface: $WIFI_INTERFACE" ;;
+    esac
+  fi
+  [[ "$wifi_interface" != "none" ]] || die "--wifi-interface none cannot migrate Wi-Fi"
+  wifi_interface_is_wireless "$wifi_interface" || die "Wi-Fi interface $wifi_interface was not found"
 
   if ip link show cscotun0 >/dev/null 2>&1 && ip link show cscotun0 | grep -q '<.*UP'; then
     die "Disconnect the Cisco VPN before migrating Wi-Fi"
   fi
 
-  log_warn "This will disconnect NetworkManager from wlan0 and hand it to IWD/Impala."
+  log_warn "This will disconnect NetworkManager from $wifi_interface and hand it to IWD/Impala."
   log_warn "Keep this terminal open and have your Wi-Fi passphrase available."
   printf 'Type MIGRATE to continue: '
   read -r confirmation
@@ -79,7 +116,7 @@ main() {
   save_enabled_state archcfg-reset-resolved-if-stub.path
 
   log_info "Installing IWD network configuration"
-  install -Dm644 "$REPO_DIR/network/NetworkManager/10-iwd-wlan0.conf" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
+  write_iwd_networkmanager_config "$wifi_interface" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf || die "Could not write NetworkManager IWD configuration"
   install -Dm644 "$REPO_DIR/network/iwd/main.conf" /etc/iwd/main.conf
   install -Dm644 "$REPO_DIR/network/systemd/host-network-online.service" /etc/systemd/system/host-network-online.service
   install -Dm644 "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.service" /etc/systemd/system/archcfg-reset-resolved-if-stub.service
@@ -102,7 +139,7 @@ main() {
   systemctl is-active --quiet NetworkManager.service || die "NetworkManager did not restart"
   systemctl is-active --quiet iwd.service || die "IWD did not start"
 
-  log_info "IWD now owns wlan0. Connect using Impala."
+  log_info "IWD now owns $wifi_interface. Connect using Impala."
   log_info "If connectivity fails, run: sudo $REPO_DIR/scripts/rollback-iwd-wlan0.sh --backup $BACKUP_DIR"
 }
 

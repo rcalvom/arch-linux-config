@@ -18,6 +18,12 @@ report() {
 compare_file() {
   local source=$1
   local destination=$2
+  local expected_mode=${3:-}
+  local actual_mode
+
+  if [[ -n "$expected_mode" ]]; then
+    printf -v expected_mode '%o' "$((8#$expected_mode))"
+  fi
 
   if [[ ! -f "$source" ]]; then
     report ERROR "missing source: $source"
@@ -25,20 +31,32 @@ compare_file() {
     return
   fi
 
-  if [[ ! -e "$destination" ]]; then
+  if [[ ! -e "$destination" && ! -L "$destination" ]]; then
     report MISSING "$destination"
     ((failures += 1))
     return
   fi
 
-  if cmp -s "$source" "$destination"; then
+  if [[ ! -f "$destination" || -L "$destination" ]]; then
+    report TYPE "$destination is not a regular file"
+    ((failures += 1))
     return
   fi
 
-  report DIFFERENT "$destination"
-  ((failures += 1))
-  if "$show_diff"; then
-    diff -u --label "$source" --label "$destination" "$source" "$destination" || true
+  if ! cmp -s "$source" "$destination"; then
+    report DIFFERENT "$destination"
+    ((failures += 1))
+    if "$show_diff"; then
+      diff -u --label "$source" --label "$destination" "$source" "$destination" || true
+    fi
+  fi
+
+  if [[ -n "$expected_mode" ]]; then
+    actual_mode=$(stat -c '%a' "$destination")
+    if [[ "$actual_mode" != "$expected_mode" ]]; then
+      report MODE "$destination has mode $actual_mode; expected $expected_mode"
+      ((failures += 1))
+    fi
   fi
 }
 
@@ -78,6 +96,7 @@ is_ignored_extra() {
 compare_tree() {
   local source_root=$1
   local destination_root=$2
+  local expected_mode=${3:-}
   local file relative destination
 
   [[ -d "$source_root" ]] || {
@@ -95,13 +114,13 @@ compare_tree() {
 
   while IFS= read -r -d '' file; do
     relative=${file#"$source_root"/}
-    [[ "$relative" == "files.conf" ]] && continue
-    compare_file "$file" "$destination_root/$relative"
+    [[ "${relative##*/}" == "files.conf" ]] && continue
+    compare_file "$file" "$destination_root/$relative" "$expected_mode"
   done < <(find "$source_root" -type f -print0)
 
   while IFS= read -r -d '' file; do
     relative=${file#"$destination_root"/}
-    [[ "$relative" == "files.conf" || -f "$source_root/$relative" ]] && continue
+    [[ "${relative##*/}" == "files.conf" || -f "$source_root/$relative" ]] && continue
     is_ignored_extra "$destination_root" "$relative" && continue
     report WARN "extra local file: $file"
     ((warnings += 1))
@@ -118,10 +137,10 @@ check_manifest() {
 
     case "$kind" in
       user_file)
-        compare_file "$package_dir/$source" "$home_dir/$destination"
+        compare_file "$package_dir/$source" "$home_dir/$destination" "$mode"
         ;;
       user_tree)
-        compare_tree "$package_dir/$source" "$home_dir/$destination"
+        compare_tree "$package_dir/$source" "$home_dir/$destination" "$mode"
         ;;
       root_file | root_tree)
         ;;
@@ -168,33 +187,51 @@ for manifest in "$repo_dir"/packages/*/files.conf; do
   check_manifest "$manifest"
 done
 
-while IFS='|' read -r source destination; do
-  compare_file "$repo_dir/$source" "$home_dir/$destination"
+while IFS='|' read -r source destination mode; do
+  compare_file "$repo_dir/$source" "$home_dir/$destination" "$mode"
 done <<'EOF'
-wayland/hypr/hyprland.lua|.config/hypr/hyprland.lua
-wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf
-wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf
-wayland/hypr/hyprlock.conf|.config/hypr/hyprlock.conf
-wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf
-wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png
-wayland/waybar/config.jsonc|.config/waybar/config.jsonc
-wayland/waybar/style.css|.config/waybar/style.css
-wayland/rofi/config.rasi|.config/rofi/config.rasi
-wayland/rofi/share-picker.rasi|.config/rofi/share-picker.rasi
-wayland/mako/config|.config/mako/config
-wayland/fontconfig/conf.d/99-ubuntu-fallback.conf|.config/fontconfig/conf.d/99-ubuntu-fallback.conf
+wayland/hypr/hyprland.lua|.config/hypr/hyprland.lua|0644
+wayland/hypr/xdph.conf|.config/hypr/xdph.conf|0644
+wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf|0644
+wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf|0644
+wayland/hypr/hyprlock.conf|.config/hypr/hyprlock.conf|0644
+wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf|0644
+wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png|0644
+wayland/waybar/config.jsonc|.config/waybar/config.jsonc|0644
+wayland/waybar/style.css|.config/waybar/style.css|0644
+wayland/rofi/config.rasi|.config/rofi/config.rasi|0644
+wayland/rofi/share-picker.rasi|.config/rofi/share-picker.rasi|0644
+wayland/mako/config|.config/mako/config|0644
+wayland/fontconfig/conf.d/99-ubuntu-fallback.conf|.config/fontconfig/conf.d/99-ubuntu-fallback.conf|0644
 EOF
 
 compare_tree "$repo_dir/wayland/rofi/share-picker-icons" "$home_dir/.config/rofi/share-picker-icons"
 
 for source in "$repo_dir"/wayland/bin/*; do
   [[ -f "$source" ]] || continue
-  compare_file "$source" "$home_dir/.local/bin/${source##*/}"
+  compare_file "$source" "$home_dir/.local/bin/${source##*/}" 0755
 done
 
 for source in "$repo_dir"/wayland/systemd/user/*; do
   [[ -f "$source" ]] || continue
-  compare_file "$source" "$home_dir/.config/systemd/user/${source##*/}"
+  compare_file "$source" "$home_dir/.config/systemd/user/${source##*/}" 0644
+done
+
+compare_file "$repo_dir/wayland/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" "$home_dir/.config/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" 0644
+
+for timer in hyprsunset-day.timer hyprsunset-night.timer; do
+  destination="$home_dir/.config/systemd/user/timers.target.wants/$timer"
+  expected="$home_dir/.config/systemd/user/$timer"
+  if [[ ! -e "$destination" && ! -L "$destination" ]]; then
+    report MISSING "$destination"
+    ((failures += 1))
+  elif [[ ! -L "$destination" ]]; then
+    report TYPE "$destination is not a symbolic link"
+    ((failures += 1))
+  elif [[ $(readlink -f -- "$destination") != "$expected" ]]; then
+    report DIFFERENT "$destination"
+    ((failures += 1))
+  fi
 done
 
 # Desktop MIME handlers are expanded by installed applications and are local state.

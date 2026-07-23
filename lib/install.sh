@@ -39,6 +39,7 @@ copy_repo_to_target() {
   rm -rf "$host_dest"
   install -dm755 "$target/opt"
   cp -a "$source_dir" "$host_dest"
+  chown -R root:root "$host_dest"
 }
 
 write_user_password_file() {
@@ -91,6 +92,7 @@ run_postinstall() {
   local username=$5
   local timezone=$6
   local enable_aur=$7
+  local wifi_interface=$8
   local postinstall_args=(
     "$repo_dest/postinstall.sh"
     --profile "$profile"
@@ -98,6 +100,7 @@ run_postinstall() {
     --username "$username"
     --timezone "$timezone"
     --repo-dir "$repo_dest"
+    --wifi-interface "$wifi_interface"
   )
 
   if [[ "$enable_aur" -eq 1 ]]; then

@@ -11,6 +11,8 @@ source "$SCRIPT_DIR/lib/log.sh"
 source "$SCRIPT_DIR/lib/args.sh"
 # shellcheck source=lib/validate.sh
 source "$SCRIPT_DIR/lib/validate.sh"
+# shellcheck source=lib/network.sh
+source "$SCRIPT_DIR/lib/network.sh"
 # shellcheck source=lib/disk.sh
 source "$SCRIPT_DIR/lib/disk.sh"
 # shellcheck source=scripts/packages.sh
@@ -37,6 +39,7 @@ trap cleanup_on_error ERR
 main() {
   require_root
   validate_profile "$PROFILE"
+  wifi_interface_name_is_valid "$WIFI_INTERFACE" || [[ "$WIFI_INTERFACE" == "auto" || "$WIFI_INTERFACE" == "none" ]] || die "Invalid Wi-Fi interface: $WIFI_INTERFACE"
   validate_uefi
   validate_internet
   refresh_mirrors_if_available
@@ -62,7 +65,7 @@ main() {
   generate_fstab "$TARGET"
   copy_repo_to_target "$SCRIPT_DIR" "$TARGET" "$REPO_DEST"
   write_user_password_file "$TARGET" "$INSTALL_USERNAME"
-  run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE" "$ENABLE_AUR"
+  run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE" "$ENABLE_AUR" "$WIFI_INTERFACE"
 
   if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]]; then
     log_info "Unmounting $TARGET"

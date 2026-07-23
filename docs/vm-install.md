@@ -61,6 +61,7 @@ Current limitations:
 
 - UEFI only.
 - Simple layout: `/boot` EFI partition plus ext4 root.
-- AUR packages are skipped unless `--aur` is explicitly passed.
+- AUR packages are skipped unless `--aur` is explicitly passed. Each package revision and its official dependencies are declared in `packages/aur.txt` and `packages/aur-deps.txt`; the installer builds them without granting passwordless root access to the build user.
+- VirtualBox normally has no Wi-Fi radio, so the default `--wifi-interface auto` leaves NetworkManager ownership unchanged.
 - Hyprland/Wayland is installed with `greetd` + `tuigreet`; Qtile is not installed by this path.
 - The `virtualbox` profile allows software rendering for Wayland because VirtualBox often boots without usable 3D/EGL acceleration.

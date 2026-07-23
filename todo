@@ -8,7 +8,6 @@ Usar tuigreet para el greeter, me interesa un greeter en la terminal
 - (later) QUiero configurar hyrland muy pero muy minimalista, lo cual require quitar las animaciones de tracisiones ya que mi ideologia para eso es muy "eso quita tiempo, quiero algo inmediato, full enfocado a la productividad"
 - Quiero agregarle openclaw y opencode, intentaré instalarlos usando pacman, se que no son C y Rust pero son tecnologias que uso mucho y enfocadas a la productividad que me gusta tanto
 - Para openclaw me gustaria guardar en su respectiva carpeta la confuguracion de los sandboxes con docker asi como lo tengo en este momento, eso es muy importante para mi
-- Descubri spotatui como visor de audio, parece que se necesita premium de spotify, es algo dificil de usar por lo que require muchos atajos del teclado pero me gusta que sea tui para reproducir musica! osea super coool
 - Con Control e tengo en Qtile un gestion de explorador de archivos, me gustaría dejarlo al estilo uqe las otras cosas de este projecto personal
 - Para instalar steam tuve que hacer lo siguiente,
 -- Activar multilib en /etc/pacman.conf

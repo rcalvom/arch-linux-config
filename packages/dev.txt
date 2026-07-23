@@ -5,6 +5,11 @@ wget
 unzip
 neovim
 btop
+fastfetch
+lazygit
+docker
+docker-compose
+lazydocker
 python-pip
 gcc
 jdk-openjdk

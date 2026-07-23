@@ -101,7 +101,9 @@ install_live_configs() {
   local hypr_config="$LIVE_HOME/.config/hypr/hyprland.lua"
 
   install_live_file "$REPO_DIR/wayland/hypr/hyprland.lua" "$hypr_config" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/xdph.conf" "$LIVE_HOME/.config/hypr/xdph.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprtoolkit.conf" "$LIVE_HOME/.config/hypr/hyprtoolkit.conf" 0644
+  install_live_file "$REPO_DIR/wayland/hypr/hypridle.conf" "$LIVE_HOME/.config/hypr/hypridle.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprlock.conf" "$LIVE_HOME/.config/hypr/hyprlock.conf" 0644
   install_live_file "$REPO_DIR/wayland/hypr/hyprpaper.conf" "$LIVE_HOME/.config/hypr/hyprpaper.conf" 0644
   install_live_file "$REPO_DIR/wayland/wallpapers/wallpaper.png" "$LIVE_HOME/Pictures/wallpaper2.png" 0644
@@ -109,8 +111,10 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/waybar/style.css" "$LIVE_HOME/.config/waybar/style.css" 0644
   install_live_file "$REPO_DIR/wayland/rofi/config.rasi" "$LIVE_HOME/.config/rofi/config.rasi" 0644
   install_live_file "$REPO_DIR/wayland/rofi/share-picker.rasi" "$LIVE_HOME/.config/rofi/share-picker.rasi" 0644
+  install_live_tree "$REPO_DIR/wayland/rofi/share-picker-icons" "$LIVE_HOME/.config/rofi/share-picker-icons" 0644
   install_live_file "$REPO_DIR/wayland/mimeapps.list" "$LIVE_HOME/.config/mimeapps.list" 0644
   install_live_file "$REPO_DIR/wayland/mako/config" "$LIVE_HOME/.config/mako/config" 0644
+  install_live_file "$REPO_DIR/wayland/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" "$LIVE_HOME/.config/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" 0644
   install_live_file "$REPO_DIR/wayland/fontconfig/conf.d/99-ubuntu-fallback.conf" "$LIVE_HOME/.config/fontconfig/conf.d/99-ubuntu-fallback.conf" 0644
   install_live_package_configs
   initialize_live_browser_profile "$LIVE_HOME/.local/bin/archcfg-firefox"
@@ -120,6 +124,7 @@ install_live_configs() {
   install_live_file "$REPO_DIR/wayland/bin/hypr-audio-selector" "$LIVE_HOME/.local/bin/hypr-audio-selector" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-display-layout" "$LIVE_HOME/.local/bin/hypr-display-layout" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-display-menu" "$LIVE_HOME/.local/bin/hypr-display-menu" 0755
+  install_live_file "$REPO_DIR/wayland/bin/hypr-session-menu" "$LIVE_HOME/.local/bin/hypr-session-menu" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-layout-cycle" "$LIVE_HOME/.local/bin/hypr-layout-cycle" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-layout-name" "$LIVE_HOME/.local/bin/hypr-layout-name" 0755
   install_live_file "$REPO_DIR/wayland/bin/hypr-workspace-swap" "$LIVE_HOME/.local/bin/hypr-workspace-swap" 0755
@@ -131,6 +136,9 @@ install_live_configs() {
   for unit in hyprsunset-day.service hyprsunset-day.timer hyprsunset-night.service hyprsunset-night.timer; do
     install_live_file "$REPO_DIR/wayland/systemd/user/$unit" "$LIVE_HOME/.config/systemd/user/$unit" 0644
   done
+  install -dm755 "$LIVE_HOME/.config/systemd/user/timers.target.wants"
+  ln -sfn ../hyprsunset-day.timer "$LIVE_HOME/.config/systemd/user/timers.target.wants/hyprsunset-day.timer"
+  ln -sfn ../hyprsunset-night.timer "$LIVE_HOME/.config/systemd/user/timers.target.wants/hyprsunset-night.timer"
 
   if [[ -f "$hypr_config" ]] && ! grep -q 'Arch Config Live terminal' "$hypr_config"; then
     cat >> "$hypr_config" <<'HYPRLIVE'
