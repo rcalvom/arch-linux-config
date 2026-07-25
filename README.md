@@ -50,6 +50,7 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
+Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
 
 ---
 

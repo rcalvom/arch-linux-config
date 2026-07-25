@@ -255,7 +255,7 @@ Snapshot:
 wayland/hypr/hyprlock.conf
 ```
 
-Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained.
+Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained. The lock screen shows the live fingerprint prompt below the field and uses Hyprlock's unified `$FAIL` value for both password and fingerprint failures; the red failure state remains visible for four seconds.
 
 Bound in Hyprland as:
 
