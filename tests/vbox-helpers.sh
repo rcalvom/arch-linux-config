@@ -86,9 +86,10 @@ assert_status 0 vbox_managed_vm_name_is_valid archcfg-e2e-test-20260724t010203z-
 assert_status 1 vbox_managed_vm_name_is_valid 'Testing Live Iso'
 
 manifest="$TEST_ROOT/manifest"
-printf 'schema=1\nrun_id=20260724t010203z-1a2b\niso=/tmp/archcfg.iso\n' > "$manifest"
+printf 'schema=1\nrun_id=20260724t010203z-1a2b\niso=/tmp/archcfg.iso\niso_sha256=checksum-value\n' > "$manifest"
 assert_equal 20260724t010203z-1a2b "$(vbox_manifest_value "$manifest" run_id)"
 assert_equal /tmp/archcfg.iso "$(vbox_manifest_value "$manifest" iso)"
+assert_equal checksum-value "$(vbox_manifest_value "$manifest" iso_sha256)"
 
 printf 'run_id=duplicate\n' >> "$manifest"
 assert_status 1 vbox_manifest_value "$manifest" run_id

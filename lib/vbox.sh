@@ -71,7 +71,7 @@ vbox_manifest_value() {
   local result=
   local matches=0
 
-  [[ "$key" =~ ^[a-z_]+$ ]] || return 2
+  [[ "$key" =~ ^[a-z0-9_]+$ ]] || return 2
   [[ -f "$manifest" ]] || return 1
 
   while IFS='=' read -r name value || [[ -n "$name" ]]; do
