@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_DEST="/opt/arch-linux-config"
 MOUNTED_BY_INSTALLER=0
+PASSWORD_FILE_VALIDATED=0
+PASSWORD_FILE_STAGED=0
 
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
@@ -22,11 +24,20 @@ source "$SCRIPT_DIR/lib/install.sh"
 
 parse_args "$@"
 
-cleanup_on_error() {
+cleanup() {
   local exit_code=$?
 
+  trap - EXIT HUP INT TERM
   set +e
-  if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]] && mountpoint -q "$TARGET"; then
+  if [[ "$PASSWORD_FILE_VALIDATED" -eq 1 ]]; then
+    rm -f -- "$USER_PASSWORD_FILE"
+  fi
+
+  if [[ "$PASSWORD_FILE_STAGED" -eq 1 ]]; then
+    rm -f -- "$TARGET/root/.archcfg-user-password"
+  fi
+
+  if [[ "$exit_code" -ne 0 && "$MOUNTED_BY_INSTALLER" -eq 1 ]] && mountpoint -q "$TARGET"; then
     log_warn "Installation failed; unmounting $TARGET"
     umount -R "$TARGET"
   fi
@@ -34,12 +45,18 @@ cleanup_on_error() {
   exit "$exit_code"
 }
 
-trap cleanup_on_error ERR
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 main() {
   require_root
   validate_profile "$PROFILE"
   wifi_interface_name_is_valid "$WIFI_INTERFACE" || [[ "$WIFI_INTERFACE" == "auto" || "$WIFI_INTERFACE" == "none" ]] || die "Invalid Wi-Fi interface: $WIFI_INTERFACE"
+  if [[ -n "$USER_PASSWORD_FILE" ]]; then
+    validate_user_password_file "$USER_PASSWORD_FILE"
+    PASSWORD_FILE_VALIDATED=1
+  fi
   validate_uefi
   validate_internet
   refresh_mirrors_if_available
@@ -64,12 +81,15 @@ main() {
   install_base_system "$TARGET" "$SCRIPT_DIR"
   generate_fstab "$TARGET"
   copy_repo_to_target "$SCRIPT_DIR" "$TARGET" "$REPO_DEST"
-  write_user_password_file "$TARGET" "$INSTALL_USERNAME"
+  write_user_password_file "$TARGET" "$INSTALL_USERNAME" "$USER_PASSWORD_FILE"
   run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE" "$ENABLE_AUR" "$WIFI_INTERFACE"
+  PASSWORD_FILE_STAGED=0
 
   if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]]; then
     log_info "Unmounting $TARGET"
     umount -R "$TARGET"
+    MOUNTED_BY_INSTALLER=0
+    PASSWORD_FILE_STAGED=0
   fi
 
   log_info "Installation finished"

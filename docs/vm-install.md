@@ -31,6 +31,10 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
 
 The installer prints `lsblk` before destructive operations and requires typing `ERASE` unless `--yes` is passed.
 
+For a fully automated disposable ISO build, install, reboot, and configuration
+verification loop, use [VirtualBox ISO Automation](vbox-automation.md). The
+runner creates its own VMs and never modifies an existing VM.
+
 ## Retry After A Failed Run
 
 If a package download fails, rerun the installer. VM mode now unmounts previous mounts from the selected disk before wiping it again.

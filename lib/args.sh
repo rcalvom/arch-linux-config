@@ -11,6 +11,7 @@ WIFI_INTERFACE="auto"
 INSTALL_HOSTNAME="archlinux"
 INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
+USER_PASSWORD_FILE=""
 
 usage() {
   cat <<'USAGE'
@@ -30,6 +31,9 @@ Options:
   --hostname <name>     Hostname. Default: archlinux.
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
+  --user-password-file <path>
+                        One-use initial-user password file for automated VM tests.
+                        Only valid with --vm --yes.
   --help                Print this help.
 
 Examples:
@@ -98,6 +102,11 @@ parse_args() {
         TIMEZONE=$2
         shift 2
         ;;
+      --user-password-file)
+        require_arg_value "$1" "${2-}"
+        USER_PASSWORD_FILE=$2
+        shift 2
+        ;;
       --help)
         usage
         exit 0
@@ -118,5 +127,9 @@ parse_args() {
 
   if [[ "$VM_MODE" -eq 0 && -n "$DISK" ]]; then
     die "--disk is only valid with --vm"
+  fi
+
+  if [[ -n "$USER_PASSWORD_FILE" && ( "$VM_MODE" -ne 1 || "$YES" -ne 1 ) ]]; then
+    die "--user-password-file is only valid with --vm --yes"
   fi
 }

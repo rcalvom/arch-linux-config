@@ -29,6 +29,34 @@ generate_fstab() {
   genfstab -U "$target" > "$target/etc/fstab"
 }
 
+validate_user_password_file() {
+  local password_file=$1
+  local runtime_dir=/run/archcfg-e2e
+  local owner
+  local group
+  local mode
+  local size
+  local password_lines=()
+
+  [[ -n "$password_file" ]] || return 0
+  [[ "${password_file%/*}" == "$runtime_dir" ]] || die "--user-password-file must be directly under $runtime_dir"
+  [[ -d "$runtime_dir" && ! -L "$runtime_dir" ]] || die "Password runtime directory must be a regular directory: $runtime_dir"
+  [[ -f "$password_file" && ! -L "$password_file" ]] || die "Password file must be a regular file: $password_file"
+
+  IFS=: read -r owner group mode <<<"$(stat -c '%u:%g:%a' -- "$runtime_dir")"
+  [[ "$owner" == 0 && "$group" == 0 && "$mode" == 700 ]] || die "Password runtime directory must be root:root mode 0700"
+
+  IFS=: read -r owner group mode <<<"$(stat -c '%u:%g:%a' -- "$password_file")"
+  [[ "$owner" == 0 && "$group" == 0 && "$mode" == 600 ]] || die "Password file must be root:root mode 0600"
+
+  size=$(stat -c '%s' -- "$password_file")
+  [[ "$size" =~ ^[0-9]+$ && "$size" -gt 0 && "$size" -le 4096 ]] || die "Password file must contain between 1 and 4096 bytes"
+
+  mapfile -t password_lines < "$password_file"
+  [[ "${#password_lines[@]}" -eq 1 && -n "${password_lines[0]}" ]] || die "Password file must contain exactly one nonempty line"
+  [[ "${password_lines[0]}" != *:* && "${password_lines[0]}" != *$'\r'* ]] || die "Password file must not contain colons or carriage returns"
+}
+
 copy_repo_to_target() {
   local source_dir=$1
   local target=$2
@@ -45,10 +73,24 @@ copy_repo_to_target() {
 write_user_password_file() {
   local target=$1
   local username=$2
+  local source_password_file=${3:-}
   local password
   local password_confirm
   local password_file="$target/root/.archcfg-user-password"
-  local old_umask
+
+  if [[ -n "$source_password_file" ]]; then
+    if ! IFS= read -r password < "$source_password_file"; then
+      [[ -n "$password" ]] || die "Could not read the initial-user password"
+    fi
+
+    install -dm700 "$target/root"
+    install -m600 /dev/null "$password_file"
+    PASSWORD_FILE_STAGED=1
+    printf '%s:%s\n' "$username" "$password" > "$password_file"
+    unset password
+    rm -f -- "$source_password_file"
+    return 0
+  fi
 
   if [[ ! -t 0 ]]; then
     log_warn "No interactive terminal detected; password for $username will not be set"
@@ -77,10 +119,9 @@ write_user_password_file() {
   done
 
   install -dm700 "$target/root"
-  old_umask=$(umask)
-  umask 077
+  install -m600 /dev/null "$password_file"
+  PASSWORD_FILE_STAGED=1
   printf '%s:%s\n' "$username" "$password" > "$password_file"
-  umask "$old_umask"
   unset password password_confirm
 }
 

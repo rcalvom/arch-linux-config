@@ -177,6 +177,7 @@ prepare_profile() {
   enable_system_service_in_profile "$profile_copy" NetworkManager.service
   enable_system_service_in_profile "$profile_copy" bluetooth.service
   enable_system_service_in_profile "$profile_copy" greetd.service
+  enable_system_service_in_profile "$profile_copy" vboxservice.service
   disable_system_service_in_profile "$profile_copy" getty@tty1.service
 }
 

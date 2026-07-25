@@ -32,6 +32,11 @@ The build script copies the committed Git tree into the ISO and applies the repo
 
 All live boot entries include `fbcon=nodefer` so the framebuffer console is bound before the TUI greeter draws.
 
+For a disposable regular-user VirtualBox build and installation loop, see
+[VirtualBox ISO Automation](vbox-automation.md). It builds from committed
+`HEAD` inside a builder VM instead of using the root-owned local `out/` and
+`work/` directories.
+
 ## Test In VirtualBox
 
 Use a UEFI VM:
@@ -55,6 +60,9 @@ archcfg-install --vm --disk /dev/sda --profile virtualbox --yes
 ```
 
 The installer still prints `lsblk` before destructive operations. Without `--yes`, it requires typing `ERASE`.
+
+`--user-password-file` is reserved for the VirtualBox automation runner. It
+requires `--vm --yes` and a root-owned one-use file under `/run/archcfg-e2e`.
 
 To skip the automatic Wayland session for troubleshooting, add this kernel argument from the boot menu:
 

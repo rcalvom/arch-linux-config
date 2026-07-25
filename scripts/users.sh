@@ -44,8 +44,11 @@ configure_initial_user() {
   chmod 0440 /etc/sudoers.d/10-wheel
 
   if [[ -f "$password_file" ]]; then
-    chpasswd < "$password_file"
-    rm -f "$password_file"
+    if ! chpasswd < "$password_file"; then
+      rm -f -- "$password_file"
+      die "Could not set the initial password for $username"
+    fi
+    rm -f -- "$password_file"
   else
     log_warn "No password file found for $username; set it with passwd $username after boot"
   fi

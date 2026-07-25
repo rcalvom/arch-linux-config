@@ -1,7 +1,7 @@
 # Arch Linux Configuration Repository
 
 **Author:** Ricardo Andres Calvo Mendez  
-**Last Updated:** 2026-07-17
+**Last Updated:** 2026-07-25
 
 ---
 
@@ -51,6 +51,7 @@ The repository is organized by functional domains (packages, bootloader, desktop
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
 Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
+Disposable ISO build and full-install validation in VirtualBox are documented in [docs/vbox-automation.md](docs/vbox-automation.md).
 
 ---
 
