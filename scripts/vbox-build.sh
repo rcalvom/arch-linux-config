@@ -109,6 +109,7 @@ prepare_builder_disk() {
       sudo mount /dev/sda1 /mnt/archcfg-builder
       sudo chown live:live /mnt/archcfg-builder
       sudo install -dm755 /mnt/archcfg-builder/root
+      sudo systemctl start --wait pacman-init.service
       sudo reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
       grep -q "^Server" /etc/pacman.d/mirrorlist
       sudo install -dm700 /mnt/archcfg-builder/root/etc/pacman.d/gnupg
