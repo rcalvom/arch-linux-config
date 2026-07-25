@@ -61,6 +61,7 @@ main() {
   validate_internet
   refresh_mirrors_if_available
   require_command pacstrap
+  require_command pacman-key
   require_command genfstab
   require_command arch-chroot
 

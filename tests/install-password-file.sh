@@ -74,7 +74,39 @@ test_password_staging() {
   [[ "$(<"$staged_file")" == 'archcfg-e2e:temporary-password' ]] || fail "staged password record is incorrect"
 }
 
+test_base_system_keyring() {
+  local target="$TEST_ROOT/base-system"
+  local calls="$TEST_ROOT/base-system-calls"
+  local keyring_dir="$target/etc/pacman.d/gnupg"
+  local call_lines=()
+
+  load_packages_from_files() {
+    local -n package_array=$1
+
+    package_array=(base)
+  }
+
+  pacman-key() {
+    printf '%s\n' "$*" >> "$calls"
+  }
+
+  pacstrap() {
+    printf '%s\n' "$*" >> "$calls"
+  }
+
+  install_base_system "$target" "$REPO_DIR"
+  mapfile -t call_lines < "$calls"
+
+  [[ "${call_lines[0]}" == "--gpgdir $keyring_dir --init" ]] || fail "keyring initialization did not run first"
+  [[ "${call_lines[1]}" == "--gpgdir $keyring_dir --populate" ]] || fail "keyring population did not run second"
+  [[ "${call_lines[2]}" == "-K $target base" ]] || fail "pacstrap invocation is incorrect"
+  [[ "$(stat -c '%a' "$keyring_dir")" == 700 ]] || fail "keyring directory mode is not 0700"
+
+  unset -f load_packages_from_files pacman-key pacstrap
+}
+
 assert_status 0 assert_valid_automated_args
 assert_status 1 assert_invalid_automated_args --vm --disk /dev/sda --user-password-file /run/archcfg-e2e/user-password
 assert_status 1 assert_invalid_automated_args --yes --user-password-file /run/archcfg-e2e/user-password
 test_password_staging
+test_base_system_keyring

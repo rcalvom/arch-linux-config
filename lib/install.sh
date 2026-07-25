@@ -16,9 +16,13 @@ install_base_system() {
   local target=$1
   local repo_dir=$2
   local packages=()
+  local keyring_dir="$target/etc/pacman.d/gnupg"
 
   log_info "Installing base system"
   load_packages_from_files packages "$repo_dir/packages/base.txt"
+  install -dm700 "$keyring_dir"
+  pacman-key --gpgdir "$keyring_dir" --init
+  pacman-key --gpgdir "$keyring_dir" --populate
   pacstrap -K "$target" "${packages[@]}"
 }
 
