@@ -202,9 +202,9 @@ main() {
   vbox_wait_for_guest_network "$VM_NAME" live "$LIVE_PASSWORD_FILE" 180 || vbox_die "Live guest network did not become ready"
 
   prepare_builder_disk
-  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$SOURCE_ARCHIVE" /mnt/archcfg-builder
+  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$SOURCE_ARCHIVE" /mnt/archcfg-builder/source.tar
   build_iso_in_guest
-  vbox_guest_copy_from "$VM_NAME" live "$LIVE_PASSWORD_FILE" /mnt/archcfg-builder/root/var/lib/archcfg-builder/out "$ARTIFACT_DIR"
+  vbox_guest_copy_from "$VM_NAME" live "$LIVE_PASSWORD_FILE" /mnt/archcfg-builder/root/var/lib/archcfg-builder/out "$ARTIFACT_DIR/out"
 
   shopt -s globstar nullglob
   iso_files=("$ARTIFACT_DIR"/**/*.iso)

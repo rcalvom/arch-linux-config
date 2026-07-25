@@ -87,3 +87,11 @@ export VBOX_MOCK_FAILURE=storageattach
 assert_status 1 vbox_create_efi_vm archcfg-e2e-build-20260724t010203z-1a2b 2048 2 1024 "$bootstrap_iso"
 [[ "$(<"$VBOX_MOCK_LOG")" == *'closemedium disk '* ]] || fail "unattached VDI was not removed during rollback"
 unset VBOX_MOCK_FAILURE
+
+: > "$VBOX_MOCK_LOG"
+vbox_guest_copy_to test-vm test-user /tmp/password-file "$bootstrap_iso" /guest/source.tar
+[[ "$(<"$VBOX_MOCK_LOG")" == *'--target-directory=/guest/source.tar'* ]] || fail "copy-to did not use an explicit guest file path"
+
+: > "$VBOX_MOCK_LOG"
+vbox_guest_copy_from test-vm test-user /tmp/password-file /guest/out "$TEST_ROOT/artifacts/out"
+[[ "$(<"$VBOX_MOCK_LOG")" == *"--target-directory=$TEST_ROOT/artifacts/out"* ]] || fail "copy-from did not use an explicit host path"

@@ -273,12 +273,12 @@ vbox_guest_copy_to() {
   local username=$2
   local password_file=$3
   local source=$4
-  local target_directory=$5
+  local target_path=$5
 
   VBoxManage guestcontrol "$vm" copyto \
     --username "$username" \
     --passwordfile "$password_file" \
-    --target-directory="$target_directory" \
+    --target-directory="$target_path" \
     "$source"
 }
 
@@ -287,14 +287,14 @@ vbox_guest_copy_from() {
   local username=$2
   local password_file=$3
   local source=$4
-  local target_directory=$5
+  local target_path=$5
 
-  install -dm700 "$target_directory"
+  install -dm700 "$(dirname -- "$target_path")"
   VBoxManage guestcontrol "$vm" copyfrom \
     --username "$username" \
     --passwordfile "$password_file" \
     --recursive \
-    --target-directory="$target_directory" \
+    --target-directory="$target_path" \
     "$source"
 }
 

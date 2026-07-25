@@ -230,7 +230,7 @@ main() {
   vbox_start_vm "$VM_NAME"
   vbox_wait_for_guest "$VM_NAME" live "$LIVE_PASSWORD_FILE" 300 || vbox_die "Live Guest Control did not become ready"
   vbox_wait_for_guest_network "$VM_NAME" live "$LIVE_PASSWORD_FILE" 180 || vbox_die "Live guest network did not become ready"
-  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$TARGET_PASSWORD_FILE" /home/live
+  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$TARGET_PASSWORD_FILE" /home/live/target-password
   run_install
 
   vbox_power_off_vm "$VM_NAME"
