@@ -8,6 +8,8 @@ OUT_DIR="$REPO_ROOT/out"
 WORK_DIR="$REPO_ROOT/work/archiso"
 CLEAN=0
 FAST=0
+FAST_JOBS=""
+TEMP_DIR=""
 
 usage() {
   cat <<'USAGE'
@@ -18,6 +20,7 @@ Options:
   --work-dir <path>     mkarchiso work directory. Default: ./work/archiso.
   --clean               Remove work/output directories before building.
   --fast                Use faster rootfs compression for local test builds.
+  --jobs <count>        Limit --fast compression workers. Default: detected CPUs.
   --help                Print this help.
 
 The ISO includes the committed repository tree at /opt/arch-linux-config and
@@ -70,6 +73,11 @@ parse_args() {
         FAST=1
         shift
         ;;
+      --jobs)
+        require_value "$1" "${2-}"
+        FAST_JOBS=$2
+        shift 2
+        ;;
       --help)
         usage
         exit 0
@@ -79,12 +87,22 @@ parse_args() {
         ;;
     esac
   done
+
+  if [[ -n "$FAST_JOBS" && "$FAST" -ne 1 ]]; then
+    die "--jobs is only valid with --fast"
+  fi
+
+  if [[ -n "$FAST_JOBS" && ( ! "$FAST_JOBS" =~ ^[0-9]+$ || "$FAST_JOBS" -lt 1 ) ]]; then
+    die "--jobs must be a positive integer"
+  fi
 }
 
 detect_worker_count() {
   local workers
 
-  if command -v nproc >/dev/null 2>&1; then
+  if [[ -n "$FAST_JOBS" ]]; then
+    workers=$FAST_JOBS
+  elif command -v nproc >/dev/null 2>&1; then
     workers=$(nproc 2>/dev/null || printf '1')
   else
     workers=$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '1')
@@ -95,6 +113,12 @@ detect_worker_count() {
   fi
 
   printf '%s\n' "$workers"
+}
+
+cleanup_temp_dir() {
+  if [[ -n "$TEMP_DIR" ]]; then
+    rm -rf -- "$TEMP_DIR"
+  fi
 }
 
 apply_fast_build_options() {
@@ -182,7 +206,6 @@ prepare_profile() {
 }
 
 main() {
-  local temp_dir
   local profile_copy
 
   parse_args "$@"
@@ -192,9 +215,9 @@ main() {
   require_command git
   require_command tar
 
-  temp_dir=$(mktemp -d)
-  trap 'rm -rf "$temp_dir"' EXIT
-  profile_copy="$temp_dir/profile"
+  TEMP_DIR=$(mktemp -d)
+  trap cleanup_temp_dir EXIT
+  profile_copy="$TEMP_DIR/profile"
   install -dm755 "$profile_copy"
 
   if [[ "$CLEAN" -eq 1 ]]; then

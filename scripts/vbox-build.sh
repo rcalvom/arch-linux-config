@@ -109,6 +109,10 @@ prepare_builder_disk() {
       sudo mount /dev/sda1 /mnt/archcfg-builder
       sudo chown live:live /mnt/archcfg-builder
       sudo install -dm755 /mnt/archcfg-builder/root
+      sudo fallocate -l 4G /mnt/archcfg-builder/swapfile
+      sudo chmod 600 /mnt/archcfg-builder/swapfile
+      sudo mkswap /mnt/archcfg-builder/swapfile
+      sudo swapon /mnt/archcfg-builder/swapfile
       sudo pacman-key --init
       sudo pacman-key --populate
       sudo reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
@@ -127,6 +131,7 @@ build_iso_in_guest() {
       sudo install -dm755 /mnt/archcfg-builder/root/opt/archcfg-source
       sudo tar -xf /mnt/archcfg-builder/source.tar -C /mnt/archcfg-builder/root/opt/archcfg-source
       cleanup_builder_root() {
+        sudo swapoff /mnt/archcfg-builder/swapfile || true
         sudo umount /mnt/archcfg-builder/root || true
       }
       trap cleanup_builder_root EXIT
@@ -134,6 +139,7 @@ build_iso_in_guest() {
       sudo arch-chroot /mnt/archcfg-builder/root /usr/bin/bash /opt/archcfg-source/scripts/build-iso.sh \
         --clean \
         --fast \
+        --jobs 1 \
         --work-dir /var/lib/archcfg-builder/work \
         --out-dir /var/lib/archcfg-builder/out
       sudo chown -R live:live /mnt/archcfg-builder/root/var/lib/archcfg-builder/out

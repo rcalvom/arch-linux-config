@@ -25,6 +25,7 @@ sudo ./scripts/build-iso.sh --clean --fast
 ```
 
 Fast mode keeps the EROFS root filesystem but switches the temporary build profile to `zstd` compression and uses the detected CPU worker count. The ISO can be larger than the default build.
+Use `--fast --jobs 1` on memory-constrained builders to limit compression to one worker.
 
 The output is written to `out/`.
 

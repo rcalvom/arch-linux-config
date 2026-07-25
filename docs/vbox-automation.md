@@ -54,7 +54,8 @@ local test.
 ## What The Runner Does
 
 1. Creates a builder VM with EFI, VMSVGA, 128 MiB video memory, disabled 3D,
-   NAT, two vCPUs, 3 GiB RAM, and a 50 GiB dynamic VDI.
+   NAT, two vCPUs, 3 GiB RAM, a 50 GiB dynamic VDI, and a temporary 4 GiB
+   swapfile. ISO compression uses one worker to keep memory bounded.
 2. Uses Guest Control as `live` to install `archiso` inside that VM, build the
    committed source on its virtual disk, and copy out the ISO plus checksum
    manifest.
