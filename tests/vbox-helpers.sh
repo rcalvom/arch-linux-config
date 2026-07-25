@@ -54,6 +54,23 @@ printf '%s\n' \
   'esac' > "$MOCK_BIN/VBoxManage"
 chmod 755 "$MOCK_BIN/VBoxManage"
 
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'printf "ssh %s\n" "$*" >> "$VBOX_MOCK_LOG"' > "$MOCK_BIN/ssh"
+chmod 755 "$MOCK_BIN/ssh"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'printf "scp %s\n" "$*" >> "$VBOX_MOCK_LOG"' > "$MOCK_BIN/scp"
+chmod 755 "$MOCK_BIN/scp"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'exit 0' > "$MOCK_BIN/ss"
+chmod 755 "$MOCK_BIN/ss"
+
 export PATH="$MOCK_BIN:$PATH"
 export VBOX_MOCK_LOG
 export ARCHCFG_VBOX_STATE_ROOT="$TEST_ROOT/state"
@@ -89,9 +106,21 @@ assert_status 1 vbox_create_efi_vm archcfg-e2e-build-20260724t010203z-1a2b 2048 
 unset VBOX_MOCK_FAILURE
 
 : > "$VBOX_MOCK_LOG"
-vbox_guest_copy_to test-vm test-user /tmp/password-file "$bootstrap_iso" /guest/source.tar
-[[ "$(<"$VBOX_MOCK_LOG")" == *'--target-directory=/guest/source.tar'* ]] || fail "copy-to did not use an explicit guest file path"
+vbox_configure_nat_ssh test-vm 22222
+vbox_console_run test-vm 'echo bootstrap'
+[[ "$(<"$VBOX_MOCK_LOG")" == *'--natpf1 archcfg-ssh,tcp,127.0.0.1,22222,,22'* ]] || fail "NAT SSH forwarding was not configured"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputstring echo bootstrap'* ]] || fail "console bootstrap command was not sent"
 
 : > "$VBOX_MOCK_LOG"
-vbox_guest_copy_from test-vm test-user /tmp/password-file /guest/out "$TEST_ROOT/artifacts/out"
-[[ "$(<"$VBOX_MOCK_LOG")" == *"--target-directory=$TEST_ROOT/artifacts/out"* ]] || fail "copy-from did not use an explicit host path"
+vbox_ssh test-user /tmp/test-key 22222 true
+vbox_scp_to test-user /tmp/test-key 22222 "$bootstrap_iso" /guest/source.tar
+vbox_scp_from test-user /tmp/test-key 22222 /guest/out "$TEST_ROOT/artifacts/out"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'ssh -i /tmp/test-key -p 22222'* ]] || fail "SSH command was not configured"
+[[ "$(<"$VBOX_MOCK_LOG")" == *"scp -i /tmp/test-key -P 22222"* ]] || fail "SCP command was not configured"
+
+bootstrap_key="$TEST_ROOT/bootstrap-key"
+printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA archcfg-e2e\n' > "$bootstrap_key.pub"
+: > "$bootstrap_key"
+: > "$VBOX_MOCK_LOG"
+vbox_bootstrap_official_ssh test-vm "$bootstrap_key" 22222 1
+[[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputstring install -dm700 /root/.ssh'* ]] || fail "official ISO SSH bootstrap command was not sent"

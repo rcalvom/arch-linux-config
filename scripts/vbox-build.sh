@@ -17,10 +17,10 @@ usage() {
 Usage: scripts/vbox-build.sh --bootstrap-iso <path> [options]
 
 Builds the live ISO inside a disposable local VirtualBox VM. The bootstrap ISO
-must already provide VirtualBox Guest Control for the `live` user.
+must be an official Arch ISO with its automatic root console login.
 
 Options:
-  --bootstrap-iso <path>  Existing Archcfg live ISO used only as the builder environment.
+  --bootstrap-iso <path>  Official Arch ISO used only as the builder environment.
   --run-id <id>           Safe lowercase run identifier. Default: generated.
   --discard-on-failure    Delete the builder VM instead of retaining it for diagnosis.
   --help                  Print this help.
@@ -46,7 +46,10 @@ cleanup() {
 
   trap - EXIT HUP INT TERM
   set +e
-  rm -f -- "${LIVE_PASSWORD_FILE:-}"
+  rm -f -- "${BUILDER_SSH_KEY:-}" "${BUILDER_SSH_KEY:-}.pub" "${LIVE_AUTHORIZED_KEY_FILE:-}"
+  if [[ "$SUCCESS" -ne 1 ]]; then
+    rm -f -- "${LIVE_SSH_KEY:-}" "${LIVE_SSH_KEY:-}.pub"
+  fi
 
   if [[ "$VM_CREATED" -eq 1 ]]; then
     vbox_power_off_vm "$VM_NAME" || true
@@ -97,52 +100,51 @@ parse_args() {
 
 prepare_builder_disk() {
   run_logged "$RUN_DIR/builder-prepare.log" \
-    vbox_guest_run "$VM_NAME" live "$LIVE_PASSWORD_FILE" 1800000 /usr/bin/bash -lc '
+    vbox_ssh root "$BUILDER_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
-      sudo wipefs -a /dev/sda
-      sudo sgdisk --zap-all /dev/sda
-      sudo sgdisk -n 1:0:0 -t 1:8300 -c 1:archcfg-builder /dev/sda
-      sudo partprobe /dev/sda
-      sudo udevadm settle
-      sudo mkfs.ext4 -F /dev/sda1
-      sudo install -dm755 /mnt/archcfg-builder
-      sudo mount /dev/sda1 /mnt/archcfg-builder
-      sudo chown live:live /mnt/archcfg-builder
-      sudo install -dm755 /mnt/archcfg-builder/root
-      sudo fallocate -l 4G /mnt/archcfg-builder/swapfile
-      sudo chmod 600 /mnt/archcfg-builder/swapfile
-      sudo mkswap /mnt/archcfg-builder/swapfile
-      sudo swapon /mnt/archcfg-builder/swapfile
-      sudo pacman-key --init
-      sudo pacman-key --populate
-      sudo reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+      wipefs -a /dev/sda
+      sgdisk --zap-all /dev/sda
+      sgdisk -n 1:0:0 -t 1:8300 -c 1:archcfg-builder /dev/sda
+      partprobe /dev/sda
+      udevadm settle
+      mkfs.ext4 -F /dev/sda1
+      install -dm755 /mnt/archcfg-builder
+      mount /dev/sda1 /mnt/archcfg-builder
+      install -dm755 /mnt/archcfg-builder/root
+      fallocate -l 4G /mnt/archcfg-builder/swapfile
+      chmod 600 /mnt/archcfg-builder/swapfile
+      mkswap /mnt/archcfg-builder/swapfile
+      swapon /mnt/archcfg-builder/swapfile
+      pacman-key --init
+      pacman-key --populate
+      reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
       grep -q "^Server" /etc/pacman.d/mirrorlist
-      sudo install -dm700 /mnt/archcfg-builder/root/etc/pacman.d/gnupg
-      sudo pacman-key --gpgdir /mnt/archcfg-builder/root/etc/pacman.d/gnupg --init
-      sudo pacman-key --gpgdir /mnt/archcfg-builder/root/etc/pacman.d/gnupg --populate
-      sudo pacstrap -K /mnt/archcfg-builder/root base archiso grub git
+      install -dm700 /mnt/archcfg-builder/root/etc/pacman.d/gnupg
+      pacman-key --gpgdir /mnt/archcfg-builder/root/etc/pacman.d/gnupg --init
+      pacman-key --gpgdir /mnt/archcfg-builder/root/etc/pacman.d/gnupg --populate
+      pacstrap -K /mnt/archcfg-builder/root base archiso grub git
     '
 }
 
 build_iso_in_guest() {
   run_logged "$RUN_DIR/builder-build.log" \
-    vbox_guest_run "$VM_NAME" live "$LIVE_PASSWORD_FILE" 7200000 /usr/bin/bash -lc '
+    vbox_ssh root "$BUILDER_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
-      sudo install -dm755 /mnt/archcfg-builder/root/opt/archcfg-source
-      sudo tar -xf /mnt/archcfg-builder/source.tar -C /mnt/archcfg-builder/root/opt/archcfg-source
+      install -dm755 /mnt/archcfg-builder/root/opt/archcfg-source
+      tar -xf /mnt/archcfg-builder/source.tar -C /mnt/archcfg-builder/root/opt/archcfg-source
       cleanup_builder_root() {
-        sudo swapoff /mnt/archcfg-builder/swapfile || true
-        sudo umount /mnt/archcfg-builder/root || true
+        swapoff /mnt/archcfg-builder/swapfile || true
+        umount /mnt/archcfg-builder/root || true
       }
       trap cleanup_builder_root EXIT
-      sudo mount --bind /mnt/archcfg-builder/root /mnt/archcfg-builder/root
-      sudo arch-chroot /mnt/archcfg-builder/root /usr/bin/bash /opt/archcfg-source/scripts/build-iso.sh \
+      mount --bind /mnt/archcfg-builder/root /mnt/archcfg-builder/root
+      arch-chroot /mnt/archcfg-builder/root /usr/bin/bash /opt/archcfg-source/scripts/build-iso.sh \
         --clean \
         --fast \
         --jobs 1 \
+        --live-authorized-key-file /opt/live-authorized-key.pub \
         --work-dir /var/lib/archcfg-builder/work \
         --out-dir /var/lib/archcfg-builder/out
-      sudo chown -R live:live /mnt/archcfg-builder/root/var/lib/archcfg-builder/out
     '
 }
 
@@ -166,6 +168,7 @@ write_manifest() {
     printf 'iso=%s\n' "$ISO_PATH"
     printf 'iso_sha256=%s\n' "$iso_checksum"
     printf 'iso_size=%s\n' "$iso_size"
+    printf 'live_ssh_key=%s\n' "$LIVE_SSH_KEY"
     printf 'created_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$manifest"
   chmod 600 "$manifest"
@@ -187,7 +190,9 @@ main() {
   ARTIFACT_DIR="$ARCHCFG_VBOX_STATE_ROOT/artifacts/$RUN_ID"
   VM_NAME="archcfg-e2e-build-$RUN_ID"
   SOURCE_ARCHIVE="$RUN_DIR/source.tar"
-  LIVE_PASSWORD_FILE="$RUN_DIR/live-password"
+  BUILDER_SSH_KEY="$RUN_DIR/builder-ssh-key"
+  LIVE_SSH_KEY="$RUN_DIR/live-ssh-key"
+  LIVE_AUTHORIZED_KEY_FILE="$RUN_DIR/live-authorized-key.pub"
 
   [[ ! -e "$RUN_DIR" && ! -e "$ARTIFACT_DIR" ]] || vbox_die "Run ID already exists: $RUN_ID"
   vbox_prepare_directory "$RUN_DIR"
@@ -198,19 +203,24 @@ main() {
 
   git -C "$REPO_ROOT" archive --format=tar HEAD > "$SOURCE_ARCHIVE"
   chmod 600 "$SOURCE_ARCHIVE"
-  vbox_write_private_file "$LIVE_PASSWORD_FILE" live
+  vbox_generate_ssh_key "$BUILDER_SSH_KEY"
+  vbox_generate_ssh_key "$LIVE_SSH_KEY"
+  install -m600 "$LIVE_SSH_KEY.pub" "$LIVE_AUTHORIZED_KEY_FILE"
 
   vbox_log_info "Creating disposable builder VM: $VM_NAME"
   vbox_create_efi_vm "$VM_NAME" 3072 2 51200 "$BOOTSTRAP_ISO"
   VM_CREATED=1
+  SSH_PORT=$(vbox_find_ssh_port) || vbox_die "Could not allocate a localhost SSH port"
+  vbox_configure_nat_ssh "$VM_NAME" "$SSH_PORT"
   vbox_start_vm "$VM_NAME"
-  vbox_wait_for_guest "$VM_NAME" live "$LIVE_PASSWORD_FILE" 300 || vbox_die "Live Guest Control did not become ready"
-  vbox_wait_for_guest_network "$VM_NAME" live "$LIVE_PASSWORD_FILE" 180 || vbox_die "Live guest network did not become ready"
+  vbox_bootstrap_official_ssh "$VM_NAME" "$BUILDER_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Official ISO SSH bootstrap did not become ready"
+  vbox_wait_for_ssh_network root "$BUILDER_SSH_KEY" "$SSH_PORT" 180 || vbox_die "Official ISO network did not become ready"
 
   prepare_builder_disk
-  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$SOURCE_ARCHIVE" /mnt/archcfg-builder/source.tar
+  vbox_scp_to root "$BUILDER_SSH_KEY" "$SSH_PORT" "$SOURCE_ARCHIVE" /mnt/archcfg-builder/source.tar
+  vbox_scp_to root "$BUILDER_SSH_KEY" "$SSH_PORT" "$LIVE_AUTHORIZED_KEY_FILE" /mnt/archcfg-builder/root/opt/live-authorized-key.pub
   build_iso_in_guest
-  vbox_guest_copy_from "$VM_NAME" live "$LIVE_PASSWORD_FILE" /mnt/archcfg-builder/root/var/lib/archcfg-builder/out "$ARTIFACT_DIR/out"
+  vbox_scp_from root "$BUILDER_SSH_KEY" "$SSH_PORT" /mnt/archcfg-builder/root/var/lib/archcfg-builder/out "$ARTIFACT_DIR/out"
 
   shopt -s globstar nullglob
   iso_files=("$ARTIFACT_DIR"/**/*.iso)

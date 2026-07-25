@@ -17,7 +17,7 @@ Usage: scripts/vbox-e2e.sh --manifest <path> [options]
 
 Boots an ISO produced by vbox-build.sh, installs it to a new disposable EFI
 VirtualBox disk, then validates the installed configuration through Guest
-Control. The test never modifies pre-existing VMs.
+SSH. The test never modifies pre-existing VMs.
 
 Options:
   --manifest <path>      Artifact manifest emitted by scripts/vbox-build.sh.
@@ -45,7 +45,7 @@ cleanup() {
 
   trap - EXIT HUP INT TERM
   set +e
-  rm -f -- "${LIVE_PASSWORD_FILE:-}" "${TARGET_PASSWORD_FILE:-}"
+  rm -f -- "${LIVE_SSH_KEY:-}" "${LIVE_SSH_KEY:-}.pub" "${TARGET_PASSWORD_FILE:-}"
 
   if [[ "$VM_CREATED" -eq 1 ]]; then
     vbox_power_off_vm "$VM_NAME" || true
@@ -87,7 +87,7 @@ parse_args() {
 
 run_install() {
   run_logged "$E2E_DIR/installer.log" \
-    vbox_guest_run "$VM_NAME" live "$LIVE_PASSWORD_FILE" 7200000 /usr/bin/bash -lc '
+    vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
       sudo install -dm700 -o root -g root /run/archcfg-e2e
       sudo install -m600 -o root -g root /home/live/target-password /run/archcfg-e2e/user-password
@@ -105,11 +105,30 @@ run_install() {
     '
 }
 
+prepare_target_ssh() {
+  run_logged "$E2E_DIR/target-ssh.log" \
+    vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
+      set -euo pipefail
+      target=/mnt
+      sudo mount /dev/sda2 "$target"
+      sudo mount /dev/sda1 "$target/boot"
+      cleanup_target_mount() {
+        sudo umount -R "$target" || true
+      }
+      trap cleanup_target_mount EXIT
+      IFS=: read -r _ _ target_uid target_gid _ < <(grep "^archcfg-e2e:" "$target/etc/passwd")
+      [[ -n "$target_uid" && -n "$target_gid" ]]
+      sudo install -dm700 -o "$target_uid" -g "$target_gid" "$target/home/archcfg-e2e/.ssh"
+      sudo install -m600 -o "$target_uid" -g "$target_gid" /home/live/.ssh/authorized_keys "$target/home/archcfg-e2e/.ssh/authorized_keys"
+      sudo systemctl enable --root "$target" sshd.service
+    '
+}
+
 wait_for_target_services() {
   local deadline=$((SECONDS + 180))
 
   while ((SECONDS < deadline)); do
-    if vbox_guest_run "$VM_NAME" archcfg-e2e "$TARGET_PASSWORD_FILE" 30000 /usr/bin/bash -lc '
+    if vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
       ping -c 1 -W 3 archlinux.org >/dev/null
       systemctl is-active --quiet NetworkManager.service
@@ -126,7 +145,7 @@ wait_for_target_services() {
 
 run_postboot_checks() {
   run_logged "$E2E_DIR/verify-system.log" \
-    vbox_guest_run "$VM_NAME" archcfg-e2e "$TARGET_PASSWORD_FILE" 180000 /usr/bin/bash -lc '
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       exec /opt/arch-linux-config/scripts/verify-system-config.sh \
         --repo /opt/arch-linux-config \
         --root / \
@@ -136,14 +155,14 @@ run_postboot_checks() {
     '
 
   run_logged "$E2E_DIR/verify-dotfiles.log" \
-    vbox_guest_run "$VM_NAME" archcfg-e2e "$TARGET_PASSWORD_FILE" 180000 /usr/bin/bash -lc '
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       exec /opt/arch-linux-config/scripts/verify-dotfiles.sh \
         --repo /opt/arch-linux-config \
         --home /home/archcfg-e2e
     '
 
   run_logged "$E2E_DIR/runtime.log" \
-    vbox_guest_run "$VM_NAME" archcfg-e2e "$TARGET_PASSWORD_FILE" 60000 /usr/bin/bash -lc '
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
       test -d /sys/firmware/efi
       findmnt -no FSTYPE /boot | grep -qx vfat
@@ -174,6 +193,7 @@ main() {
   local schema
   local iso_path
   local iso_directory
+  local expected_live_ssh_key
   local expected_checksum
   local actual_checksum
 
@@ -211,9 +231,13 @@ main() {
   actual_checksum=$(vbox_file_sha256 "$iso_path")
   [[ "$actual_checksum" == "$expected_checksum" ]] || vbox_die "ISO checksum does not match its manifest"
 
+  LIVE_SSH_KEY=$(vbox_manifest_value "$MANIFEST" live_ssh_key) || vbox_die "Manifest is missing the live SSH key path"
+  expected_live_ssh_key="$ARCHCFG_VBOX_STATE_ROOT/runs/$RUN_ID/live-ssh-key"
+  [[ "$LIVE_SSH_KEY" == "$expected_live_ssh_key" && -f "$LIVE_SSH_KEY" && ! -L "$LIVE_SSH_KEY" ]] || vbox_die "Live SSH key is outside the managed run state"
+  [[ "$(stat -c '%a' -- "$LIVE_SSH_KEY")" == 600 ]] || vbox_die "Live SSH key must have mode 0600"
+
   E2E_DIR="$ARCHCFG_VBOX_STATE_ROOT/runs/$RUN_ID/e2e"
   VM_NAME="archcfg-e2e-test-$RUN_ID"
-  LIVE_PASSWORD_FILE="$E2E_DIR/live-password"
   TARGET_PASSWORD_FILE="$E2E_DIR/target-password"
   [[ ! -e "$E2E_DIR" ]] || vbox_die "E2E results already exist for run: $RUN_ID"
   vbox_prepare_directory "$E2E_DIR"
@@ -221,22 +245,24 @@ main() {
   trap 'exit 130' INT
   trap 'exit 143' TERM
 
-  vbox_write_private_file "$LIVE_PASSWORD_FILE" live
   vbox_generate_password_file "$TARGET_PASSWORD_FILE"
 
   vbox_log_info "Creating disposable installation VM: $VM_NAME"
   vbox_create_efi_vm "$VM_NAME" 2048 2 24576 "$iso_path"
   VM_CREATED=1
+  SSH_PORT=$(vbox_find_ssh_port) || vbox_die "Could not allocate a localhost SSH port"
+  vbox_configure_nat_ssh "$VM_NAME" "$SSH_PORT"
   vbox_start_vm "$VM_NAME"
-  vbox_wait_for_guest "$VM_NAME" live "$LIVE_PASSWORD_FILE" 300 || vbox_die "Live Guest Control did not become ready"
-  vbox_wait_for_guest_network "$VM_NAME" live "$LIVE_PASSWORD_FILE" 180 || vbox_die "Live guest network did not become ready"
-  vbox_guest_copy_to "$VM_NAME" live "$LIVE_PASSWORD_FILE" "$TARGET_PASSWORD_FILE" /home/live/target-password
+  vbox_wait_for_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Live ISO SSH did not become ready"
+  vbox_wait_for_ssh_network live "$LIVE_SSH_KEY" "$SSH_PORT" 180 || vbox_die "Live ISO network did not become ready"
+  vbox_scp_to live "$LIVE_SSH_KEY" "$SSH_PORT" "$TARGET_PASSWORD_FILE" /home/live/target-password
   run_install
+  prepare_target_ssh
 
   vbox_power_off_vm "$VM_NAME"
   vbox_eject_iso "$VM_NAME"
   vbox_start_vm "$VM_NAME"
-  vbox_wait_for_guest "$VM_NAME" archcfg-e2e "$TARGET_PASSWORD_FILE" 300 || vbox_die "Installed Guest Control did not become ready"
+  vbox_wait_for_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Installed system SSH did not become ready"
   wait_for_target_services
   run_postboot_checks
   write_result

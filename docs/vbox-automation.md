@@ -11,9 +11,11 @@ host user and never changes existing VirtualBox machines.
 - On Arch, an administrator must install headers matching the running kernel,
   rebuild/load the DKMS module, and reboot when required. Do not rely on
   `/sbin/vboxconfig`: it is not provided on this host.
-- A previously built Archcfg live ISO to use as the disposable builder
-  environment. It must support the `live` user and VirtualBox Guest Control.
+- An official Arch ISO to use as the disposable builder environment. The runner
+  bootstraps key-only SSH over a localhost NAT forward with the ISO's automatic
+  root console login; it does not require Guest Additions.
 - NAT egress to Arch mirrors and `archlinux.org`.
+- Host `ssh`, `scp`, `ssh-keygen`, and `ss` commands.
 - A clean, committed checkout. The builder transfers `git archive HEAD`, so
   uncommitted and untracked files are intentionally excluded.
 
@@ -25,13 +27,13 @@ scripts/vbox-preflight.sh
 
 ## Build And Test
 
-Use an existing live ISO only as the builder environment. The ISO produced by
-the build contains the current committed repository tree, not the repository
-embedded in the bootstrap ISO.
+Use an official Arch ISO only as the builder environment. The ISO produced by
+the build contains the current committed repository tree, not files embedded
+in the bootstrap ISO.
 
 ```bash
 scripts/vbox-build.sh \
-  --bootstrap-iso /path/to/archcfg-live-previous.iso
+  --bootstrap-iso /path/to/archlinux-current.iso
 ```
 
 The command creates an artifact manifest under:
@@ -56,17 +58,18 @@ local test.
 1. Creates a builder VM with EFI, VMSVGA, 128 MiB video memory, disabled 3D,
    NAT, two vCPUs, 3 GiB RAM, a 50 GiB dynamic VDI, and a temporary 4 GiB
    swapfile. ISO compression uses one worker to keep memory bounded.
-2. Uses Guest Control as `live` to install `archiso` inside that VM, build the
-   committed source on its virtual disk, and copy out the ISO plus checksum
-   manifest.
+2. Uses a temporary Ed25519 key and an SSH forward bound to `127.0.0.1` to
+   install `archiso` inside that VM, build the committed source on its virtual
+   disk, and copy out the ISO plus checksum manifest.
 3. Creates a separate test VM with the same EFI/graphics settings, two vCPUs,
    2 GiB RAM, and a new 24 GiB dynamic VDI.
-4. Generates a random one-use test password outside the repository, transfers
-   it to a root-owned runtime file in the live guest, and invokes the installer
-   with `--user-password-file`.
+4. Generates a random one-use test password and SSH key outside the repository,
+   transfers the password to a root-owned runtime file in the live guest, and
+   invokes the installer with `--user-password-file`. The generated ISO enables
+   SSH only when the one-use public key is injected by the builder.
 5. Powers the VM off, ejects the ISO, cold-boots the installed disk, then uses
-   Guest Control as `archcfg-e2e` to run both configuration verifiers and boot
-   service checks.
+   the same temporary SSH key as `archcfg-e2e` to run configuration verifiers
+   and boot service checks. The runner removes that key before VM cleanup.
 
 The password file is accepted only with `--vm --yes`, must be directly below a
 root-owned mode-`0700` `/run/archcfg-e2e` directory, and must itself be
@@ -87,14 +90,15 @@ automation input, not a normal interactive install option.
 - Use `--discard-on-failure` with either runner when diagnostics do not need to
   be retained.
 
-The runner does not use shared folders, bridged networking, USB passthrough,
-or SSH. It does not configure `vboxusers`; preflight reports any missing
-VirtualBox device access.
+The runner does not use shared folders, bridged networking, or USB passthrough.
+SSH is restricted to a dynamically allocated `127.0.0.1` NAT forward and a
+one-use key stored below the runner state directory. It does not configure
+`vboxusers`; preflight reports any missing VirtualBox device access.
 
 ## Coverage Limits
 
 The E2E test proves ISO creation, live boot, automatic installation, target
-cold boot, Guest Additions, configured services, system configuration, and
-user dotfiles. It cannot prove real fingerprint hardware, battery charge
-limits, Wi-Fi hardware, suspend/resume, or visual Hyprland rendering. Those
-remain hardware or manual smoke-test concerns.
+cold boot, configured services, system configuration, and user dotfiles. It
+cannot prove real fingerprint hardware, battery charge limits, Wi-Fi hardware,
+suspend/resume, or visual Hyprland rendering. Those remain hardware or manual
+smoke-test concerns.

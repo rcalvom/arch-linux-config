@@ -10,6 +10,7 @@ CLEAN=0
 FAST=0
 FAST_JOBS=""
 TEMP_DIR=""
+LIVE_AUTHORIZED_KEY_FILE=""
 
 usage() {
   cat <<'USAGE'
@@ -21,6 +22,8 @@ Options:
   --clean               Remove work/output directories before building.
   --fast                Use faster rootfs compression for local test builds.
   --jobs <count>        Limit --fast compression workers. Default: detected CPUs.
+  --live-authorized-key-file <path>
+                        One-use live SSH public key for VirtualBox E2E automation.
   --help                Print this help.
 
 The ISO includes the committed repository tree at /opt/arch-linux-config and
@@ -78,6 +81,11 @@ parse_args() {
         FAST_JOBS=$2
         shift 2
         ;;
+      --live-authorized-key-file)
+        require_value "$1" "${2-}"
+        LIVE_AUTHORIZED_KEY_FILE=$2
+        shift 2
+        ;;
       --help)
         usage
         exit 0
@@ -94,6 +102,14 @@ parse_args() {
 
   if [[ -n "$FAST_JOBS" && ( ! "$FAST_JOBS" =~ ^[0-9]+$ || "$FAST_JOBS" -lt 1 ) ]]; then
     die "--jobs must be a positive integer"
+  fi
+
+  if [[ -n "$LIVE_AUTHORIZED_KEY_FILE" ]]; then
+    local key_lines=()
+
+    [[ -f "$LIVE_AUTHORIZED_KEY_FILE" && ! -L "$LIVE_AUTHORIZED_KEY_FILE" ]] || die "Live authorized key file must be a regular file: $LIVE_AUTHORIZED_KEY_FILE"
+    mapfile -t key_lines < "$LIVE_AUTHORIZED_KEY_FILE"
+    [[ "${#key_lines[@]}" -eq 1 && "${key_lines[0]}" =~ ^ssh-ed25519[[:space:]][A-Za-z0-9+/=]+[[:space:]]archcfg-e2e$ ]] || die "Live authorized key file must contain one archcfg-ed25519 key"
   fi
 }
 
@@ -153,6 +169,17 @@ enable_system_service_in_profile() {
   ln -sfn "/usr/lib/systemd/system/$service" "$wants_dir/$service"
 }
 
+install_live_authorized_key() {
+  local profile_dir=$1
+  local ssh_dir="$profile_dir/airootfs/home/live/.ssh"
+
+  [[ -n "$LIVE_AUTHORIZED_KEY_FILE" ]] || return 0
+  install -dm700 "$ssh_dir"
+  install -m600 "$LIVE_AUTHORIZED_KEY_FILE" "$ssh_dir/authorized_keys"
+  chown -R 1000:1000 "$ssh_dir"
+  enable_system_service_in_profile "$profile_dir" sshd.service
+}
+
 copy_grub_theme_to_profile() {
   local profile_dir=$1
   local theme_dest="$profile_dir/grub/themes/arch"
@@ -189,6 +216,7 @@ prepare_profile() {
     apply_fast_build_options "$profile_copy"
   fi
   copy_grub_theme_to_profile "$profile_copy"
+  install_live_authorized_key "$profile_copy"
 
   rm -rf "$bundled_repo"
   copy_committed_repo_tree "$bundled_repo"

@@ -30,7 +30,7 @@ main() {
   esac
 
   vbox_require_regular_user
-  for command_name in VBoxManage git openssl sha256sum stat tar tee; do
+  for command_name in VBoxManage base64 git openssl scp sha256sum ssh ssh-keygen ss stat tar tee; do
     vbox_require_command "$command_name"
   done
 

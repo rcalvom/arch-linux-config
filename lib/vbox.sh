@@ -45,15 +45,6 @@ vbox_prepare_directory() {
   install -dm700 "$1"
 }
 
-vbox_write_private_file() {
-  local path=$1
-  local content=$2
-
-  install -dm700 "$(dirname -- "$path")"
-  install -m600 /dev/null "$path"
-  printf '%s\n' "$content" > "$path"
-}
-
 vbox_generate_password_file() {
   local path=$1
 
@@ -214,88 +205,167 @@ vbox_eject_iso() {
   VBoxManage modifyvm "$vm" --boot1 disk --boot2 none
 }
 
-vbox_guest_run() {
-  local vm=$1
-  local username=$2
-  local password_file=$3
-  local timeout_milliseconds=$4
-  local executable=$5
+vbox_find_ssh_port() {
+  local port
+  local attempt
 
-  shift 5
-  VBoxManage guestcontrol "$vm" run \
-    --exe "$executable" \
-    --username "$username" \
-    --passwordfile "$password_file" \
-    --wait-stdout \
-    --wait-stderr \
-    --timeout "$timeout_milliseconds" \
-    -- "$@"
+  vbox_require_command ss
+  for ((attempt = 0; attempt < 100; attempt++)); do
+    port=$((22000 + RANDOM % 20000))
+    if [[ -z "$(ss -ltnH "sport = :$port" 2>/dev/null)" ]]; then
+      printf '%s\n' "$port"
+      return 0
+    fi
+  done
+
+  vbox_log_warn "Could not find an available localhost SSH port"
+  return 1
 }
 
-vbox_wait_for_guest() {
+vbox_configure_nat_ssh() {
   local vm=$1
-  local username=$2
-  local password_file=$3
+  local port=$2
+
+  [[ "$port" =~ ^[0-9]+$ && "$port" -ge 1024 && "$port" -le 65535 ]] || vbox_die "Invalid SSH port: $port"
+  VBoxManage modifyvm "$vm" --natpf1 "archcfg-ssh,tcp,127.0.0.1,$port,,22"
+}
+
+vbox_generate_ssh_key() {
+  local key_path=$1
+
+  vbox_require_command ssh-keygen
+  install -dm700 "$(dirname -- "$key_path")"
+  rm -f -- "$key_path" "$key_path.pub"
+  ssh-keygen -q -t ed25519 -N '' -C archcfg-e2e -f "$key_path"
+  chmod 600 "$key_path"
+}
+
+vbox_ssh() {
+  local username=$1
+  local key_path=$2
+  local port=$3
+
+  shift 3
+  ssh \
+    -i "$key_path" \
+    -p "$port" \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o LogLevel=ERROR \
+    -o ConnectTimeout=10 \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=10 \
+    "$username@127.0.0.1" \
+    "$@"
+}
+
+vbox_scp_to() {
+  local username=$1
+  local key_path=$2
+  local port=$3
+  local source=$4
+  local target_path=$5
+
+  scp \
+    -i "$key_path" \
+    -P "$port" \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o LogLevel=ERROR \
+    "$source" \
+    "$username@127.0.0.1:$target_path"
+}
+
+vbox_scp_from() {
+  local username=$1
+  local key_path=$2
+  local port=$3
+  local source_path=$4
+  local target_path=$5
+
+  install -dm700 "$(dirname -- "$target_path")"
+  scp \
+    -r \
+    -i "$key_path" \
+    -P "$port" \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o LogLevel=ERROR \
+    "$username@127.0.0.1:$source_path" \
+    "$target_path"
+}
+
+vbox_wait_for_ssh() {
+  local username=$1
+  local key_path=$2
+  local port=$3
   local timeout_seconds=$4
   local deadline=$((SECONDS + timeout_seconds))
 
   while ((SECONDS < deadline)); do
-    if vbox_guest_run "$vm" "$username" "$password_file" 10000 /usr/bin/true >/dev/null 2>&1; then
+    if vbox_ssh "$username" "$key_path" "$port" true >/dev/null 2>&1; then
       return 0
     fi
     sleep 3
   done
 
-  vbox_log_warn "Timed out waiting for VirtualBox Guest Control in $vm"
+  vbox_log_warn "Timed out waiting for SSH access as $username on localhost:$port"
   return 1
 }
 
-vbox_wait_for_guest_network() {
-  local vm=$1
-  local username=$2
-  local password_file=$3
+vbox_wait_for_ssh_network() {
+  local username=$1
+  local key_path=$2
+  local port=$3
   local timeout_seconds=$4
   local deadline=$((SECONDS + timeout_seconds))
 
   while ((SECONDS < deadline)); do
-    if vbox_guest_run "$vm" "$username" "$password_file" 30000 /usr/bin/bash -lc 'ping -c 1 -W 3 archlinux.org >/dev/null' >/dev/null 2>&1; then
+    if vbox_ssh "$username" "$key_path" "$port" 'ping -c 1 -W 3 archlinux.org >/dev/null' >/dev/null 2>&1; then
       return 0
     fi
     sleep 5
   done
 
-  vbox_log_warn "Timed out waiting for guest network access in $vm"
+  vbox_log_warn "Timed out waiting for network access over SSH on localhost:$port"
   return 1
 }
 
-vbox_guest_copy_to() {
+vbox_console_run() {
   local vm=$1
-  local username=$2
-  local password_file=$3
-  local source=$4
-  local target_path=$5
+  local command=$2
 
-  VBoxManage guestcontrol "$vm" copyto \
-    --username "$username" \
-    --passwordfile "$password_file" \
-    --target-directory="$target_path" \
-    "$source"
+  VBoxManage controlvm "$vm" keyboardputstring "$command"
+  VBoxManage controlvm "$vm" keyboardputscancode 1c 9c
 }
 
-vbox_guest_copy_from() {
+vbox_bootstrap_official_ssh() {
   local vm=$1
-  local username=$2
-  local password_file=$3
-  local source=$4
-  local target_path=$5
+  local key_path=$2
+  local port=$3
+  local timeout_seconds=$4
+  local public_key
+  local command
+  local deadline=$((SECONDS + timeout_seconds))
 
-  install -dm700 "$(dirname -- "$target_path")"
-  VBoxManage guestcontrol "$vm" copyfrom \
-    --username "$username" \
-    --passwordfile "$password_file" \
-    --recursive \
-    --target-directory="$target_path" \
-    "$source"
+  [[ -f "$key_path.pub" ]] || vbox_die "Missing public SSH key: $key_path.pub"
+  public_key=$(<"$key_path.pub")
+  [[ "$public_key" =~ ^ssh-ed25519[[:space:]][A-Za-z0-9+/=]+[[:space:]]archcfg-e2e$ ]] || vbox_die "Unexpected generated SSH public key format"
+  command="install -dm700 /root/.ssh; printf '%s\\n' '$public_key' > /root/.ssh/authorized_keys; chmod 600 /root/.ssh/authorized_keys; systemctl start sshd"
+
+  while ((SECONDS < deadline)); do
+    vbox_console_run "$vm" "$command"
+    if vbox_ssh root "$key_path" "$port" true >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 10
+  done
+
+  vbox_log_warn "Timed out bootstrapping SSH from the official Arch ISO"
+  return 1
 }
 
 vbox_collect_vm_evidence() {

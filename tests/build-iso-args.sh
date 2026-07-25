@@ -26,3 +26,9 @@ assert_rejected --jobs 1
 assert_rejected --fast --jobs 0
 assert_rejected --fast --jobs invalid
 assert_valid_before_root_check --fast --jobs 1
+assert_rejected --fast --live-authorized-key-file /does/not/exist
+
+authorized_key=$(mktemp)
+trap 'rm -f -- "$authorized_key"' EXIT
+printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA archcfg-e2e\n' > "$authorized_key"
+assert_valid_before_root_check --fast --live-authorized-key-file "$authorized_key"
