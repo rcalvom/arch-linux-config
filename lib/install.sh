@@ -12,6 +12,18 @@ refresh_mirrors_if_available() {
   fi
 }
 
+unmount_installer_target() {
+  local target=$1
+
+  if umount -R "$target"; then
+    return 0
+  fi
+
+  log_warn "Target has busy mounts; syncing and detaching them"
+  sync
+  umount -R -l "$target"
+}
+
 install_base_system() {
   local target=$1
   local repo_dir=$2

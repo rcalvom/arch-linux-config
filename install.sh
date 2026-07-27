@@ -39,7 +39,7 @@ cleanup() {
 
   if [[ "$exit_code" -ne 0 && "$MOUNTED_BY_INSTALLER" -eq 1 ]] && mountpoint -q "$TARGET"; then
     log_warn "Installation failed; unmounting $TARGET"
-    umount -R "$TARGET"
+    unmount_installer_target "$TARGET"
   fi
 
   exit "$exit_code"
@@ -88,7 +88,7 @@ main() {
 
   if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]]; then
     log_info "Unmounting $TARGET"
-    umount -R "$TARGET"
+    unmount_installer_target "$TARGET"
     MOUNTED_BY_INSTALLER=0
     PASSWORD_FILE_STAGED=0
   fi

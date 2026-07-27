@@ -123,9 +123,33 @@ test_postinstall_shell_invocation() {
   unset -f arch-chroot
 }
 
+test_busy_target_detach() {
+  local calls="$TEST_ROOT/unmount-calls"
+  local call_lines=()
+
+  umount() {
+    printf '%s\n' "$*" >> "$calls"
+    [[ "$*" != '-R /target' ]]
+  }
+
+  sync() {
+    printf 'sync\n' >> "$calls"
+  }
+
+  unmount_installer_target /target
+  mapfile -t call_lines < "$calls"
+
+  [[ "${call_lines[0]}" == '-R /target' ]] || fail "initial target unmount is incorrect"
+  [[ "${call_lines[1]}" == sync ]] || fail "busy target was not synced before detaching"
+  [[ "${call_lines[2]}" == '-R -l /target' ]] || fail "busy target was not detached lazily"
+
+  unset -f umount sync
+}
+
 assert_status 0 assert_valid_automated_args
 assert_status 1 assert_invalid_automated_args --vm --disk /dev/sda --user-password-file /run/archcfg-e2e/user-password
 assert_status 1 assert_invalid_automated_args --yes --user-password-file /run/archcfg-e2e/user-password
 test_password_staging
 test_base_system_keyring
 test_postinstall_shell_invocation
+test_busy_target_detach
