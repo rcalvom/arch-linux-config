@@ -149,7 +149,7 @@ wait_for_target_services() {
 run_postboot_checks() {
   run_logged "$E2E_DIR/verify-system.log" \
     vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
-      exec /opt/arch-linux-config/scripts/verify-system-config.sh \
+      exec /usr/bin/bash /opt/arch-linux-config/scripts/verify-system-config.sh \
         --repo /opt/arch-linux-config \
         --root / \
         --profile virtualbox \
@@ -159,7 +159,7 @@ run_postboot_checks() {
 
   run_logged "$E2E_DIR/verify-dotfiles.log" \
     vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
-      exec /opt/arch-linux-config/scripts/verify-dotfiles.sh \
+      exec /usr/bin/bash /opt/arch-linux-config/scripts/verify-dotfiles.sh \
         --repo /opt/arch-linux-config \
         --home /home/archcfg-e2e
     '
