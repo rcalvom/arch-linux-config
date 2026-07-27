@@ -340,7 +340,21 @@ vbox_console_run() {
 
   VBoxManage controlvm "$vm" keyboardputstring "$command"
   sleep 1
+  vbox_console_press_enter "$vm"
+}
+
+vbox_console_press_enter() {
+  local vm=$1
+
   VBoxManage controlvm "$vm" keyboardputscancode 1c 9c
+}
+
+vbox_boot_grub_default() {
+  local vm=$1
+
+  vbox_log_info "Selecting the default GRUB entry"
+  sleep 20
+  vbox_console_press_enter "$vm"
 }
 
 vbox_bootstrap_official_ssh() {
