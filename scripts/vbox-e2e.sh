@@ -113,7 +113,10 @@ prepare_target_ssh() {
       sudo mount /dev/sda2 "$target"
       sudo mount /dev/sda1 "$target/boot"
       cleanup_target_mount() {
-        sudo umount -R "$target" || true
+        sudo sync
+        if ! sudo umount -R "$target"; then
+          sudo umount -R -l "$target"
+        fi
       }
       trap cleanup_target_mount EXIT
       IFS=: read -r _ _ target_uid target_gid _ < <(grep "^archcfg-e2e:" "$target/etc/passwd")
