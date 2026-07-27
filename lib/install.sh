@@ -145,7 +145,7 @@ run_postinstall() {
   local enable_aur=$7
   local wifi_interface=$8
   local postinstall_args=(
-    "$repo_dest/postinstall.sh"
+    /usr/bin/bash "$repo_dest/postinstall.sh"
     --profile "$profile"
     --hostname "$hostname"
     --username "$username"

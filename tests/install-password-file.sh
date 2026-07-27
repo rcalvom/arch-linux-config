@@ -105,8 +105,27 @@ test_base_system_keyring() {
   unset -f load_packages_from_files pacman-key pacstrap
 }
 
+test_postinstall_shell_invocation() {
+  local calls="$TEST_ROOT/postinstall-calls"
+  local call_args=()
+
+  arch-chroot() {
+    printf '%s\0' "$@" > "$calls"
+  }
+
+  run_postinstall /target /opt/arch-linux-config virtualbox archcfg-e2e archcfg-e2e UTC 0 none
+  mapfile -d '' -t call_args < "$calls"
+
+  [[ "${call_args[0]}" == /target ]] || fail "postinstall target is incorrect"
+  [[ "${call_args[1]}" == /usr/bin/bash ]] || fail "postinstall does not run through bash"
+  [[ "${call_args[2]}" == /opt/arch-linux-config/postinstall.sh ]] || fail "postinstall script path is incorrect"
+
+  unset -f arch-chroot
+}
+
 assert_status 0 assert_valid_automated_args
 assert_status 1 assert_invalid_automated_args --vm --disk /dev/sda --user-password-file /run/archcfg-e2e/user-password
 assert_status 1 assert_invalid_automated_args --yes --user-password-file /run/archcfg-e2e/user-password
 test_password_staging
 test_base_system_keyring
+test_postinstall_shell_invocation
