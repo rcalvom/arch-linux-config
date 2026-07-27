@@ -71,6 +71,12 @@ printf '%s\n' \
   'exit 0' > "$MOCK_BIN/ss"
 chmod 755 "$MOCK_BIN/ss"
 
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'printf "sleep %s\n" "$*" >> "$VBOX_MOCK_LOG"' > "$MOCK_BIN/sleep"
+chmod 755 "$MOCK_BIN/sleep"
+
 export PATH="$MOCK_BIN:$PATH"
 export VBOX_MOCK_LOG
 export ARCHCFG_VBOX_STATE_ROOT="$TEST_ROOT/state"
@@ -111,6 +117,7 @@ vbox_configure_nat_ssh test-vm 22222
 vbox_console_run test-vm 'echo bootstrap'
 [[ "$(<"$VBOX_MOCK_LOG")" == *'--natpf1 archcfg-ssh,tcp,127.0.0.1,22222,,22'* ]] || fail "NAT SSH forwarding was not configured"
 [[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputstring echo bootstrap'* ]] || fail "console bootstrap command was not sent"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 1'* ]] || fail "console input was submitted without a delivery delay"
 
 : > "$VBOX_MOCK_LOG"
 vbox_ssh test-user /tmp/test-key 22222 true
@@ -125,3 +132,4 @@ printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 : > "$VBOX_MOCK_LOG"
 vbox_bootstrap_official_ssh test-vm "$bootstrap_key" 22222 1
 [[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputstring install -dm700 /root/.ssh'* ]] || fail "official ISO SSH bootstrap command was not sent"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 30'* ]] || fail "official ISO console wait was not applied"

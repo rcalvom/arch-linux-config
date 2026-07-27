@@ -339,6 +339,7 @@ vbox_console_run() {
   local command=$2
 
   VBoxManage controlvm "$vm" keyboardputstring "$command"
+  sleep 1
   VBoxManage controlvm "$vm" keyboardputscancode 1c 9c
 }
 
@@ -349,12 +350,15 @@ vbox_bootstrap_official_ssh() {
   local timeout_seconds=$4
   local public_key
   local command
-  local deadline=$((SECONDS + timeout_seconds))
+  local deadline
 
   [[ -f "$key_path.pub" ]] || vbox_die "Missing public SSH key: $key_path.pub"
   public_key=$(<"$key_path.pub")
   [[ "$public_key" =~ ^ssh-ed25519[[:space:]][A-Za-z0-9+/=]+[[:space:]]archcfg-e2e$ ]] || vbox_die "Unexpected generated SSH public key format"
   command="install -dm700 /root/.ssh; printf '%s\\n' '$public_key' > /root/.ssh/authorized_keys; chmod 600 /root/.ssh/authorized_keys; systemctl start sshd"
+  vbox_log_info "Waiting for the official ISO root console"
+  sleep 30
+  deadline=$((SECONDS + timeout_seconds))
 
   while ((SECONDS < deadline)); do
     vbox_console_run "$vm" "$command"
