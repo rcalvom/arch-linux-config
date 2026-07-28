@@ -1,14 +1,14 @@
 # GRUB Profiles
 
-The repository keeps two GRUB profiles. Activating one does not delete the graphical theme directory.
+The repository keeps two GRUB profiles. New installations and the live ISO use the classic profile by default. Activating one does not delete the graphical theme directory.
 
 ## Graphical
 
-`grub/grub` and `grub/theme/` preserve the existing icon-based graphical theme. Its timeout remains `-1`, requiring explicit user input before boot.
+`grub/grub` and `grub/theme/` preserve the optional icon-based graphical theme. Its timeout remains `-1`, requiring explicit user input before boot.
 
 ## Classic
 
-`grub/classic/grub` uses a minimal gfxterm theme that retains GRUB's traditional terminal presentation while allowing its font, palette, and spacing to match the greeter:
+`grub/classic/grub` is the default profile. It uses a minimal gfxterm theme that retains GRUB's traditional terminal presentation while allowing its font, palette, and spacing to match the greeter:
 
 - Black background with white text.
 - A blue selected entry, without a menu frame, icons, or artwork.
@@ -27,7 +27,7 @@ Applying the classic profile removes the retired graphical TUI theme at `/usr/sh
 
 Run the selector from the repository with root privileges. It asks for `APPLY`, saves the previous `/etc/default/grub` under `/var/lib/arch-linux-config/grub-backups/`, installs the selected profile, and regenerates `/boot/grub/grub.cfg`.
 
-Restore the existing graphical profile with:
+Activate the optional graphical profile with:
 
 ```bash
 sudo ./scripts/apply-grub-profile.sh --profile graphical

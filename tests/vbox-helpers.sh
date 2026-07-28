@@ -120,11 +120,6 @@ vbox_console_run test-vm 'echo bootstrap'
 [[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 1'* ]] || fail "console input was submitted without a delivery delay"
 
 : > "$VBOX_MOCK_LOG"
-vbox_boot_grub_default test-vm
-[[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 20'* ]] || fail "GRUB selection wait was not applied"
-[[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputscancode 1c 9c'* ]] || fail "GRUB default entry was not selected"
-
-: > "$VBOX_MOCK_LOG"
 vbox_ssh test-user /tmp/test-key 22222 true
 vbox_scp_to test-user /tmp/test-key 22222 "$bootstrap_iso" /guest/source.tar
 vbox_scp_from test-user /tmp/test-key 22222 /guest/out "$TEST_ROOT/artifacts/out"

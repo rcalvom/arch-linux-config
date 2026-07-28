@@ -195,7 +195,6 @@ wayland/hypr/xdph.conf|.config/hypr/xdph.conf|0644
 wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf|0644
 wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf|0644
 wayland/hypr/hyprlock.conf|.config/hypr/hyprlock.conf|0644
-wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf|0644
 wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png|0644
 wayland/waybar/config.jsonc|.config/waybar/config.jsonc|0644
 wayland/waybar/style.css|.config/waybar/style.css|0644

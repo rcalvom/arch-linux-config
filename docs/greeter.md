@@ -29,14 +29,14 @@ The status-bar keybindings use the same hard-coded reverse-video modifier. `butt
 
 To make those ANSI names match the Alacritty palette on the Linux virtual console, this repo installs `greetd/vtrgb` to `/etc/vtrgb` and a `greetd.service` drop-in that runs `setvtrgb /etc/vtrgb` before the greeter starts. The first ANSI color is kept at true black (`#000000`) so `container=black` renders as a deep black background.
 
-`fbcon=nodefer` in `grub/grub` disables deferred framebuffer-console takeover. AMD KMS is already ready before `greetd` starts, but without this parameter `fbcon` can bind only when `tuigreet` first draws, causing a temporary-resolution redraw. The `greetd` drop-in no longer uses a fixed sleep.
+`fbcon=nodefer` in both tracked GRUB profiles disables deferred framebuffer-console takeover. AMD KMS is already ready before `greetd` starts, but without this parameter `fbcon` can bind only when `tuigreet` first draws, causing a temporary-resolution redraw. The `greetd` drop-in no longer uses a fixed sleep.
 
 ## Session Output
 
 Session programs otherwise inherit the greeter's `tty1` output streams, so expected teardown messages can appear on the shutdown console. The tracked wrappers keep that output in the user's state directory instead:
 
 - `greetd/archcfg-xsession-wrapper` starts X11 sessions through `startx` and writes to `~/.local/state/arch-linux-config/xsession.log`.
-- `greetd/archcfg-wayland-session-wrapper` runs the selected Wayland command directly and writes to `~/.local/state/arch-linux-config/wayland-session.log`.
+- `greetd/archcfg-wayland-session-wrapper` launches the default Hyprland session through `start-hyprland` and writes to `~/.local/state/arch-linux-config/wayland-session.log`.
 
 `tuigreet` uses `--xsession-wrapper` for X11 sessions and `--session-wrapper` for Wayland sessions. The latter covers both the default `--cmd Hyprland` command and Wayland sessions selected from the session menu. Qtile can therefore log X connection teardown messages, while Hyprland or its session launcher can log Wayland teardown messages, without either writing directly to `tty1`.
 

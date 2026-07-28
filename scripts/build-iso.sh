@@ -186,7 +186,7 @@ copy_grub_theme_to_profile() {
 
   rm -rf "$theme_dest"
   install -dm755 "$theme_dest"
-  cp -a "$REPO_ROOT/grub/theme/." "$theme_dest/"
+  cp -a "$REPO_ROOT/grub/classic/theme/." "$theme_dest/"
 }
 
 copy_committed_repo_tree() {

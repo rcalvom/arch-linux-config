@@ -1,10 +1,10 @@
 Custom GRUB themes for this setup.
 
-The existing icon-based theme remains in `theme/`. The classic terminal alternative is in `classic/`; see `docs/grub.md` and use `scripts/apply-grub-profile.sh` to switch profiles safely.
+New installations and the live ISO use the classic terminal profile in `classic/`. The icon-based graphical alternative remains in `theme/`; see `docs/grub.md` and use `scripts/apply-grub-profile.sh` to switch profiles safely.
 
-The `grub/grub` file in this folder is the exact configuration you should place at `/etc/default/grub`. That file is the base configuration used by `grub-mkconfig` to generate `/boot/grub/grub.cfg`.
+The `grub/classic/grub` file is the default configuration placed at `/etc/default/grub`. The `grub/grub` file remains the optional graphical configuration. Each is the base configuration used by `grub-mkconfig` to generate `/boot/grub/grub.cfg`.
 
-Install the configuration file:
+To manually activate the optional graphical profile, install its configuration file:
 
 ```sh
 sudo cp grub/grub /etc/default/grub

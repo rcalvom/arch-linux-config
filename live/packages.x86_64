@@ -29,7 +29,7 @@ hyprland
 hypridle
 hyprlock
 hyprlauncher
-hyprpaper
+swaybg
 hyprsunset
 hyperv
 iputils
@@ -38,6 +38,7 @@ imagemagick
 iwd
 jdk-openjdk
 jq
+khal
 less
 libnotify
 linux
@@ -66,6 +67,7 @@ polkit-kde-agent
 poppler
 pv
 python
+python-aiohttp-oauthlib
 qemu-guest-agent
 reflector
 ripgrep
@@ -80,6 +82,7 @@ ttf-ubuntu-mono-nerd
 ueberzugpp
 unzip
 upower
+vdirsyncer
 virtualbox-guest-utils-nox
 waybar
 wget

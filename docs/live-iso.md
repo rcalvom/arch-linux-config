@@ -29,7 +29,7 @@ Use `--fast --jobs 1` on memory-constrained builders to limit compression to one
 
 The output is written to `out/`.
 
-The build script copies the committed Git tree into the ISO and applies the repository GRUB theme to the live boot menu. Commit changes before building if you want those changes included.
+The build script copies the committed Git tree into the ISO and applies the classic repository GRUB theme, matching the host boot menu, to the live boot menu. Commit changes before building if you want those changes included.
 
 All live boot entries include `fbcon=nodefer` so the framebuffer console is bound before the TUI greeter draws.
 

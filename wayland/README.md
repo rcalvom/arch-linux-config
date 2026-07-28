@@ -9,7 +9,7 @@ This folder records the active Wayland/Hyprland setup used by the installer. Qti
 - Hyprland session as the primary desktop target.
 - Waybar as the status bar.
 - Rofi as the app launcher.
-- Calcurse as the terminal calendar.
+- Khal as the read-only Google Calendar view, with Calcurse for local TODOs and notes.
 - Wdisplays for one-off graphical output adjustments.
 - Firefox and Thunderbird with square browser chrome.
 - Yazi as terminal file manager.
@@ -22,7 +22,7 @@ See `packages/desktop.txt`.
 Important packages added/used:
 
 - `hyprland`
-- `hyprpaper`
+- `swaybg`
 - `hyprlock`
 - `hyprsunset`
 - `fprintd`
@@ -92,7 +92,7 @@ SUPER + E      -> Alacritty running Yazi
 SUPER + A      -> Rofi audio input/output selector
 SUPER + P      -> Rofi display mode/profile selector
 SUPER + Shift+P -> pseudo-tile active window
-SUPER + C      -> Alacritty running Calcurse
+SUPER + C      -> Alacritty running the Khal Google Calendar view
 SUPER + W/Q    -> close active window
 SUPER + L      -> Hyprlock
 CTRL + ALT + Delete -> Rofi session menu
@@ -120,7 +120,7 @@ Firefox and Thunderbird use versioned profile templates under `packages/`. Their
 
 Firefox starts through `archcfg-firefox` from the `SUPER + B` binding. Its browser chrome hides client window controls and the Tab List button, with square tabs, controls, and panels. Thunderbird applies the equivalent titlebar customization through `archcfg-thunderbird`.
 
-Calcurse and VS Code settings are also versioned under `packages/`. VS Code remains an optional AUR application and is not included in the live ISO.
+Calcurse, Khal, Vdirsyncer, and VS Code settings are also versioned under `packages/`. VS Code remains an optional AUR application and is not included in the live ISO.
 
 ## Monitor layout
 
@@ -165,7 +165,7 @@ The Lua config starts these session helpers:
 ```text
 waybar
 mako
-hyprpaper
+swaybg
 hypr-display-layout
 hypridle
 polkit-kde-authentication-agent-1
@@ -236,16 +236,15 @@ SUPER + R       -> warm filter, 3500K
 SUPER + Shift + R -> identity / no filter
 ```
 
-## Hyprpaper / wallpaper
+## Swaybg / wallpaper
 
 Snapshot:
 
 ```text
-wayland/hypr/hyprpaper.conf
 wayland/wallpapers/wallpaper.png
 ```
 
-The wallpaper is copied to `~/Pictures/wallpaper2.png` and loaded through Hyprpaper with `fit_mode = cover`.
+The wallpaper is copied to `~/Pictures/wallpaper2.png` and loaded through Swaybg with `fill` mode.
 
 ## Hyprlock
 
@@ -293,11 +292,13 @@ progress-color=#20a5ba
 
 ## Calendar
 
-Calcurse opens in Alacritty through the familiar binding:
+Khal opens the read-only Google Calendar mirror in Alacritty through the familiar binding:
 
 ```text
-SUPER + C -> alacritty -e calcurse
+SUPER + C -> alacritty -e archcfg-google-calendar
 ```
+
+The launcher refreshes the local mirror with Vdirsyncer before opening Khal. Calcurse remains available manually for its local TODOs and notes.
 
 ## Screenshots
 

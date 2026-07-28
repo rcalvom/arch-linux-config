@@ -13,3 +13,5 @@ if sudo grep -q '^GRUB_THEME=' "$grub_defaults"; then
 else
   echo "GRUB_THEME=\"${theme_dir}/theme.txt\"" | sudo tee -a "$grub_defaults" >/dev/null
 fi
+
+sudo grub-mkconfig -o /boot/grub/grub.cfg

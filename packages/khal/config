@@ -1,0 +1,27 @@
+[calendars]
+[[google]]
+path = ~/.local/share/vdirsyncer/calendars/*
+type = discover
+readonly = True
+
+[default]
+enable_mouse = True
+highlight_event_days = True
+show_all_days = True
+timedelta = 14d
+
+[locale]
+local_timezone = America/Indiana/Indianapolis
+default_timezone = America/Indiana/Indianapolis
+timeformat = %H:%M
+dateformat = %a %d
+longdateformat = "%A, %d %B %Y"
+datetimeformat = %a %d %b %H:%M
+longdatetimeformat = "%A, %d %B %Y %H:%M"
+firstweekday = 0
+weeknumbers = left
+
+[view]
+# Arch's Khal 0.14.0 crashes with Urwid 4 when drawing frames. Re-enable after the packaged upstream fix.
+frame = False
+theme = dark

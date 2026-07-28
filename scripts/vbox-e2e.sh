@@ -154,7 +154,7 @@ run_postboot_checks() {
         --root / \
         --profile virtualbox \
         --wifi-interface none \
-        --grub-profile graphical
+        --grub-profile classic
     '
 
   run_logged "$E2E_DIR/verify-dotfiles.log" \
@@ -265,7 +265,6 @@ main() {
   vbox_power_off_vm "$VM_NAME"
   vbox_eject_iso "$VM_NAME"
   vbox_start_vm "$VM_NAME"
-  vbox_boot_grub_default "$VM_NAME"
   vbox_wait_for_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Installed system SSH did not become ready"
   wait_for_target_services
   run_postboot_checks

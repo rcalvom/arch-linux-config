@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  printf 'Usage: %s <desktop-oauth-client.json>\n' "${0##*/}" >&2
+}
+
+config_string() {
+  jq -Rn --arg value "$1" '$value'
+}
+
+[[ $# -eq 1 ]] || {
+  usage
+  exit 1
+}
+
+client_json=$1
+[[ -f "$client_json" ]] || {
+  printf 'OAuth client JSON not found: %s\n' "$client_json" >&2
+  exit 1
+}
+
+jq -e '.installed | (type == "object" and has("client_id") and has("client_secret"))' \
+  "$client_json" >/dev/null || {
+  printf 'Expected a Desktop OAuth client JSON with installed.client_id and installed.client_secret.\n' >&2
+  exit 1
+}
+
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+state_home=${XDG_STATE_HOME:-"$HOME/.local/state"}
+config_dir="$config_home/vdirsyncer"
+config_file="$config_dir/config"
+token_file="$config_dir/google-token.json"
+calendar_dir="$data_home/vdirsyncer/calendars"
+status_dir="$state_home/vdirsyncer/status"
+
+[[ ! -e "$config_file" ]] || {
+  printf 'Refusing to overwrite existing Vdirsyncer config: %s\n' "$config_file" >&2
+  exit 1
+}
+
+client_id=$(jq -er '.installed.client_id' "$client_json")
+client_secret=$(jq -er '.installed.client_secret' "$client_json")
+
+umask 077
+install -dm700 "$config_dir" "$calendar_dir" "$status_dir"
+chmod 600 "$client_json"
+
+tmp_config=$(mktemp "$config_dir/config.XXXXXX")
+trap 'rm -f "$tmp_config"' EXIT
+
+{
+  printf '%s\n' '# Generated from a local Desktop OAuth client JSON. Do not commit this file.'
+  printf '%s\n' '[general]'
+  printf 'status_path = %s\n\n' "$(config_string "$status_dir")"
+  printf '%s\n' '[pair google_calendars]'
+  printf '%s\n' 'a = "google_remote"'
+  printf '%s\n' 'b = "google_local"'
+  printf '%s\n' 'collections = ["from a"]'
+  printf '%s\n' 'conflict_resolution = "a wins"'
+  printf '%s\n' 'partial_sync = "revert"'
+  printf '%s\n\n' 'metadata = ["displayname", "color"]'
+  printf '%s\n' '[storage google_remote]'
+  printf '%s\n' 'type = "google_calendar"'
+  printf 'token_file = %s\n' "$(config_string "$token_file")"
+  printf 'client_id = %s\n' "$(config_string "$client_id")"
+  printf 'client_secret = %s\n' "$(config_string "$client_secret")"
+  printf '%s\n\n' 'read_only = true'
+  printf '%s\n' '[storage google_local]'
+  printf '%s\n' 'type = "filesystem"'
+  printf 'path = %s\n' "$(config_string "$calendar_dir")"
+  printf '%s\n' 'fileext = ".ics"'
+} >"$tmp_config"
+
+chmod 600 "$tmp_config"
+mv "$tmp_config" "$config_file"
+trap - EXIT
+
+printf 'Created private Vdirsyncer config: %s\n' "$config_file"
+printf 'Next run: vdirsyncer discover && vdirsyncer sync\n'

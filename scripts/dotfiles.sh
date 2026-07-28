@@ -103,7 +103,6 @@ install_wayland_dotfiles() {
   install_user_file "$repo_dir/wayland/hypr/hyprtoolkit.conf" "$home_dir/.config/hypr/hyprtoolkit.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hypridle.conf" "$home_dir/.config/hypr/hypridle.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprlock.conf" "$home_dir/.config/hypr/hyprlock.conf" "$username" 0644
-  install_user_file "$repo_dir/wayland/hypr/hyprpaper.conf" "$home_dir/.config/hypr/hyprpaper.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/wallpapers/wallpaper.png" "$home_dir/Pictures/wallpaper2.png" "$username" 0644
   install_user_file "$repo_dir/wayland/waybar/config.jsonc" "$home_dir/.config/waybar/config.jsonc" "$username" 0644
   install_user_file "$repo_dir/wayland/waybar/style.css" "$home_dir/.config/waybar/style.css" "$username" 0644

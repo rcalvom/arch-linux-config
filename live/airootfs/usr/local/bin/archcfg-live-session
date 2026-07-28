@@ -194,10 +194,10 @@ main() {
 
   log_info "Starting Hyprland live session"
   if command -v dbus-run-session >/dev/null 2>&1; then
-    exec dbus-run-session Hyprland
+    exec dbus-run-session start-hyprland
   fi
 
-  exec Hyprland
+  exec start-hyprland
 }
 
 main "$@"

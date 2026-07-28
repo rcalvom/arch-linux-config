@@ -362,6 +362,7 @@ verify_grub() {
   local config_source
   local theme_source
   local theme_destination
+  local theme_config_path
 
   if [[ "$selected_profile" == none ]]; then
     return 0
@@ -384,11 +385,13 @@ verify_grub() {
       config_source="$repo_dir/grub/grub"
       theme_source="$repo_dir/grub/theme"
       theme_destination="$root_prefix/usr/share/grub/themes/arch"
+      theme_config_path=/usr/share/grub/themes/arch/theme.txt
       ;;
     classic)
       config_source="$repo_dir/grub/classic/grub"
       theme_source="$repo_dir/grub/classic/theme"
       theme_destination="$root_prefix/usr/share/grub/themes/arch-classic"
+      theme_config_path=/usr/share/grub/themes/arch-classic/theme.txt
       ;;
     *)
       report ERROR "invalid GRUB profile: $selected_profile"
@@ -401,6 +404,9 @@ verify_grub() {
   compare_tree "$theme_source" "$theme_destination"
   if [[ ! -f "$root_prefix/boot/grub/grub.cfg" ]]; then
     report MISSING "$root_prefix/boot/grub/grub.cfg"
+    ((failures += 1))
+  elif ! grep -Fq "$theme_config_path" "$root_prefix/boot/grub/grub.cfg"; then
+    report DIFFERENT "$root_prefix/boot/grub/grub.cfg does not reference $theme_config_path"
     ((failures += 1))
   fi
 }

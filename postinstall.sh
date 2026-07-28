@@ -143,16 +143,16 @@ HOSTS
 
 install_grub_theme() {
   local repo_dir=$1
-  local theme_dir=/usr/share/grub/themes/arch
+  local theme_dir=/usr/share/grub/themes/arch-classic
 
-  [[ -f "$repo_dir/grub/grub" ]] || die "Missing GRUB defaults: $repo_dir/grub/grub"
-  [[ -d "$repo_dir/grub/theme" ]] || die "Missing GRUB theme: $repo_dir/grub/theme"
+  [[ -f "$repo_dir/grub/classic/grub" ]] || die "Missing GRUB defaults: $repo_dir/grub/classic/grub"
+  [[ -d "$repo_dir/grub/classic/theme" ]] || die "Missing GRUB theme: $repo_dir/grub/classic/theme"
 
-  log_info "Installing GRUB defaults and theme"
-  install -Dm644 "$repo_dir/grub/grub" /etc/default/grub
+  log_info "Installing classic GRUB defaults and theme"
+  install -Dm644 "$repo_dir/grub/classic/grub" /etc/default/grub
   rm -rf "$theme_dir"
   install -dm755 "$theme_dir"
-  cp -a "$repo_dir/grub/theme/." "$theme_dir/"
+  cp -a "$repo_dir/grub/classic/theme/." "$theme_dir/"
   chown -R root:root "$theme_dir"
 }
 

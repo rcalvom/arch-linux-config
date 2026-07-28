@@ -1,6 +1,6 @@
 # Wayland / Hyprland desktop profile. Qtile is intentionally not installed.
 hyprland
-hyprpaper
+swaybg
 hypridle
 hyprlock
 hyprsunset
@@ -17,6 +17,9 @@ grim
 slurp
 alacritty
 calcurse
+khal
+vdirsyncer
+python-aiohttp-oauthlib
 firefox
 thunderbird
 yazi
