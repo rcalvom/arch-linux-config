@@ -46,7 +46,7 @@ Use a UEFI VM:
 Settings > System > Motherboard > Enable EFI
 ```
 
-Boot the generated ISO. It should show a `tuigreet` login on tty1. Log in with user `live` and password `live`; the selected session starts Hyprland using the repository configs, including Alacritty, Neovim, Zsh, and the Ginger prompt under the live user's home.
+Boot the generated ISO. It should show a `tuigreet` login on tty1. Log in with user `live` and password `live`; the selected session starts Hyprland using the repository configs, including Alacritty, Neovim, Zsh, and the Ginger prompt under the live user's home. The account is created during the ISO build so no password hash is versioned in the repository.
 
 Open a terminal with `SUPER + Return`, or use the terminal opened by the live session. To install from the live ISO, run:
 

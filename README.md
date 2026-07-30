@@ -50,8 +50,10 @@ sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
 The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
+OpenClaw sandbox boundaries, image recovery, and safe operator checks are documented in [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
 Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
 Disposable ISO build and full-install validation in VirtualBox are documented in [docs/vbox-automation.md](docs/vbox-automation.md).
+Original code and configuration are licensed under the [MIT License](LICENSE); bundled third-party assets retain their own terms as listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 
@@ -100,6 +102,9 @@ Contain the active terminal, editor, and shell configuration. Package folders ca
 
 ### `server-bootstrap/`
 Contains a portable, user-level Bash bootstrap for remote Linux servers. It installs terminal development tools when possible and deploys the Ginger Zsh, Neovim, OpenCode, and tmux configuration without touching system or hardware-specific settings. See [server-bootstrap/README.md](server-bootstrap/README.md).
+
+### `openclaw/`
+Contains the Docker Compose build definition for the local OpenClaw sandbox images. It does not contain OpenClaw runtime configuration, credentials, deploy keys, or workspace state. See [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
 
 ### `qtile/`
 Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.

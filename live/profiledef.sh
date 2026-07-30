@@ -3,7 +3,7 @@
 
 iso_name="archcfg-live"
 iso_label="ARCHCFG_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
-iso_publisher="Ricardo Calvo <https://github.com/rcalvom>"
+iso_publisher="Arch Config <https://github.com/rcalvom/arch-linux-config>"
 iso_application="Arch Config live installer"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
 install_dir="arch"
@@ -23,7 +23,6 @@ file_permissions=(
   ["/etc/greetd/environments"]="0:0:644"
   ["/etc/systemd/system/greetd.service.d/10-vtrgb.conf"]="0:0:644"
   ["/etc/sudoers.d/10-live"]="0:0:440"
-  ["/var/lib/greetd"]="970:970:755"
   ["/root/.bash_profile"]="0:0:644"
   ["/home/live"]="1000:1000:755"
   ["/home/live/.bash_profile"]="1000:1000:644"

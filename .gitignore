@@ -6,3 +6,6 @@ out/
 work/
 *.iso
 *.iso.sig
+
+# Generated local editor state
+relative-state/
