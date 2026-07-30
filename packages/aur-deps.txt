@@ -1,0 +1,26 @@
+# Official build and runtime dependencies for the reviewed AUR package set.
+# Update this file together with packages/aur.txt after reviewing .SRCINFO.
+base-devel
+git
+go
+npm
+nodejs
+alsa-lib
+flac
+libvorbis
+libogg
+ffmpeg
+yt-dlp
+ripgrep
+libxkbfile
+gnupg
+gtk3
+libsecret
+nss
+gcc-libs
+libnotify
+libxss
+glibc
+lsof
+shared-mime-info
+xdg-utils

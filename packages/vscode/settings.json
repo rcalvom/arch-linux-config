@@ -1,0 +1,31 @@
+{
+    "security.workspace.trust.untrustedFiles": "open",
+    "files.autoSave": "afterDelay",
+    "editor.fontSize": 16,
+    "window.zoomLevel": 1,
+    "editor.fontFamily": "'UbuntuMono Nerd font', monospace",
+    "git.openRepositoryInParentFolders": "always",
+    "chat.agent.codeBlockProgress": false,
+    "chat.agent.enabled": false,
+    "chat.agent.thinking.collapsedTools": "off",
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
+    "workbench.editor.empty.hint": "hidden",
+    "workbench.iconTheme": "material-icon-theme",
+    "window.restoreWindows": "none",
+    "window.titleBarStyle": "native",
+    "window.menuBarVisibility": "toggle",
+    "workbench.welcomePage.walkthroughs.openOnInstall": false,
+    "chat.viewWelcome.enabled": false,
+    "workbench.startupEditor": "none",
+    "extensions.ignoreRecommendations": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false
+    },
+    "claudeCode.preferredLocation": "panel"
+}

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2034
+
+iso_name="archcfg-live"
+iso_label="ARCHCFG_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
+iso_publisher="Arch Config <https://github.com/rcalvom/arch-linux-config>"
+iso_application="Arch Config live installer"
+iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
+install_dir="arch"
+buildmodes=('iso')
+bootmodes=('bios.syslinux.mbr' 'bios.syslinux.eltorito'
+           'uefi-ia32.grub.esp' 'uefi-x64.grub.esp'
+           'uefi-ia32.grub.eltorito' 'uefi-x64.grub.eltorito')
+arch="x86_64"
+pacman_conf="pacman.conf"
+airootfs_image_type="erofs"
+airootfs_image_tool_options=('-zlzma,109' -E 'ztailpacking,fragments,dedupe')
+file_permissions=(
+  ["/etc/shadow"]="0:0:400"
+  ["/etc/gshadow"]="0:0:400"
+  ["/etc/vtrgb"]="0:0:644"
+  ["/etc/greetd/config.toml"]="0:0:644"
+  ["/etc/greetd/environments"]="0:0:644"
+  ["/etc/systemd/system/greetd.service.d/10-vtrgb.conf"]="0:0:644"
+  ["/etc/sudoers.d/10-live"]="0:0:440"
+  ["/root/.bash_profile"]="0:0:644"
+  ["/home/live"]="1000:1000:755"
+  ["/home/live/.bash_profile"]="1000:1000:644"
+  ["/home/live/.zprofile"]="1000:1000:644"
+  ["/usr/local/bin/archcfg-install"]="0:0:755"
+  ["/usr/local/bin/archcfg-live-session"]="0:0:755"
+)

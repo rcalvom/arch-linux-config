@@ -1,0 +1,84 @@
+[colors.bright]
+black = "0x818181"
+blue = "0x20bbfc"
+cyan = "0x4fb8cc"
+green = "0x5fd7af"
+magenta = "0x6855de"
+red = "0xfb007a"
+white = "0xf1f1f1"
+yellow = "0xf3e430"
+
+[colors.cursor]
+cursor = "0xd9d9d9"
+text = "0x2c2c2c"
+
+[colors.dim]
+black = "0x818181"
+blue = "0x20bbfc"
+cyan = "0x4fb8cc"
+green = "0x5fd7af"
+magenta = "0x6855de"
+red = "0xfb007a"
+white = "0xf1f1f1"
+yellow = "0xf3e430"
+
+[colors.normal]
+black = "0x212121"
+blue = "0x008ec4"
+cyan = "0x20a5ba"
+green = "0x10a778"
+magenta = "0x523c79"
+red = "0xc30771"
+white = "0xe0e0e0"
+yellow = "0xa89c14"
+
+[colors.primary]
+background = "0x000000"
+#bright_background = "0x3a3a3a"
+bright_foreground = "0xd9d9d9"
+#dim_background = "0x202020"
+dim_foreground = "0xdbdbdb"
+foreground = "0xd6d6d6"
+
+[cursor.style]
+blinking = "On"
+shape = "Beam"
+
+[font]
+size = 12
+
+[font.bold]
+family = "UbuntuMono Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "UbuntuMono Nerd Font"
+style = "Italic"
+
+[font.normal]
+family = "UbuntuMono Nerd Font"
+style = "Regular"
+
+[font.offset]
+x = 1
+y = 1
+
+[terminal.shell]
+program = "/bin/zsh"
+
+[window]
+decorations = "full"
+dynamic_padding = true
+opacity = 0.8
+resize_increments = true
+
+[window.padding]
+x = 12
+y = 12
+
+[terminal]
+
+[[keyboard.bindings]]
+key = "F"
+mods = "Control|Shift"
+chars = "\u001b[70;6u"

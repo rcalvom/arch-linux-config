@@ -1,0 +1,12 @@
+[Unit]
+Description=Apply dock-aware battery charge limit
+ConditionPathExistsGlob=/sys/class/power_supply/*/charge_control_end_threshold
+Wants=upower.service
+After=upower.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/archcfg-charge-limit
+
+[Install]
+WantedBy=multi-user.target

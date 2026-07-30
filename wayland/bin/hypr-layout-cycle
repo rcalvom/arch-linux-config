@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+current=$(hyprctl getoption general:layout | awk -F ': ' '$1 == "str" {gsub(/"/, "", $2); print $2; exit}')
+
+case "$current" in
+  monocle) target=master ;;
+  master) target=monocle ;;
+  *) target=monocle ;;
+esac
+
+hyprctl eval "hl.config({ general = { layout = \"$target\" } })"

@@ -1,0 +1,63 @@
+# GRUB2 gfxmenu Linux theme
+# Designed for any resolution
+
+# Global Property
+title-text: ""
+title-font: "UbuntuMono Nerd Font Regular 48"
+title-color: "#ffffff"
+desktop-color: "#000000"
+terminal-font: "UbuntuMono Nerd Font Regular 18"
+terminal-left: "20%"
+terminal-top: "20%"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "76"
+
+# Show the boot menu
++ boot_menu {
+  left = 35%
+  top = 35%
+  width = 30%
+  height = 30%
+  item_font = "UbuntuMono Nerd Font Regular 24"
+  item_color = "#ffffff"
+  selected_item_color = "#f1ffffcc"
+  #selected_item_color = "#033e8ccc"
+  icon_width = 48
+  icon_height = 48
+  item_icon_space = 24
+  item_height = 56
+  item_padding = 8
+  item_spacing = 16
+  selected_item_pixmap_style = "select_*.png"
+}
+
++ label {
+  top = 10%
+  left = 0%
+  width = 100%
+  align = "center"
+  text = "Choose the operating system"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 48"
+}
+
++ label {
+  top = 100%-200
+  left = 35%
+  width = 30%
+  align = "center"
+  text = "Press E to edit entry parameters"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 18"
+}
+
++ label {
+  top = 100%-150
+  left = 35%
+  width = 30%
+  align = "center"
+  text = "Press C to open GRUB terminal"
+  color = "#ffffff"
+  font = "UbuntuMono Nerd Font Regular 18"
+}

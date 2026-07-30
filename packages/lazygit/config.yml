@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/jesseduffield/lazygit/master/schema/config.json
+gui:
+  border: single
+  nerdFontsVersion: "3"
+  showFileIcons: true
+  showCommandLog: false
+  showRandomTip: false
+  mouseEvents: true
+  mainPanelSplitMode: flexible
+  wrapLinesInStagingView: true
+  theme:
+    activeBorderColor:
+      - "#20a5ba"
+      - bold
+    inactiveBorderColor:
+      - "#595959"
+    searchingActiveBorderColor:
+      - "#008ec4"
+      - bold
+    optionsTextColor:
+      - "#20a5ba"
+    selectedLineBgColor:
+      - "#033e8c"
+    inactiveViewSelectedLineBgColor:
+      - "#212121"
+    cherryPickedCommitFgColor:
+      - "#20a5ba"
+    cherryPickedCommitBgColor:
+      - "#212121"
+    unstagedChangesColor:
+      - "#c30771"
+    defaultFgColor:
+      - "#d6d6d6"
+git:
+  autoFetch: true
+  autoRefresh: true
+  log:
+    order: topo-order
+    showGraph: always
+os:
+  editPreset: nvim
+  editInTerminal: true
+  open: "xdg-open {{filename}} >/dev/null 2>&1"
+  copyToClipboardCmd: wl-copy
+  readFromClipboardCmd: wl-paste --no-newline

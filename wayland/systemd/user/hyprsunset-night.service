@@ -1,0 +1,6 @@
+[Unit]
+Description=Set Hyprsunset strong warm temperature for night
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/hyprsunset-set temperature 3500

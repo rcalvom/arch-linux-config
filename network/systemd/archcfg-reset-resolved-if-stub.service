@@ -1,0 +1,7 @@
+[Unit]
+Description=Reset systemd-resolved after a VPN restores the stub resolver
+After=systemd-resolved.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/archcfg-reset-resolved-if-stub

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Render selected images in the current terminal, then return to Yazi on a keypress.
+for image in "$@"; do
+  clear
+  chafa --format=symbols --scale=max -- "$image"
+  printf '\nPress any key to return to Yazi...'
+  IFS= read -rsn 1 _
+done

@@ -1,0 +1,4 @@
+/* Hyprland owns window actions, so Thunderbird does not render its own controls. */
+.titlebar-buttonbox-container {
+  display: none !important;
+}

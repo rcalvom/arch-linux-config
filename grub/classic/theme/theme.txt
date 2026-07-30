@@ -1,0 +1,42 @@
+# Minimal terminal-style GRUB theme using the greeter font and palette.
+
+desktop-color: "#000000"
+terminal-font: "Terminus Bold 18"
+
++ label {
+  top = 17%
+  left = 0%
+  width = 100%
+  align = "center"
+  text = "Choose the operating system"
+  color = "#008ec4"
+  font = "Terminus Bold 22"
+}
+
++ boot_menu {
+  left = 30%
+  top = 29%
+  width = 40%
+  height = 36%
+  item_font = "Terminus Bold 22"
+  item_color = "#e0e0e0"
+  selected_item_font = "Terminus Bold 22"
+  selected_item_color = "#008ec4"
+  icon_width = 0
+  icon_height = 0
+  item_height = 42
+  item_padding = 8
+  item_icon_space = 0
+  item_spacing = 0
+}
+
++ label {
+  id = "__timeout__"
+  top = 72%
+  left = 0%
+  width = 100%
+  align = "center"
+  text = "Booting in %d seconds"
+  color = "#e0e0e0"
+  font = "Terminus Bold 22"
+}

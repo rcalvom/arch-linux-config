@@ -1,0 +1,37 @@
+/* Hyprland owns window actions, so Firefox does not render its own controls. */
+.titlebar-buttonbox-container {
+  display: none !important;
+}
+
+/* Hide the Tab List / Search Tabs dropdown. */
+#alltabs-button {
+  display: none !important;
+}
+
+/* Square the browser chrome without changing page content. */
+:root {
+  --tab-block-margin: 0px !important;
+  --tab-overflow-clip-margin: 0px !important;
+  --tab-selected-shadow: none !important;
+  --toolbarbutton-border-radius: 0px !important;
+  --urlbar-border-radius: 0px !important;
+  --urlbar-inner-border-radius: 0px !important;
+  --urlbarview-border-radius: 0px !important;
+  --panel-border-radius: 0px !important;
+  --panel-menuitem-border-radius: 0px !important;
+  --button-border-radius: 0px !important;
+}
+
+#tabbrowser-tabs .tab-background,
+#urlbar-background,
+.urlbar-input-container,
+#searchbar,
+#PanelUI-menu-button > .toolbarbutton-badge-stack,
+panel[type="arrow"] > .panel-arrowcontainer > .panel-arrowcontent {
+  border-radius: 0 !important;
+}
+
+/* Firefox inserts this separator before the horizontal tab strip. */
+#tabbrowser-tabs[orient="horizontal"]::before {
+  display: none !important;
+}

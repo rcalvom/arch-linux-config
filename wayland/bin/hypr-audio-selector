@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for command in jq pactl rofi; do
+  command -v "$command" >/dev/null 2>&1 || {
+    printf 'Missing required command: %s\n' "$command" >&2
+    exit 1
+  }
+done
+
+theme=$HOME/.config/rofi/share-picker.rasi
+
+# Keep unavailable analog jacks out of the menu while retaining connected devices.
+list_devices() {
+  local kind=$1
+  local default_name=$2
+  local icon=$3
+
+  case $kind in
+    sink) pactl -f json list sinks ;;
+    source) pactl -f json list sources ;;
+    *) return 1 ;;
+  esac | jq --arg kind "$kind" --arg default_name "$default_name" --arg icon "$icon" '
+    def display_name:
+      (if (.description // "") == "" then .name else .description end)
+      | gsub("[\r\n\t]+"; " ");
+    def has_available_port:
+      ([.ports[]?] | length) as $port_count
+      | ([.ports[]?.availability | select(. != "not available")] | length) as $available_count
+      | ($port_count == 0 or $available_count > 0);
+
+    map(
+      select(
+        has_available_port
+        and ($kind != "source" or (.monitor_source // "") == "")
+      )
+      | {
+          name: .name,
+          icon: $icon,
+          label: ((if .name == $default_name then "* " else "" end) + display_name),
+          active: (.name == $default_name)
+        }
+    )
+  '
+}
+
+mode=${1:-}
+case $mode in
+  output)
+    kind=sink
+    default_name=$(pactl get-default-sink 2>/dev/null || true)
+    icon=audio-speakers
+    prompt=Output
+    ;;
+  input)
+    kind=source
+    default_name=$(pactl get-default-source 2>/dev/null || true)
+    icon=audio-input-microphone
+    prompt=Input
+    ;;
+  '')
+    script_path=${BASH_SOURCE[0]}
+    rofi -show Output \
+      -modes "Output:$script_path output,Input:$script_path input" \
+      -sidebar-mode \
+      -show-icons \
+      -theme "$theme" \
+      -theme-str 'entry { placeholder: "Choose audio device"; }'
+    exit
+    ;;
+  *) exit 1 ;;
+esac
+
+if [[ ${ROFI_RETV:-0} == 1 ]]; then
+  device_name=${ROFI_INFO:-}
+  [[ -n $device_name ]] || exit 1
+
+  case $kind in
+    sink) pactl set-default-sink "$device_name" ;;
+    source) pactl set-default-source "$device_name" ;;
+  esac
+  exit
+fi
+
+# Rofi invokes this script independently for each visible mode.
+devices=$(list_devices "$kind" "$default_name" "$icon")
+printf '\0prompt\x1f%s\n' "$prompt"
+printf '\0no-custom\x1ftrue\n'
+jq -r '.[] | "\(.label)\u0000icon\u001f\(.icon)\u001finfo\u001f\(.name)" + (if .active then "\u001factive\u001ftrue" else "" end)' <<< "$devices"

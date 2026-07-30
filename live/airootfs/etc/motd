@@ -1,0 +1,15 @@
+Arch Config Live ISO
+
+Repository: /opt/arch-linux-config
+Installer:  archcfg-install
+
+This live ISO is only the installer environment. The installed system is still
+created by install.sh from the repository.
+
+UEFI is required for the installer target.
+
+Common VM command:
+  archcfg-install --vm --disk /dev/sda --profile virtualbox
+
+Repeated disposable VM test:
+  archcfg-install --vm --disk /dev/sda --profile virtualbox --yes

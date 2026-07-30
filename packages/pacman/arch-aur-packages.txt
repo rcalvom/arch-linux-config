@@ -1,0 +1,6 @@
+# Inventory only; packages/aur.txt controls installer AUR input.
+slack-desktop
+visual-studio-code-bin
+yay-bin
+yay-bin-debug
+zoom

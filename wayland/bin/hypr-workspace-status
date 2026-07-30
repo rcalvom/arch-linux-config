@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ! $1 =~ ^[1-9]$ ]]; then
+  exit 2
+fi
+
+cache_file="${XDG_RUNTIME_DIR:?}/archcfg-hypr-workspaces"
+while IFS=$'\t' read -r workspace_id payload; do
+  if [[ $workspace_id == "$1" ]]; then
+    printf '%s\n' "$payload"
+    exit 0
+  fi
+done < "$cache_file"
+
+exit 1

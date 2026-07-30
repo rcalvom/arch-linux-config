@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for command in rofi hyprlock loginctl systemctl; do
+  command -v "$command" >/dev/null 2>&1 || {
+    printf 'Missing required command: %s\n' "$command" >&2
+    exit 1
+  }
+done
+
+theme=$HOME/.config/rofi/share-picker.rasi
+icon_dir=$HOME/.config/rofi/share-picker-icons
+lock_icon=$icon_dir/session-lock.svg
+suspend_icon=$icon_dir/suspend.svg
+logout_icon=$icon_dir/session-logout.svg
+power_icon=$icon_dir/session-power.svg
+action=${1:-}
+
+if [[ -z $action ]]; then
+  action=$(
+    {
+      printf 'Lock screen\0icon\x1f%s\n' "$lock_icon"
+      printf 'Suspend\0icon\x1f%s\n' "$suspend_icon"
+      printf 'Log out\0icon\x1f%s\n' "$logout_icon"
+      printf 'Power off\0icon\x1f%s\n' "$power_icon"
+    } | rofi -dmenu -i -no-custom -show-icons -p 'Session' -theme "$theme" \
+      -theme-str 'entry { placeholder: "Choose an action"; }'
+  ) || exit 0
+fi
+
+case $action in
+  'Lock screen') exec hyprlock ;;
+  Suspend)
+    # Do not suspend until the lock screen is running.
+    hyprlock &
+    lock_pid=$!
+    sleep 1
+    kill -0 "$lock_pid" 2>/dev/null
+    exec systemctl suspend
+    ;;
+  'Log out') exec loginctl terminate-session "${XDG_SESSION_ID:?Missing XDG_SESSION_ID}" ;;
+  'Power off') exec systemctl poweroff ;;
+  *) exit 2 ;;
+esac

@@ -1,0 +1,11 @@
+# Python cache
+__pycache__
+
+# ISO build output
+out/
+work/
+*.iso
+*.iso.sig
+
+# Generated local editor state
+relative-state/

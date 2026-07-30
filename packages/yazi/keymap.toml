@@ -1,0 +1,17 @@
+# Additional bindings supplement Yazi's built-in Vim-style keymap.
+
+[mgr]
+prepend_keymap = [
+  { on = ["g", "h"], run = "cd ~", desc = "Home" },
+  { on = ["g", "d"], run = "cd ~/Documents", desc = "Documents" },
+  { on = ["g", "D"], run = "cd ~/Downloads", desc = "Downloads" },
+  { on = ["g", "p"], run = "cd ~/Pictures", desc = "Pictures" },
+  { on = ["g", "m"], run = "cd ~/Music", desc = "Music" },
+  { on = ["g", "v"], run = "cd ~/Videos", desc = "Videos" },
+  { on = ["g", "c"], run = "cd ~/.config", desc = "Configuration" },
+  { on = ["g", "r"], run = "cd ~/Documents/Personal/repositories", desc = "Repositories" },
+  { on = ["g", "a"], run = "cd ~/Documents/Personal/repositories/arch-linux-config", desc = "Arch configuration" },
+  { on = ["g", "t"], run = "cd /tmp", desc = "Temporary files" },
+  { on = ["g", "f"], run = "search --via=fd --args='--hidden --exclude .git'", desc = "Find files" },
+  { on = ["g", "/"], run = "search --via=rg", desc = "Search contents" },
+]

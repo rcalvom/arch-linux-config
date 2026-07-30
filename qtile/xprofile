@@ -1,0 +1,30 @@
+setxkbmap -layout latam,latam
+xset -b
+export XCURSOR_SIZE=24
+
+pgrep -x picom >/dev/null 2>&1 || picom --config "$HOME/.config/picom/picom.conf" -b
+
+# Qtile handles the resulting RandR event without a manual config reload.
+internal_output=
+external_outputs=()
+
+while read -r output state _; do
+    [[ "$state" == "connected" ]] || continue
+
+    case "$output" in
+        eDP-* | LVDS-* | DSI-*) internal_output=$output ;;
+        *) external_outputs+=("$output") ;;
+    esac
+done < <(xrandr --query)
+
+if [[ -n "$internal_output" && ${#external_outputs[@]} -gt 0 ]]; then
+    xrandr_args=(--output "$internal_output" --auto --primary)
+    previous_output=$internal_output
+
+    for output in "${external_outputs[@]}"; do
+        xrandr_args+=(--output "$output" --auto --right-of "$previous_output")
+        previous_output=$output
+    done
+
+    xrandr "${xrandr_args[@]}"
+fi

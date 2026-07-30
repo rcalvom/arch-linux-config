@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+restore_flag=""
+if [[ ${1:-} == "--allow-token" ]]; then
+  restore_flag="r"
+fi
+
+# Adwaita's symbolic SVGs hard-code gray fills, so use local white copies.
+icon_dir=$HOME/.config/rofi/share-picker-icons
+screen_icon=$icon_dir/screen.svg
+window_icon=$icon_dir/window.svg
+region_icon=$icon_dir/region.svg
+
+declare -A window_icon_cache=()
+desktop_dirs=("${XDG_DATA_HOME:-$HOME/.local/share}/applications")
+IFS=: read -r -a data_dirs <<< "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+for data_dir in "${data_dirs[@]}"; do
+  desktop_dirs+=("$data_dir/applications")
+done
+desktop_dirs+=(
+  "$HOME/.local/share/flatpak/exports/share/applications"
+  "/var/lib/flatpak/exports/share/applications"
+)
+
+choose_index() {
+  local prompt=$1
+  shift
+
+  local theme=$HOME/.config/rofi/share-picker.rasi
+  local entry
+  local icon
+  local label
+  local index
+  (( $# > 0 )) || return 1
+
+  for entry in "$@"; do
+    [[ $entry == *$'\t'* ]] || return 1
+  done
+
+  index=$(
+    for entry in "$@"; do
+      icon=${entry%%$'\t'*}
+      label=${entry#*$'\t'}
+      printf '%s\0icon\x1f%s\n' "$label" "$icon"
+    done | rofi -dmenu -i -no-custom -show-icons -format i -p "$prompt" -theme "$theme"
+  ) || return 1
+  [[ $index =~ ^[0-9]+$ ]] || return 1
+  (( index < $# )) || return 1
+
+  printf '%s\n' "$index"
+}
+
+# XDPH supplies a window class, while desktop entries provide the icon name.
+desktop_entry_details() {
+  local file=$1
+  local line
+  local in_desktop_entry=false
+  local startup_class=""
+  local icon=""
+
+  while IFS= read -r line || [[ -n $line ]]; do
+    line=${line%$'\r'}
+    case $line in
+      '[Desktop Entry]') in_desktop_entry=true ;;
+      '['*)
+        if [[ $in_desktop_entry == true ]]; then
+          break
+        fi
+        ;;
+      Icon=*)
+        if [[ $in_desktop_entry == true ]]; then
+          icon=${line#Icon=}
+        fi
+        ;;
+      StartupWMClass=*)
+        if [[ $in_desktop_entry == true ]]; then
+          startup_class=${line#StartupWMClass=}
+        fi
+        ;;
+    esac
+  done < "$file"
+
+  printf '%s\t%s\n' "$startup_class" "$icon"
+}
+
+resolve_window_icon() {
+  local class=$1
+  local key
+  local dir
+  local file
+  local entry
+  local startup_class
+  local icon
+
+  resolved_window_icon=$window_icon
+  [[ -n $class ]] || return 0
+
+  key=${class,,}
+  if [[ ${window_icon_cache[$key]+_} ]]; then
+    resolved_window_icon=${window_icon_cache[$key]}
+    return 0
+  fi
+
+  for dir in "${desktop_dirs[@]}"; do
+    file=$dir/$class.desktop
+    [[ -f $file ]] || continue
+
+    entry=$(desktop_entry_details "$file")
+    icon=${entry#*$'\t'}
+    if [[ -n $icon ]]; then
+      window_icon_cache["$key"]=$icon
+      resolved_window_icon=$icon
+      return 0
+    fi
+  done
+
+  for dir in "${desktop_dirs[@]}"; do
+    [[ -d $dir ]] || continue
+
+    for file in "$dir"/*.desktop; do
+      [[ -f $file ]] || continue
+
+      entry=$(desktop_entry_details "$file")
+      startup_class=${entry%%$'\t'*}
+      icon=${entry#*$'\t'}
+      if [[ -n $icon && ${startup_class,,} == "$key" ]]; then
+        window_icon_cache["$key"]=$icon
+        resolved_window_icon=$icon
+        return 0
+      fi
+    done
+  done
+
+  window_icon_cache["$key"]=$window_icon
+}
+
+select_screen() {
+  local -a screens=()
+  local -a picker_entries=()
+  mapfile -t screens < <(hyprctl monitors -j | jq -r '.[] | select(.disabled | not) | "\(.name)\t\(.description) (\(.width)x\(.height))"')
+
+  local screen
+  for screen in "${screens[@]}"; do
+    picker_entries+=("$screen_icon"$'\t'"$screen")
+  done
+
+  local index
+  index=$(choose_index "Share screen" "${picker_entries[@]}") || return 1
+
+  local output=${screens[index]%%$'\t'*}
+  printf '[SELECTION]%s/screen:%s\n' "$restore_flag" "$output"
+}
+
+select_window() {
+  local list=${XDPH_WINDOW_SHARING_LIST:-}
+  local -a window_ids=()
+  local -a picker_entries=()
+  local class_marker='[HC>]'
+  local title_marker='[HT>]'
+  local address_marker='[HE>]'
+  local entry_marker='[HA>]'
+
+  while [[ -n $list ]]; do
+    [[ $list == *"$class_marker"* && $list == *"$title_marker"* && $list == *"$address_marker"* && $list == *"$entry_marker"* ]] || break
+
+    local id=${list%%"$class_marker"*}
+    list=${list#*"$class_marker"}
+    local class=${list%%"$title_marker"*}
+    list=${list#*"$title_marker"}
+    local title=${list%%"$address_marker"*}
+    list=${list#*"$address_marker"}
+    list=${list#*"$entry_marker"}
+
+    [[ $id =~ ^[0-9]+$ ]] || continue
+    title=${title//$'\n'/ }
+    title=${title//$'\r'/ }
+    title=${title//$'\t'/ }
+
+    window_ids+=("$id")
+    resolve_window_icon "$class"
+    picker_entries+=("$resolved_window_icon"$'\t'"$class: $title")
+  done
+
+  local index
+  index=$(choose_index "Share window" "${picker_entries[@]}") || return 1
+
+  printf '[SELECTION]%s/window:%s\n' "$restore_flag" "${window_ids[index]}"
+}
+
+select_region() {
+  local region
+  region=$(slurp -f '%o %x %y %w %h') || return 1
+
+  local output x y width height
+  read -r output x y width height <<< "$region"
+  [[ -n $output && $x =~ ^-?[0-9]+$ && $y =~ ^-?[0-9]+$ && $width =~ ^[0-9]+$ && $height =~ ^[0-9]+$ ]] || return 1
+
+  local origin
+  origin=$(hyprctl monitors -j | jq -r --arg output "$output" '.[] | select(.name == $output) | "\(.x) \(.y)"')
+
+  local origin_x origin_y
+  read -r origin_x origin_y <<< "$origin"
+  [[ $origin_x =~ ^-?[0-9]+$ && $origin_y =~ ^-?[0-9]+$ ]] || return 1
+
+  printf '[SELECTION]%s/region:%s@%d,%d,%d,%d\n' "$restore_flag" "$output" "$((x - origin_x))" "$((y - origin_y))" "$width" "$height"
+}
+
+mode=$(choose_index "Share" \
+  "$screen_icon"$'\tScreen' \
+  "$window_icon"$'\tWindow' \
+  "$region_icon"$'\tRegion') || exit 1
+
+case $mode in
+  0) select_screen ;;
+  1) select_window ;;
+  2) select_region ;;
+  *) exit 1 ;;
+esac

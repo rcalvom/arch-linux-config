@@ -1,0 +1,113 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    "source": "arch",
+    "type": "small",
+    "color": {
+      "1": "#008ec4"
+    },
+    "padding": {
+      "left": 2,
+      "right": 4
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "#008ec4",
+      "title": "#20a5ba",
+      "output": "#d6d6d6",
+      "separator": "#4fb8cc"
+    },
+    "key": {
+      "width": 14
+    },
+    "percent": {
+      "type": ["num", "num-color"]
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "key": " "
+    },
+    {
+      "type": "separator",
+      "string": "────────────────────",
+      "outputColor": "#595959"
+    },
+    {
+      "type": "os",
+      "key": "{icon} OS",
+      "keyIcon": ""
+    },
+    {
+      "type": "host",
+      "key": "{icon} Host",
+      "keyIcon": "󰌢"
+    },
+    {
+      "type": "kernel",
+      "key": "{icon} Kernel",
+      "keyIcon": ""
+    },
+    {
+      "type": "uptime",
+      "key": "{icon} Uptime",
+      "keyIcon": "󰅐"
+    },
+    {
+      "type": "packages",
+      "key": "{icon} Packages",
+      "keyIcon": "󰏖"
+    },
+    {
+      "type": "shell",
+      "key": "{icon} Shell",
+      "keyIcon": ""
+    },
+    {
+      "type": "wm",
+      "key": "{icon} WM",
+      "keyIcon": ""
+    },
+    {
+      "type": "terminal",
+      "key": "{icon} Terminal",
+      "keyIcon": ""
+    },
+    {
+      "type": "cpu",
+      "key": "{icon} CPU",
+      "keyIcon": ""
+    },
+    {
+      "type": "gpu",
+      "key": "{icon} GPU",
+      "keyIcon": "󰾲"
+    },
+    {
+      "type": "memory",
+      "key": "{icon} Memory",
+      "keyIcon": ""
+    },
+    {
+      "type": "disk",
+      "key": "{icon} Disk",
+      "keyIcon": "",
+      "folders": "/"
+    },
+    {
+      "type": "battery",
+      "key": "{icon} Battery",
+      "keyIcon": ""
+    },
+    "break",
+    {
+      "type": "colors",
+      "key": " ",
+      "symbol": "block",
+      "paddingLeft": 2
+    }
+  ]
+}

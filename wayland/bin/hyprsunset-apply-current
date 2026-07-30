@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Applies Ricardo's schedule:
+# 18:30-07:30 -> strong warm filter 3500K
+# 07:30-18:30 -> identity/no filter
+set -u
+now_minutes=$((10#$(date +%H) * 60 + 10#$(date +%M)))
+night_start=$((18 * 60 + 30))
+day_start=$((7 * 60 + 30))
+
+if [ "$now_minutes" -ge "$night_start" ] || [ "$now_minutes" -lt "$day_start" ]; then
+  exec "$HOME/.local/bin/hyprsunset-set" temperature 3500
+else
+  exec "$HOME/.local/bin/hyprsunset-set" identity
+fi

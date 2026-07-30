@@ -1,0 +1,21 @@
+name: openclaw-sandboxes
+
+# Build only: these services exist to produce local OpenClaw sandbox images.
+services:
+  sandbox-base:
+    image: openclaw-sandbox:bookworm-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      # Build-time workaround only; OpenClaw controls runtime networking.
+      network: host
+
+  sandbox-ssh:
+    image: openclaw-sandbox-ssh:bookworm-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ssh
+      # Build-time workaround only; OpenClaw controls runtime networking.
+      network: host

@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Refresh cached workspace state and notify Waybar on Hyprland events."""
+
+from __future__ import annotations
+
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+WORKSPACE_EVENTS = {
+    "workspacev2",
+    "focusedmonv2",
+    "openwindow",
+    "closewindow",
+    "movewindowv2",
+}
+STATE_SCRIPT = Path(__file__).with_name("hypr-workspace-state")
+
+
+def refresh_and_notify() -> None:
+    subprocess.run(
+        [sys.executable, str(STATE_SCRIPT)],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    subprocess.run(
+        ["pkill", "-RTMIN+8", "waybar"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def main() -> int:
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+    signature = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
+    if not runtime_dir or not signature:
+        return 2
+
+    socket_path = os.path.join(runtime_dir, "hypr", signature, ".socket2.sock")
+    while True:
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.connect(socket_path)
+                refresh_and_notify()
+                with client.makefile("r", encoding="utf-8", errors="replace") as events:
+                    for line in events:
+                        if line.partition(">>")[0] in WORKSPACE_EVENTS:
+                            refresh_and_notify()
+        except FileNotFoundError:
+            return 0
+        except OSError:
+            # Avoid a busy loop while Hyprland recreates its event socket.
+            time.sleep(1)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

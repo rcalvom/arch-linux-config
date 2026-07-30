@@ -1,0 +1,16 @@
+# Personal developer tools from official repositories.
+base-devel
+openssh
+wget
+unzip
+neovim
+btop
+fastfetch
+lazygit
+docker
+docker-compose
+lazydocker
+python-pip
+gcc
+jdk-openjdk
+npm
