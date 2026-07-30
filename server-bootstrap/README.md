@@ -11,7 +11,7 @@ It configures:
 
 It does not configure Git identity, SSH keys, API keys, OpenCode credentials, disks, services, networking, or the default shell unless explicitly requested.
 
-## Use
+## Use From A Clone
 
 Clone the repository, then run the script as the regular target user. Do not run the whole script with `sudo`; it asks for `sudo` or `doas` only when package installation needs it.
 
@@ -26,6 +26,28 @@ After exporting `server-bootstrap/` to its own repository, run the same script f
 ```bash
 bash bootstrap.sh
 ```
+
+## Advanced: One-Line Launch
+
+After this repository is public and the changes are pushed to `master`, the launcher can fetch the matching payload and invoke the bootstrap in one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rcalvom/arch-linux-config/master/server-bootstrap/install.sh | bash -s -- --yes --ref master
+```
+
+Equivalent `wget` form:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/rcalvom/arch-linux-config/master/server-bootstrap/install.sh | bash -s -- --yes --ref master
+```
+
+`--yes` is required because the bootstrap installs packages and replaces managed user configuration after making backups. To inspect the planned archive URL and forwarded bootstrap command without downloading or changing anything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rcalvom/arch-linux-config/master/server-bootstrap/install.sh | bash -s -- --dry-run --ref master --skip-packages
+```
+
+For a reproducible run, replace both occurrences of `master` with the same reviewed tag or commit SHA. The launcher downloads the GitHub archive for that ref into a temporary directory, verifies its top-level path, invokes the bundled `server-bootstrap/bootstrap.sh`, and removes the temporary directory afterwards. Bootstrap options such as `--skip-packages`, `--skip-opencode-install`, and `--set-zsh-default` pass through unchanged.
 
 The supported package managers are Apt, DNF, Pacman, Zypper, and APK. The script installs `git`, `zsh`, `neovim`, `tmux`, `ripgrep`, `fd`, `curl`, Node.js, and npm when the package manager is available.
 
@@ -79,7 +101,7 @@ ${XDG_STATE_HOME:-~/.local/state}/server-bootstrap/backups/run.XXXXXX/
 
 The script then continues if a separate step fails and exits nonzero only after printing every failed step. This means a missing package manager, no sudo access, or a temporary network error does not prevent local themes and configuration files from being installed.
 
-The bootstrap does not use `curl | bash`. Oh My Zsh is cloned through Git and OpenCode is installed with npm under `~/.local`, so no global npm permissions are required.
+The one-line launcher is an advanced convenience path, not a substitute for reviewing the source. It requires `--yes`, fetches the requested GitHub ref into a temporary directory, and then runs the same local bootstrap used by a clone. Oh My Zsh is cloned through Git and OpenCode is installed with npm under `~/.local`, so no global npm permissions are required.
 
 For safety, it refuses to replace a symlinked managed file or write through a symlinked parent directory. It honors absolute `ZDOTDIR` and `ZSH_CUSTOM` paths when selecting the Zsh config and Ginger theme destinations; relative paths are rejected because their runtime locations are ambiguous. Relative `XDG_CONFIG_HOME` and `XDG_STATE_HOME` values are ignored in accordance with the XDG specification and fall back to their standard paths under `$HOME`.
 
@@ -100,12 +122,10 @@ OpenCode's visual theme belongs in `~/.config/opencode/tui.json` and `~/.config/
 
 It contains no provider configuration, tokens, MCP credentials, or personal state. Quit and restart OpenCode after changing its configuration or theme.
 
-## Publishing This Directory
+## Publishing
 
-Before publishing, review the payload, choose a license, and create a standalone repository from this directory. For example, Git can export its history as a separate branch:
+The launcher defaults to `rcalvom/arch-linux-config` at `master` and expects `server-bootstrap/` to exist in that repository. Before announcing the one-line command:
 
-```bash
-git subtree split --prefix=server-bootstrap -b server-bootstrap-public
-```
-
-Push that branch to a new public repository rather than making the whole hardware-specific Arch configuration repository public.
+1. Review every tracked file in the repository because making this remote public exposes more than the server bootstrap.
+2. Choose and add a license.
+3. Push the launcher and payload to the public `master` branch, then test both documented URLs from a disposable host.

@@ -14,7 +14,8 @@ opt.confirm = true
 opt.fillchars = { eob = " " }
 opt.showtabline = 2
 opt.laststatus = 3
-opt.cmdheight = 0
+-- Neovim 0.7 requires a positive command-line height.
+opt.cmdheight = vim.fn.has("nvim-0.8") == 1 and 0 or 1
 opt.showmode = false
 opt.showcmd = false
 opt.ruler = false
