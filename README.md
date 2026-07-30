@@ -1,13 +1,13 @@
 # Arch Linux Configuration Repository
 
-**Author:** Ricardo Andres Calvo Mendez  
+**Author:** Ricardo Andres Calvo Mendez<br>
 **Last Updated:** 2026-07-25
 
 ---
 
 ## Overview
 
-This repository contains a curated and reproducible set of configurations for an Arch Linux system.  
+This repository contains a curated and reproducible set of configurations for an Arch Linux system.
 Its purpose is to document, version, and automate system setup across installations, enabling fast recovery, consistency, and incremental improvements over time.
 
 The active installer target is a UEFI Arch Linux system with a Hyprland/Wayland desktop. Qtile files are kept only as legacy reference and are not installed by the new installer path.
@@ -146,11 +146,13 @@ The AMD laptop should eventually add `amd-ucode` to the package profile and `fwu
 
 ## Notes
 
-This repository reflects a personal workflow and hardware setup.  
+This repository reflects a personal workflow and hardware setup.
 Adjustments may be required when applying it to different machines or use cases.
 
 ---
 
 ## License
 
-Specify a license here (e.g., MIT, GPL, or private use).
+Original code and configuration are licensed under the [MIT License](LICENSE).
+Bundled third-party assets retain their own terms as listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
