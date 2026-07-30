@@ -380,9 +380,9 @@ def lua_for_operation(operation: dict[str, Any]) -> str:
     return "hl.monitor({ " + ", ".join(fields) + " })"
 
 
-def run_operation(operation: dict[str, Any]) -> None:
+def run_operations(operations: list[dict[str, Any]]) -> None:
     result = subprocess.run(
-        [HYPRCTL, "eval", lua_for_operation(operation)],
+        [HYPRCTL, "eval", "\n".join(lua_for_operation(operation) for operation in operations)],
         capture_output=True,
         text=True,
         check=False,
@@ -453,14 +453,12 @@ def apply_operations(operations: list[dict[str, Any]]) -> None:
     disabled = [operation for operation in operations if operation["action"] == "disable"]
 
     # Always verify a usable output before disabling anything else.
-    for operation in enabled:
-        run_operation(operation)
     if enabled:
+        run_operations(enabled)
         wait_for_operations(enabled)
 
-    for operation in disabled:
-        run_operation(operation)
     if disabled:
+        run_operations(disabled)
         wait_for_operations(disabled)
 
 
