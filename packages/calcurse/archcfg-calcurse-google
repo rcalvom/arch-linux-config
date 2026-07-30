@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+state_home=${XDG_STATE_HOME:-"$HOME/.local/state"}
+vdir_config="$config_home/vdirsyncer/config"
+calendar_dir="$data_home/vdirsyncer/calendars"
+calcurse_config_dir="$config_home/calcurse"
+profile_dir="$data_home/archcfg/calcurse-google"
+generations_dir="$profile_dir/generations"
+current_profile="$profile_dir/current"
+state_dir="$state_home/archcfg"
+lock_file="$state_dir/calcurse-google.lock"
+build_dir=
+file_list=
+import_config_dir=
+session_dir=
+
+cleanup() {
+    local path
+
+    for path in "$build_dir" "$file_list" "$import_config_dir" "$session_dir"; do
+        [[ -z "$path" || ! -e "$path" ]] || rm -rf -- "$path"
+    done
+}
+
+cleanup_generations() {
+    local current_generation
+    local -a generations=()
+    local -a backups=()
+    local generation
+    local index
+
+    current_generation=$(readlink -f -- "$current_profile") || return 0
+    shopt -s nullglob
+    generations=("$generations_dir"/*)
+    shopt -u nullglob
+
+    for generation in "${generations[@]}"; do
+        [[ "$generation" == "$current_generation" ]] || backups+=("$generation")
+    done
+
+    # Keep the active generation and two rollback generations.
+    for ((index = 0; index < ${#backups[@]} - 2; index++)); do
+        rm -rf -- "${backups[index]}"
+    done
+}
+
+cleanup_stale_workdirs() {
+    local path
+    local owner_pid
+
+    shopt -s nullglob
+    for path in "$generations_dir"/.build.* "$state_dir"/calcurse-google-config.* "$state_dir"/calcurse-google-files.*; do
+        rm -rf -- "$path"
+    done
+
+    for path in "$state_dir"/calcurse-google-session.*; do
+        [[ -f "$path/.archcfg-owner-pid" ]] || continue
+        owner_pid=$(<"$path/.archcfg-owner-pid")
+        [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null && continue
+        rm -rf -- "$path"
+    done
+    shopt -u nullglob
+}
+
+build_profile() {
+    local -a calendar_files=()
+    local calendar_file
+    local generation_name
+    local generation_dir
+    local next_link
+
+    if ! file_list=$(mktemp "$state_dir/calcurse-google-files.XXXXXX"); then
+        printf 'Could not prepare the Google Calendar file list.\n' >&2
+        return 1
+    fi
+
+    if ! find "$calendar_dir" -type f -name '*.ics' -print0 | sort -z >"$file_list"; then
+        printf 'Could not read the Google Calendar mirror; keeping the last verified Calcurse view.\n' >&2
+        return 1
+    fi
+
+    if ! mapfile -d '' calendar_files <"$file_list"; then
+        printf 'Could not load the Google Calendar file list.\n' >&2
+        return 1
+    fi
+
+    if ((${#calendar_files[@]} == 0)); then
+        printf 'Google Calendar mirror has no event files; keeping the last verified Calcurse view.\n' >&2
+        return 1
+    fi
+
+    if ! build_dir=$(mktemp -d "$generations_dir/.build.XXXXXX"); then
+        printf 'Could not create a Calcurse Google view.\n' >&2
+        return 1
+    fi
+
+    if ! import_config_dir=$(mktemp -d "$state_dir/calcurse-google-config.XXXXXX"); then
+        printf 'Could not prepare the Calcurse import configuration.\n' >&2
+        return 1
+    fi
+
+    printf 'Building Calcurse Google view from %d calendar files.\n' "${#calendar_files[@]}"
+
+    for calendar_file in "${calendar_files[@]}"; do
+        if ! calcurse -D "$build_dir" -C "$import_config_dir" -q -i "$calendar_file"; then
+            printf 'Could not import a Google Calendar event; keeping the last verified Calcurse view.\n' >&2
+            return 1
+        fi
+    done
+
+    if { [[ ! -s "$build_dir/apts" ]] && [[ ! -s "$build_dir/todo" ]]; } ||
+        ! calcurse -D "$build_dir" -C "$import_config_dir" --read-only -G >/dev/null; then
+        printf 'Generated Calcurse Google view failed validation; keeping the last verified view.\n' >&2
+        return 1
+    fi
+
+    printf -v generation_name '%s-%08d' "$(date -u +%Y%m%dT%H%M%SZ)" "$$"
+    generation_dir="$generations_dir/$generation_name"
+    if ! mv -- "$build_dir" "$generation_dir"; then
+        printf 'Could not publish the Calcurse Google view.\n' >&2
+        return 1
+    fi
+    build_dir=
+
+    next_link="$profile_dir/.current.$$"
+    if ! ln -s "generations/$generation_name" "$next_link"; then
+        printf 'Could not activate the Calcurse Google view.\n' >&2
+        return 1
+    fi
+
+    if ! mv -Tf -- "$next_link" "$current_profile"; then
+        rm -f -- "$next_link"
+        printf 'Could not activate the Calcurse Google view.\n' >&2
+        return 1
+    fi
+
+    cleanup_generations
+}
+
+prepare_session() {
+    local generation
+
+    if ! generation=$(readlink -f -- "$current_profile") || [[ ! -d "$generation" ]]; then
+        printf 'No verified Google Calendar view is available yet.\n' >&2
+        return 1
+    fi
+
+    if ! session_dir=$(mktemp -d "$state_dir/calcurse-google-session.XXXXXX"); then
+        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        return 1
+    fi
+
+    if ! printf '%s\n' "$$" >"$session_dir/.archcfg-owner-pid"; then
+        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        return 1
+    fi
+
+    # Calcurse can write note files even with --read-only, so never open a retained generation directly.
+    if ! cp -a -- "$generation/." "$session_dir/" ||
+        ! cp -a -- "$calcurse_config_dir/conf" "$calcurse_config_dir/keys" "$session_dir/"; then
+        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        return 1
+    fi
+}
+
+[[ $# -eq 0 ]] || {
+    printf 'Usage: %s\n' "${0##*/}" >&2
+    exit 2
+}
+
+[[ -f "$calcurse_config_dir/conf" && -f "$calcurse_config_dir/keys" ]] || {
+    printf 'Calcurse is not configured.\n' >&2
+    exit 1
+}
+
+command -v calcurse >/dev/null || {
+    printf 'calcurse is not installed.\n' >&2
+    exit 1
+}
+
+command -v flock >/dev/null || {
+    printf 'flock is not installed.\n' >&2
+    exit 1
+}
+
+umask 077
+install -dm700 "$profile_dir" "$generations_dir" "$state_dir"
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+exec 9>"$lock_file"
+if ! flock -n 9; then
+    printf 'Another Calcurse Google refresh is already running.\n' >&2
+    exit 1
+fi
+
+cleanup_stale_workdirs
+
+if ! command -v vdirsyncer >/dev/null; then
+    printf 'vdirsyncer is not installed; opening the last verified Calcurse view.\n' >&2
+elif [[ ! -f "$vdir_config" ]]; then
+    printf 'Google Calendar is not configured; opening the last verified Calcurse view.\n' >&2
+elif ! vdirsyncer --config "$vdir_config" sync; then
+    printf 'Google Calendar sync failed; opening the last verified Calcurse view.\n' >&2
+elif [[ ! -d "$calendar_dir" ]]; then
+    printf 'Google Calendar mirror is unavailable; opening the last verified Calcurse view.\n' >&2
+elif ! build_profile; then
+    :
+fi
+
+if ! prepare_session; then
+    exit 1
+fi
+
+rm -rf -- "$file_list" "$import_config_dir"
+file_list=
+import_config_dir=
+
+flock -u 9
+set +e
+calcurse -D "$session_dir" --read-only
+calcurse_status=$?
+set -e
+exit "$calcurse_status"

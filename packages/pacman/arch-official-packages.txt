@@ -24,7 +24,7 @@ grim
 grub
 hyprland
 hyprlock
-swaybg
+hyprpaper
 hyprsunset
 impala
 imagemagick

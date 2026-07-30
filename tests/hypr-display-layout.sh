@@ -61,4 +61,39 @@ assert calls == [
     [module.HYPRCTL, "eval", "\n".join(module.lua_for_operation(operation) for operation in disabled)],
 ]
 assert waits == [enabled, disabled]
+
+desk_monitors = [
+    {
+        "name": "eDP-1",
+        "description": module.LAPTOP,
+        "width": 1920,
+        "height": 1200,
+        "scale": 1.0,
+        "transform": 0,
+    },
+    {
+        "name": "DP-7",
+        "description": module.DESK_LEFT_DISPLAY,
+        "width": 1920,
+        "height": 1080,
+        "scale": 1.0,
+        "transform": 0,
+    },
+    {
+        "name": "DP-8",
+        "description": module.DESK_RIGHT_DISPLAY,
+        "width": 1920,
+        "height": 1080,
+        "scale": 1.0,
+        "transform": 0,
+    },
+]
+desk_plan = module.plan_for_state(
+    {"version": 1, "kind": "profile", "profile": "desk-three-screen"}, desk_monitors
+)
+assert [(operation["output"], operation["position"]) for operation in desk_plan["operations"]] == [
+    ("DP-7", "0x0"),
+    ("eDP-1", "1920x0"),
+    ("DP-8", "3840x0"),
+]
 PY

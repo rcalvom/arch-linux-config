@@ -191,6 +191,7 @@ while IFS='|' read -r source destination mode; do
   compare_file "$repo_dir/$source" "$home_dir/$destination" "$mode"
 done <<'EOF'
 wayland/hypr/hyprland.lua|.config/hypr/hyprland.lua|0644
+wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf|0644
 wayland/hypr/xdph.conf|.config/hypr/xdph.conf|0644
 wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf|0644
 wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf|0644

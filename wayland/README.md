@@ -9,7 +9,7 @@ This folder records the active Wayland/Hyprland setup used by the installer. Qti
 - Hyprland session as the primary desktop target.
 - Waybar as the status bar.
 - Rofi as the app launcher.
-- Khal as the read-only Google Calendar view, with Calcurse for local TODOs and notes.
+- Calcurse for local TODOs and notes, with a separate read-only Google Calendar view.
 - Wdisplays for one-off graphical output adjustments.
 - Firefox and Thunderbird with square browser chrome.
 - Yazi as terminal file manager.
@@ -22,7 +22,7 @@ See `packages/desktop.txt`.
 Important packages added/used:
 
 - `hyprland`
-- `swaybg`
+- `hyprpaper`
 - `hyprlock`
 - `hyprsunset`
 - `fprintd`
@@ -92,7 +92,7 @@ SUPER + E      -> Alacritty running Yazi
 SUPER + A      -> Rofi audio input/output selector
 SUPER + P      -> Rofi display mode/profile selector
 SUPER + Shift+P -> pseudo-tile active window
-SUPER + C      -> Alacritty running the Khal Google Calendar view
+SUPER + C      -> Alacritty running the Calcurse Google Calendar view
 SUPER + W/Q    -> close active window
 SUPER + L      -> Hyprlock
 CTRL + ALT + Delete -> Rofi session menu
@@ -120,7 +120,7 @@ Firefox and Thunderbird use versioned profile templates under `packages/`. Their
 
 Firefox starts through `archcfg-firefox` from the `SUPER + B` binding. Its browser chrome hides client window controls and the Tab List button, with square tabs, controls, and panels. Thunderbird applies the equivalent titlebar customization through `archcfg-thunderbird`.
 
-Calcurse, Khal, Vdirsyncer, and VS Code settings are also versioned under `packages/`. VS Code remains an optional AUR application and is not included in the live ISO.
+Calcurse, Vdirsyncer, and VS Code settings are also versioned under `packages/`. VS Code remains an optional AUR application and is not included in the live ISO.
 
 ## Monitor layout
 
@@ -133,11 +133,14 @@ Calcurse, Khal, Vdirsyncer, and VS Code settings are also versioned under `packa
 
 Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays.
 
+`Desk - 3 displays` maps Dell P2422H `HDFJ5V3` to the left of the laptop panel and Dell P2422H `H3G8XB3` to its right. It matches the monitors by their physical descriptions rather than transient connector names.
+
 `SUPER + P` opens a compact Rofi picker with two tabs:
 
 ```text
 Modes    -> Single monitor, Extend displays, Mirror / Duplicate
 Profiles -> Dock - 3 displays
+          Desk - 3 displays
 ```
 
 Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then selects and persists Extend displays. The `Dock - 3 displays` profile restores the layout shown above.
@@ -165,7 +168,7 @@ The Lua config starts these session helpers:
 ```text
 waybar
 mako
-swaybg
+hyprpaper
 hypr-display-layout
 hypridle
 polkit-kde-authentication-agent-1
@@ -236,7 +239,7 @@ SUPER + R       -> warm filter, 3500K
 SUPER + Shift + R -> identity / no filter
 ```
 
-## Swaybg / wallpaper
+## Hyprpaper / wallpaper
 
 Snapshot:
 
@@ -244,7 +247,7 @@ Snapshot:
 wayland/wallpapers/wallpaper.png
 ```
 
-The wallpaper is copied to `~/Pictures/wallpaper2.png` and loaded through Swaybg with `fill` mode.
+The wallpaper is copied to `~/Pictures/wallpaper2.png` and loaded through Hyprpaper using `wayland/hypr/hyprpaper.conf`.
 
 ## Hyprlock
 
@@ -292,13 +295,13 @@ progress-color=#20a5ba
 
 ## Calendar
 
-Khal opens the read-only Google Calendar mirror in Alacritty through the familiar binding:
+Calcurse opens the read-only Google Calendar mirror in Alacritty through the familiar binding:
 
 ```text
-SUPER + C -> alacritty -e archcfg-google-calendar
+SUPER + C -> alacritty -e archcfg-calcurse-google
 ```
 
-The launcher refreshes the local mirror with Vdirsyncer before opening Khal. Calcurse remains available manually for its local TODOs and notes.
+The launcher refreshes the local mirror with Vdirsyncer, rebuilds a separate Calcurse profile, and opens it with `--read-only`. Calcurse remains available manually for its local TODOs and notes.
 
 ## Screenshots
 

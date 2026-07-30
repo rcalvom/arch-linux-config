@@ -18,6 +18,8 @@ from typing import Any
 LAPTOP = "Lenovo Group Limited 0x41B5"
 LEFT_DISPLAY = "Dell Inc. DELL P2419H 3B0FPD3"
 RIGHT_DISPLAY = "Dell Inc. DELL P2422H 8V9K8T3"
+DESK_LEFT_DISPLAY = "Dell Inc. DELL P2422H HDFJ5V3"
+DESK_RIGHT_DISPLAY = "Dell Inc. DELL P2422H H3G8XB3"
 HYPRCTL = os.environ.get("HYPRCTL", "hyprctl")
 MODE_PATTERN = re.compile(r"^(\d+)x(\d+)@([0-9.]+)Hz$")
 DEFAULT_STATE = {"version": 1, "kind": "extend"}
@@ -28,6 +30,10 @@ PROFILES = {
     "dock-three-screen": {
         "label": "Dock - 3 displays",
         "description": "Dell P2419H + Dell P2422H + Lenovo laptop panel",
+    },
+    "desk-three-screen": {
+        "label": "Desk - 3 displays",
+        "description": "Dell P2422H HDFJ5V3 + Lenovo laptop panel + Dell P2422H H3G8XB3",
     },
 }
 
@@ -255,6 +261,24 @@ def dock_operations(monitors: list[dict[str, Any]]) -> list[dict[str, Any]] | No
     return operations
 
 
+def desk_operations(monitors: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
+    laptop = monitor_with_description(monitors, LAPTOP)
+    left = monitor_with_description(monitors, DESK_LEFT_DISPLAY)
+    right = monitor_with_description(monitors, DESK_RIGHT_DISPLAY)
+    if not (laptop and left and right):
+        return None
+    left_width, _ = logical_size(left)
+    laptop_width, _ = logical_size(laptop)
+    enabled = {left["name"], laptop["name"], right["name"]}
+    operations = [
+        enable_operation(left, 0, 0),
+        enable_operation(laptop, left_width, 0),
+        enable_operation(right, left_width + laptop_width, 0),
+    ]
+    operations.extend(disable_operation(monitor) for monitor in monitors if monitor["name"] not in enabled)
+    return operations
+
+
 def common_modes(monitors: list[dict[str, Any]]) -> dict[str, str] | None:
     source, *targets = monitors
     candidates = sorted(parsed_modes(source), key=lambda mode: (mode[0] * mode[1], mode[2]), reverse=True)
@@ -359,6 +383,11 @@ def plan_for_state(state: dict[str, Any], monitors: list[dict[str, Any]]) -> dic
         if operations:
             return {"state": state, "operations": operations}
         return fallback_extend(state, monitors, "dock profile outputs are unavailable")
+    if kind == "profile" and state["profile"] == "desk-three-screen":
+        operations = desk_operations(monitors)
+        if operations:
+            return {"state": state, "operations": operations}
+        return fallback_extend(state, monitors, "desk profile outputs are unavailable")
     return {"state": dict(DEFAULT_STATE), "operations": extend_operations(monitors)}
 
 

@@ -11,4 +11,4 @@ vdirsyncer sync
 vdirsyncer metasync
 ```
 
-Select every Google calendar to mirror at <https://calendar.google.com/calendar/syncselect>. The remote storage is configured as read-only, so local changes are reverted rather than uploaded.
+Select every Google calendar to mirror at <https://calendar.google.com/calendar/syncselect>. The remote storage is configured as read-only, so local changes are reverted rather than uploaded. `archcfg-calcurse-google` imports every discovered local collection into its separate read-only Calcurse view.

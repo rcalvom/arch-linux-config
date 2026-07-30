@@ -6,7 +6,6 @@ This folder groups configuration files and package lists for common tools.
 - `aur.txt` pins reviewed optional AUR package revisions installed only when `install.sh` receives `--aur`; `aur-deps.txt` lists their reviewed official build and runtime dependencies.
 - `alacritty/` contains the Alacritty terminal config (`alacritty.toml`).
 - `calcurse/` contains the calendar configuration and keymap.
-- `khal/` contains the read-only terminal view for the Google Calendar mirror.
 - `cliamp/` contains the Archcfg Ocean custom theme without managing provider credentials.
 - `fastfetch/` contains the terminal system summary configuration.
 - `firefox/` and `thunderbird/` contain launchers and profile templates.
@@ -16,7 +15,7 @@ This folder groups configuration files and package lists for common tools.
 - `yazi/` contains the file manager configuration copied into `~/.config/yazi`.
 - `oh-my-zsh/` stores `.zshrc` and the `ginger` theme copied into the user's home.
 - `vscode/` contains VS Code and VS Code R settings.
-- `vdirsyncer/` contains the private Google Calendar mirror setup helper.
+- `vdirsyncer/` contains the private Google Calendar mirror setup helper used by the Calcurse Google view.
 - `pacman/` keeps package lists and a helper script for updating them.
 
 ## Config Manifests

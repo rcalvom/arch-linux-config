@@ -3,7 +3,7 @@
 
 hyprland
 hyprlang
-swaybg
+hyprpaper
 hyprlock
 hyprsunset
 waybar

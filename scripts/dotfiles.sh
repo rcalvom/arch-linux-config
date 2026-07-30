@@ -99,6 +99,7 @@ install_wayland_dotfiles() {
   log_info "Installing Wayland dotfiles for $username"
 
   install_user_file "$repo_dir/wayland/hypr/hyprland.lua" "$home_dir/.config/hypr/hyprland.lua" "$username" 0644
+  install_user_file "$repo_dir/wayland/hypr/hyprpaper.conf" "$home_dir/.config/hypr/hyprpaper.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/xdph.conf" "$home_dir/.config/hypr/xdph.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hyprtoolkit.conf" "$home_dir/.config/hypr/hyprtoolkit.conf" "$username" 0644
   install_user_file "$repo_dir/wayland/hypr/hypridle.conf" "$home_dir/.config/hypr/hypridle.conf" "$username" 0644

@@ -29,7 +29,7 @@ hyprland
 hypridle
 hyprlock
 hyprlauncher
-swaybg
+hyprpaper
 hyprsunset
 hyperv
 iputils
@@ -38,7 +38,6 @@ imagemagick
 iwd
 jdk-openjdk
 jq
-khal
 less
 libnotify
 linux
