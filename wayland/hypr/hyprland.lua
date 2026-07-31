@@ -71,9 +71,12 @@ hl.window_rule({
     center = true,
 })
 
-for workspace = 1, 9 do
-    hl.workspace_rule({ workspace = tostring(workspace), persistent = true })
-end
+-- Steam game windows use steam_app_<appid>; leave Steam dialogs unaffected.
+hl.window_rule({
+    name = "tile-steam-games",
+    match = { initial_class = "^steam_app_[0-9]+$", xwayland = true },
+    float = false,
+})
 
 local function applyDisplayLayout()
     hl.exec_cmd(displayLayout)
@@ -109,6 +112,17 @@ local function command(keys, value, options)
     hl.bind(keys, hl.dsp.exec_cmd(value), options)
 end
 
+-- Persistent workspace rules are reassigned to the focused monitor during layout updates.
+local function toggleFocusedWorkspaceLayout()
+    local workspace = hl.get_active_special_workspace() or hl.get_active_workspace()
+    if not workspace then
+        return
+    end
+
+    local layout = workspace.tiled_layout == "monocle" and "master" or "monocle"
+    hl.workspace_rule({ workspace = workspace.config_name, layout = layout })
+end
+
 -- Keep the familiar Qtile application and session bindings.
 command(mainMod .. " + Return", terminal)
 command(mainMod .. " + SPACE", menu)
@@ -135,8 +149,8 @@ hl.bind("ALT + Down", hl.dsp.window.resize({ x = 0, y = 50, relative = true }))
 hl.bind("ALT + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind("ALT + SHIFT + Up", hl.dsp.window.move({ direction = "up" }))
 hl.bind("ALT + SHIFT + Down", hl.dsp.window.move({ direction = "down" }))
-command(mainMod .. " + Tab", userBin .. "/hypr-layout-cycle")
-command(mainMod .. " + SHIFT + Tab", userBin .. "/hypr-layout-cycle")
+hl.bind(mainMod .. " + Tab", toggleFocusedWorkspaceLayout)
+hl.bind(mainMod .. " + SHIFT + Tab", toggleFocusedWorkspaceLayout)
 hl.bind(mainMod .. " + comma", hl.dsp.focus({ monitor = "-1" }))
 hl.bind(mainMod .. " + period", hl.dsp.focus({ monitor = "+1" }))
 
@@ -151,7 +165,7 @@ command(mainMod .. " + P", displayMenu)
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + T", hl.dsp.layout("togglesplit"))
 
--- Nine global workspaces mirror the Qtile group model.
+-- Nine workspace bindings mirror the Qtile group model.
 for workspace = 1, 9 do
     local workspaceName = tostring(workspace)
     hl.bind("ALT + " .. workspace, hl.dsp.focus({ workspace = workspaceName, on_current_monitor = true }))
