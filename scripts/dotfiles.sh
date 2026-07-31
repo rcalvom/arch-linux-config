@@ -130,7 +130,7 @@ install_wayland_dotfiles() {
   install_user_file "$repo_dir/wayland/bin/hypr-waybar-start" "$home_dir/.local/bin/hypr-waybar-start" "$username" 0755
   install_user_file "$repo_dir/wayland/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" "$home_dir/.config/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" "$username" 0644
 
-  for unit in hyprsunset-day.service hyprsunset-day.timer hyprsunset-night.service hyprsunset-night.timer; do
+  for unit in waybar.service hyprsunset-day.service hyprsunset-day.timer hyprsunset-night.service hyprsunset-night.timer; do
     install_user_file "$repo_dir/wayland/systemd/user/$unit" "$home_dir/.config/systemd/user/$unit" "$username" 0644
   done
 

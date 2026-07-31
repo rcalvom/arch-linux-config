@@ -22,7 +22,7 @@ DESK_LEFT_DISPLAY = "Dell Inc. DELL P2422H HDFJ5V3"
 DESK_RIGHT_DISPLAY = "Dell Inc. DELL P2422H H3G8XB3"
 HYPRCTL = os.environ.get("HYPRCTL", "hyprctl")
 MODE_PATTERN = re.compile(r"^(\d+)x(\d+)@([0-9.]+)Hz$")
-DEFAULT_STATE = {"version": 1, "kind": "extend"}
+DEFAULT_STATE = {"version": 1, "kind": "profile", "profile": "desk-three-screen"}
 CONNECTOR_ID = "connector:"
 DESCRIPTION_ID = "description:"
 

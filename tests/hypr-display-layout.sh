@@ -13,6 +13,12 @@ spec = importlib.util.spec_from_loader(loader.name, loader)
 module = importlib.util.module_from_spec(spec)
 loader.exec_module(module)
 
+assert module.normalized_state({}) == {
+    "version": 1,
+    "kind": "profile",
+    "profile": "desk-three-screen",
+}
+
 enabled = [
     {
         "action": "enable",
