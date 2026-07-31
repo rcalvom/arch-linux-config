@@ -79,26 +79,29 @@ local function applyDisplayLayout()
     hl.exec_cmd(displayLayout)
 end
 
-local function extendDisplayLayout()
+local function reconcileDisplayLayout()
     -- Give DRM time to finish modesetting a newly connected output.
-    hl.exec_cmd("/bin/sh -c 'sleep 2; exec " .. displayLayout .. " extend'")
+    hl.exec_cmd("/bin/sh -c 'sleep 2; exec " .. displayLayout .. " reconcile'")
+end
+
+local function restartWaybar()
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP && systemctl --user restart waybar.service")
 end
 
 hl.on("hyprland.start", function()
     applyDisplayLayout()
-    hl.exec_cmd(userBin .. "/hypr-waybar-start")
+    restartWaybar()
     hl.exec_cmd(userBin .. "/hypr-workspace-watch")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("mako")
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("nm-applet --indicator")
-    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user start hyprsunset.service")
     hl.exec_cmd(userBin .. "/hyprsunset-apply-current")
 end)
 
-hl.on("monitor.added", extendDisplayLayout)
+hl.on("monitor.added", reconcileDisplayLayout)
 hl.on("monitor.removed", applyDisplayLayout)
 hl.on("config.reloaded", applyDisplayLayout)
 

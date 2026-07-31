@@ -1,0 +1,7 @@
+[Unit]
+Description=Waybar status bar for Hyprland
+
+[Service]
+ExecStart=%h/.local/bin/hypr-waybar-start
+Restart=always
+RestartSec=1

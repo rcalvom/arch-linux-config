@@ -131,7 +131,7 @@ Calcurse, Vdirsyncer, and VS Code settings are also versioned under `packages/`.
      [ Lenovo laptop panel ]
 ```
 
-Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays.
+Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays. When no valid saved selection exists, the controller first attempts `Desk - 3 displays` and falls back safely to Extend if those monitors are unavailable.
 
 `Desk - 3 displays` maps Dell P2422H `HDFJ5V3` to the left of the laptop panel and Dell P2422H `H3G8XB3` to its right. It matches the monitors by their physical descriptions rather than transient connector names.
 
@@ -143,7 +143,7 @@ Profiles -> Dock - 3 displays
           Desk - 3 displays
 ```
 
-Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then selects and persists Extend displays. The `Dock - 3 displays` profile restores the layout shown above.
+Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then reconciles the saved selection without replacing it. The `Dock - 3 displays` profile restores the layout shown above.
 
 Manual changes through Wdisplays remain in effect until the next display-menu action, monitor hotplug event, configuration reload, or Hyprland session start.
 
@@ -366,7 +366,7 @@ Current modules:
 - left: nine Qtile-style workspaces and the active window for that output
 - right: volume, backlight, network SSID, battery, clock, tray
 
-`hypr-waybar-start` waits for the Wayland socket and a non-empty Hyprland monitor list before it starts Waybar. This avoids an output-readiness race without relying on a fixed delay.
+`hypr-waybar-start` waits for the Wayland socket and a non-empty Hyprland monitor list before it starts Waybar. `waybar.service` supervises that launcher with `Restart=always`, so a bar that exits during an output reconfiguration is recreated without a new login.
 
 The nine workspaces are visible on every output. Their custom Waybar buttons use Hyprland's Lua dispatcher, because the native Waybar module emits incompatible legacy dispatcher syntax for this session. A single event watcher updates cached workspace state before signaling the buttons, so a refresh needs two Hyprland queries rather than eighteen. Clicking one or pressing Alt/Super+1..9 brings it to the focused monitor and swaps visible workspaces when needed. Their order is Console, Agents, Firefox, Development, File Explorer, Mail, Messages, Entertainment, and Others. The focused workspace is blue, visible workspaces use the secondary background, and occupied workspaces use the active text color.
 
