@@ -38,7 +38,7 @@ hl.config({
             active_border = "rgb(033e8c)",
             inactive_border = "rgba(595959aa)",
         },
-        layout = "monocle",
+        layout = "master",
     },
     decoration = {
         rounding = 0,
