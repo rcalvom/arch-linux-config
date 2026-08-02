@@ -126,7 +126,20 @@ wait_for_live_services() {
     sleep 3
   done
 
+  collect_live_network_diagnostics
   vbox_die "Live ISO network services did not become ready within 90 seconds"
+}
+
+collect_live_network_diagnostics() {
+  run_logged "$E2E_DIR/live-network-diagnostics.log" \
+    vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
+      systemctl --no-pager --full status iwd.service systemd-networkd.service systemd-resolved.service host-network-online.service greetd.service || true
+      journalctl --no-pager -b -u host-network-online.service || true
+      ip -4 address show || true
+      ip -4 route show || true
+      resolvectl status || true
+      resolvectl --cache=no --type=A query archlinux.org || true
+    ' || true
 }
 
 run_live_checks() {

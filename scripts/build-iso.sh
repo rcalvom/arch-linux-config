@@ -172,7 +172,8 @@ enable_system_service_in_profile() {
 enable_profile_local_system_service() {
   local profile_dir=$1
   local service=$2
-  local wants_dir="$profile_dir/airootfs/etc/systemd/system/multi-user.target.wants"
+  local target=${3:-multi-user.target}
+  local wants_dir="$profile_dir/airootfs/etc/systemd/system/$target.wants"
 
   install -dm755 "$wants_dir"
   ln -sfn "/etc/systemd/system/$service" "$wants_dir/$service"
@@ -246,7 +247,8 @@ prepare_profile() {
   enable_system_service_in_profile "$profile_copy" iwd.service
   enable_system_service_in_profile "$profile_copy" systemd-networkd.service
   enable_system_service_in_profile "$profile_copy" systemd-resolved.service
-  enable_profile_local_system_service "$profile_copy" host-network-online.service
+  enable_system_service_in_profile "$profile_copy" network-online.target
+  enable_profile_local_system_service "$profile_copy" host-network-online.service network-online.target
   enable_system_service_in_profile "$profile_copy" bluetooth.service
   enable_system_service_in_profile "$profile_copy" greetd.service
   enable_system_service_in_profile "$profile_copy" vboxservice.service
