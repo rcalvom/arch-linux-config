@@ -47,8 +47,6 @@ configure_iwd_networking() {
   install -Dm644 "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.path" /etc/systemd/system/archcfg-reset-resolved-if-stub.path
   install -Dm755 "$repo_dir/network/bin/archcfg-wait-network-online" /usr/local/libexec/archcfg-wait-network-online
   install -Dm755 "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" /usr/local/libexec/archcfg-reset-resolved-if-stub
-  rm -f /etc/resolv.conf
-  ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
   rm -f /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
   disable_service_if_present NetworkManager.service

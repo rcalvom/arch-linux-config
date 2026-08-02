@@ -105,6 +105,20 @@ test_base_system_keyring() {
   unset -f load_packages_from_files pacman-key pacstrap
 }
 
+test_target_resolv_conf() {
+  local target="$TEST_ROOT/resolv-conf-target"
+  local resolv_conf="$target/etc/resolv.conf"
+
+  install -dm755 "$target/etc"
+  printf '%s\n' 'nameserver 10.0.2.3' > "$resolv_conf"
+
+  configure_target_resolv_conf "$target"
+  configure_target_resolv_conf "$target"
+
+  [[ -L "$resolv_conf" ]] || fail "target resolv.conf is not a symbolic link"
+  [[ "$(readlink "$resolv_conf")" == /run/systemd/resolve/stub-resolv.conf ]] || fail "target resolv.conf has an unexpected target"
+}
+
 test_postinstall_shell_invocation() {
   local calls="$TEST_ROOT/postinstall-calls"
   local call_args=()
@@ -152,5 +166,6 @@ assert_status 1 assert_invalid_automated_args --vm --disk /dev/sda --user-passwo
 assert_status 1 assert_invalid_automated_args --yes --user-password-file /run/archcfg-e2e/user-password
 test_password_staging
 test_base_system_keyring
+test_target_resolv_conf
 test_postinstall_shell_invocation
 test_busy_target_detach

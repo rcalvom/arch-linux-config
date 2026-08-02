@@ -81,6 +81,7 @@ main() {
   copy_repo_to_target "$SCRIPT_DIR" "$TARGET" "$REPO_DEST"
   write_user_password_file "$TARGET" "$INSTALL_USERNAME" "$USER_PASSWORD_FILE"
   run_postinstall "$TARGET" "$REPO_DEST" "$PROFILE" "$INSTALL_HOSTNAME" "$INSTALL_USERNAME" "$TIMEZONE" "$ENABLE_AUR"
+  configure_target_resolv_conf "$TARGET"
   PASSWORD_FILE_STAGED=0
 
   if [[ "$MOUNTED_BY_INSTALLER" -eq 1 ]]; then

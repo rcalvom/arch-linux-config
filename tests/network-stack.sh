@@ -40,8 +40,8 @@ grep -Fq 'enable_profile_local_system_service "$profile_copy" host-network-onlin
 grep -Fq 'file_permissions["/usr/local/libexec/archcfg-wait-network-online"]="0:0:755"' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO does not preserve the network wait helper mode"
 grep -Fq 'rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO retains a duplicate wired network rule"
 grep -Fq 'disable_service_if_present NetworkManager.service' "$REPO_DIR/scripts/services.sh" || fail "installed systems do not disable NetworkManager"
-grep -Fqx '  rm -f /etc/resolv.conf' "$REPO_DIR/scripts/services.sh" || fail "installed systems do not replace resolv.conf"
-grep -Fqx '  ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf' "$REPO_DIR/scripts/services.sh" || fail "installed systems do not link resolv.conf to resolved"
+grep -Fq 'configure_target_resolv_conf "$TARGET"' "$REPO_DIR/install.sh" || fail "installer does not configure target resolv.conf after the chroot"
+! grep -Fq '/etc/resolv.conf' "$REPO_DIR/scripts/services.sh" || fail "postinstall attempts to replace the arch-chroot resolver mount"
 grep -Fq 'check_disabled_unit NetworkManager.service' "$REPO_DIR/scripts/verify-system-config.sh" || fail "system verifier does not reject active NetworkManager"
 grep -Fq 'wait_for_live_services' "$REPO_DIR/scripts/vbox-e2e.sh" || fail "E2E does not wait for live network services"
 grep -Fq 'run_live_checks' "$REPO_DIR/scripts/vbox-e2e.sh" || fail "E2E does not verify live networking"
@@ -49,7 +49,7 @@ grep -Fq 'run_live_checks' "$REPO_DIR/scripts/vbox-e2e.sh" || fail "E2E does not
 
 networkd_enable_line=$(grep -n 'enable_service_if_present systemd-networkd.service' "$REPO_DIR/scripts/services.sh" | cut -d: -f1)
 networkd_wait_disable_line=$(grep -n 'disable_service_if_present systemd-networkd-wait-online.service' "$REPO_DIR/scripts/services.sh" | cut -d: -f1)
-resolv_conf_remove_line=$(grep -n 'rm -f /etc/resolv.conf' "$REPO_DIR/scripts/services.sh" | cut -d: -f1)
-resolv_conf_link_line=$(grep -n 'ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf' "$REPO_DIR/scripts/services.sh" | cut -d: -f1)
+postinstall_line=$(grep -n 'run_postinstall "\$TARGET"' "$REPO_DIR/install.sh" | cut -d: -f1)
+resolv_conf_line=$(grep -n 'configure_target_resolv_conf "\$TARGET"' "$REPO_DIR/install.sh" | cut -d: -f1)
 [[ "$networkd_wait_disable_line" -gt "$networkd_enable_line" ]] || fail "networkd wait-online is disabled before networkd can enable it"
-[[ "$resolv_conf_link_line" -gt "$resolv_conf_remove_line" ]] || fail "resolv.conf is linked before it is replaced"
+[[ "$resolv_conf_line" -gt "$postinstall_line" ]] || fail "target resolv.conf is configured before arch-chroot exits"

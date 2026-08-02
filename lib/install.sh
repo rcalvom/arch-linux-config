@@ -38,6 +38,15 @@ unmount_installer_target() {
   umount -R -l "$target"
 }
 
+configure_target_resolv_conf() {
+  local target=$1
+  local resolv_conf="$target/etc/resolv.conf"
+
+  [[ -d "$target/etc" ]] || die "Target etc directory does not exist: $target/etc"
+  rm -f "$resolv_conf"
+  ln -s /run/systemd/resolve/stub-resolv.conf "$resolv_conf"
+}
+
 install_base_system() {
   local target=$1
   local repo_dir=$2
