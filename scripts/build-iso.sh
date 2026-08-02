@@ -240,6 +240,7 @@ prepare_profile() {
   install -Dm644 "$REPO_ROOT/network/systemd/network/20-wired.network" "$profile_copy/airootfs/etc/systemd/network/20-wired.network"
   install -Dm644 "$REPO_ROOT/network/systemd/host-network-online.service" "$profile_copy/airootfs/etc/systemd/system/host-network-online.service"
   install -Dm755 "$REPO_ROOT/network/bin/archcfg-wait-network-online" "$profile_copy/airootfs/usr/local/libexec/archcfg-wait-network-online"
+  printf '\nfile_permissions["/usr/local/libexec/archcfg-wait-network-online"]="0:0:755"\n' >> "$profile_copy/profiledef.sh"
   rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"
   rm -f "$profile_copy/airootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
   ln -sfn /run/systemd/resolve/stub-resolv.conf "$profile_copy/airootfs/etc/resolv.conf"

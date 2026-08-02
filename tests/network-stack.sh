@@ -37,6 +37,7 @@ grep -Fq 'enable_system_service_in_profile "$profile_copy" systemd-networkd.serv
 grep -Fq 'enable_system_service_in_profile "$profile_copy" systemd-resolved.service' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO does not enable resolved"
 grep -Fq 'enable_system_service_in_profile "$profile_copy" network-online.target' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO does not start network-online.target"
 grep -Fq 'enable_profile_local_system_service "$profile_copy" host-network-online.service network-online.target' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO does not enable aggregate network wait"
+grep -Fq 'file_permissions["/usr/local/libexec/archcfg-wait-network-online"]="0:0:755"' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO does not preserve the network wait helper mode"
 grep -Fq 'rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO retains a duplicate wired network rule"
 grep -Fq 'disable_service_if_present NetworkManager.service' "$REPO_DIR/scripts/services.sh" || fail "installed systems do not disable NetworkManager"
 grep -Fq 'check_disabled_unit NetworkManager.service' "$REPO_DIR/scripts/verify-system-config.sh" || fail "system verifier does not reject active NetworkManager"
