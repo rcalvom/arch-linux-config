@@ -5,7 +5,8 @@ linux-firmware
 sudo
 nano
 git
-networkmanager
+iwd
+wireless-regdb
 upower
 zsh
 grub

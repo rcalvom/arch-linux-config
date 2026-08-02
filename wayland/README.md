@@ -48,7 +48,6 @@ Important packages added/used:
 - `impala`
 - `bluetui`
 - `polkit-kde-agent`
-- `network-manager-applet`
 - `xdg-desktop-portal-hyprland`
 
 ## Hyprland
@@ -172,7 +171,7 @@ hyprpaper
 hypr-display-layout
 hypridle
 polkit-kde-authentication-agent-1
-nm-applet --indicator
+Click the Waybar network module to open Impala when Wi-Fi interaction is needed.
 ```
 
 The installer config starts `waybar` and also bootstraps the Hyprsunset schedule at session start.

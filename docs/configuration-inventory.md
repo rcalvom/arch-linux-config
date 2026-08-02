@@ -41,7 +41,7 @@ Run the system verifier after an installation or a root-level configuration chan
 sudo ./scripts/verify-system-config.sh --profile developer --diff
 ```
 
-Use `--root /mnt` to inspect a mounted target, `--wifi-interface <name>` when its Wi-Fi adapter is not visible to the current host, and `--grub-profile graphical|classic` when automatic profile detection is not appropriate.
+Use `--root /mnt` to inspect a mounted target and `--grub-profile graphical|classic` when automatic profile detection is not appropriate.
 
 Both verifiers only compare files, links, modes, and enabled-unit state. They never install, copy, change services, reload Hyprland, or change any system state.
 

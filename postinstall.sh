@@ -8,14 +8,11 @@ INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
 REPO_DIR="$SCRIPT_DIR"
 ENABLE_AUR=0
-WIFI_INTERFACE="auto"
 
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
 # shellcheck source=lib/validate.sh
 source "$SCRIPT_DIR/lib/validate.sh"
-# shellcheck source=lib/network.sh
-source "$SCRIPT_DIR/lib/network.sh"
 # shellcheck source=scripts/packages.sh
 source "$SCRIPT_DIR/scripts/packages.sh"
 # shellcheck source=scripts/aur.sh
@@ -40,9 +37,6 @@ Options:
   --timezone <zone>     Timezone. Default: America/Bogota.
   --repo-dir <path>     Repository path inside the target system.
   --aur                 Install optional AUR packages for the selected profile.
-  --wifi-interface <value>
-                        Wi-Fi interface for IWD: auto, none, or an interface name.
-                        Default: auto.
   --help                Print this help.
 USAGE
 }
@@ -87,11 +81,6 @@ parse_postinstall_args() {
       --aur)
         ENABLE_AUR=1
         shift
-        ;;
-      --wifi-interface)
-        require_postinstall_value "$1" "${2-}"
-        WIFI_INTERFACE=$2
-        shift 2
         ;;
       --help)
         usage
@@ -183,7 +172,6 @@ main() {
   parse_postinstall_args "$@"
   require_root
   validate_profile "$PROFILE"
-  wifi_interface_name_is_valid "$WIFI_INTERFACE" || [[ "$WIFI_INTERFACE" == "auto" || "$WIFI_INTERFACE" == "none" ]] || die "Invalid Wi-Fi interface: $WIFI_INTERFACE"
 
   configure_timezone "$TIMEZONE"
   configure_locale
@@ -197,7 +185,7 @@ main() {
     configure_wayland_desktop "$PROFILE" "$REPO_DIR"
   fi
 
-  configure_iwd_networking "$PROFILE" "$REPO_DIR" "$WIFI_INTERFACE"
+  configure_iwd_networking "$REPO_DIR"
   configure_charge_limits "$REPO_DIR"
   enable_core_services "$PROFILE"
   install_aur_packages_for_profile "$PROFILE" "$REPO_DIR" "$INSTALL_USERNAME" "$ENABLE_AUR"

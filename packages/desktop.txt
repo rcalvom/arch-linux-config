@@ -48,12 +48,9 @@ bluez
 bluez-utils
 bluetui
 impala
-iwd
-wireless-regdb
 brightnessctl
 playerctl
 polkit-kde-agent
-network-manager-applet
 xdg-user-dirs
 xdg-utils
 xorg-xwayland

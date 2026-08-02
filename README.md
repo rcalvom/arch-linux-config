@@ -51,6 +51,7 @@ The repository is organized by functional domains (packages, bootloader, desktop
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
 OpenClaw sandbox boundaries, image recovery, and safe operator checks are documented in [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
+Optional OpenCode desktop and Telegram notifications are documented in [docs/opencode-notifier.md](docs/opencode-notifier.md).
 Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
 Disposable ISO build and full-install validation in VirtualBox are documented in [docs/vbox-automation.md](docs/vbox-automation.md).
 Original code and configuration are licensed under the [MIT License](LICENSE); bundled third-party assets retain their own terms as listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

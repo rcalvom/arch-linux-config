@@ -113,12 +113,13 @@ test_postinstall_shell_invocation() {
     printf '%s\0' "$@" > "$calls"
   }
 
-  run_postinstall /target /opt/arch-linux-config virtualbox archcfg-e2e archcfg-e2e UTC 0 none
+  run_postinstall /target /opt/arch-linux-config virtualbox archcfg-e2e archcfg-e2e UTC 0
   mapfile -d '' -t call_args < "$calls"
 
   [[ "${call_args[0]}" == /target ]] || fail "postinstall target is incorrect"
   [[ "${call_args[1]}" == /usr/bin/bash ]] || fail "postinstall does not run through bash"
   [[ "${call_args[2]}" == /opt/arch-linux-config/postinstall.sh ]] || fail "postinstall script path is incorrect"
+  [[ " ${call_args[*]} " != *' --wifi-interface '* ]] || fail "postinstall still receives a Wi-Fi interface selector"
 
   unset -f arch-chroot
 }

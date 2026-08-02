@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# shellcheck source=../lib/network.sh
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/lib/network.sh"
-
 enable_service_if_present() {
   local service=$1
 
@@ -31,79 +28,20 @@ enable_user_service_globally_if_present() {
   fi
 }
 
-restore_networkmanager_wifi() {
-  log_info "Restoring NetworkManager Wi-Fi ownership"
-
-  disable_service_if_present host-network-online.service
-  disable_service_if_present archcfg-reset-resolved-if-stub.path
-  disable_service_if_present iwd.service
-  rm -f /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
-  rm -f /etc/systemd/system/host-network-online.service
-  rm -f /etc/systemd/system/archcfg-reset-resolved-if-stub.service
-  rm -f /etc/systemd/system/archcfg-reset-resolved-if-stub.path
-  rm -f /usr/local/libexec/archcfg-wait-network-online
-  rm -f /usr/local/libexec/archcfg-reset-resolved-if-stub
-  systemctl daemon-reload
-  enable_service_if_present NetworkManager-wait-online.service
-}
-
 configure_iwd_networking() {
-  local profile=$1
-  local repo_dir=$2
-  local requested_interface=${3:-auto}
-  local wifi_interface
-  local selection_status
-
-  if [[ "$requested_interface" == none ]]; then
-    restore_networkmanager_wifi
-    return 0
-  fi
-
-  case "$profile" in
-    desktop | developer | virtualbox)
-      ;;
-    *)
-      return 0
-      ;;
-  esac
-
-  if wifi_interface=$(select_wifi_interface "$requested_interface"); then
-    :
-  else
-    selection_status=$?
-    case "$selection_status" in
-      1)
-        log_info "No Wi-Fi interface detected; leaving NetworkManager Wi-Fi ownership unchanged"
-        return 0
-        ;;
-      2)
-        log_warn "Multiple Wi-Fi interfaces detected; rerun with --wifi-interface <name> to select one"
-        return 0
-        ;;
-      4)
-        die "Wi-Fi interface $requested_interface is not wireless"
-        ;;
-      *)
-        die "Invalid Wi-Fi interface: $requested_interface"
-        ;;
-    esac
-  fi
-
-  if [[ "$wifi_interface" == "none" ]]; then
-    restore_networkmanager_wifi
-    return 0
-  fi
+  local repo_dir=$1
 
   [[ -f "$repo_dir/network/iwd/main.conf" ]] || die "Missing IWD configuration"
+  [[ -f "$repo_dir/network/systemd/network/20-wired.network" ]] || die "Missing networkd configuration"
   [[ -f "$repo_dir/network/systemd/host-network-online.service" ]] || die "Missing network-online service"
   [[ -f "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.service" ]] || die "Missing resolver reset service"
   [[ -f "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.path" ]] || die "Missing resolver reset path"
   [[ -f "$repo_dir/network/bin/archcfg-wait-network-online" ]] || die "Missing network-online helper"
   [[ -f "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" ]] || die "Missing resolver reset helper"
 
-  log_info "Configuring IWD-owned Wi-Fi on $wifi_interface"
-  write_iwd_networkmanager_config "$wifi_interface" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf || die "Could not write NetworkManager IWD configuration"
+  log_info "Configuring IWD, systemd-networkd, and systemd-resolved"
   install -Dm644 "$repo_dir/network/iwd/main.conf" /etc/iwd/main.conf
+  install -Dm644 "$repo_dir/network/systemd/network/20-wired.network" /etc/systemd/network/20-wired.network
   install -Dm644 "$repo_dir/network/systemd/host-network-online.service" /etc/systemd/system/host-network-online.service
   install -Dm644 "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.service" /etc/systemd/system/archcfg-reset-resolved-if-stub.service
   install -Dm644 "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.path" /etc/systemd/system/archcfg-reset-resolved-if-stub.path
@@ -111,8 +49,14 @@ configure_iwd_networking() {
   install -Dm755 "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" /usr/local/libexec/archcfg-reset-resolved-if-stub
   ln -sfn /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
+  rm -f /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
+  disable_service_if_present NetworkManager.service
   disable_service_if_present NetworkManager-wait-online.service
+  systemctl unmask iwd.service
   enable_service_if_present iwd.service
+  enable_service_if_present systemd-networkd.service
+  # Enabling networkd can also enable its stock wait-online unit through Also=.
+  disable_service_if_present systemd-networkd-wait-online.service
   enable_service_if_present systemd-resolved.service
   enable_service_if_present host-network-online.service
   enable_service_if_present archcfg-reset-resolved-if-stub.path
@@ -146,7 +90,6 @@ configure_charge_limits() {
 enable_core_services() {
   local profile=$1
 
-  enable_service_if_present NetworkManager.service
   enable_service_if_present bluetooth.service
   enable_user_service_globally_if_present pipewire.service
   enable_user_service_globally_if_present pipewire-pulse.service

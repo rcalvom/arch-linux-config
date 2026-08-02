@@ -155,7 +155,6 @@ run_postinstall() {
   local username=$5
   local timezone=$6
   local enable_aur=$7
-  local wifi_interface=$8
   local postinstall_args=(
     /usr/bin/bash "$repo_dest/postinstall.sh"
     --profile "$profile"
@@ -163,7 +162,6 @@ run_postinstall() {
     --username "$username"
     --timezone "$timezone"
     --repo-dir "$repo_dest"
-    --wifi-interface "$wifi_interface"
   )
 
   if [[ "$enable_aur" -eq 1 ]]; then

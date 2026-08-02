@@ -169,6 +169,15 @@ enable_system_service_in_profile() {
   ln -sfn "/usr/lib/systemd/system/$service" "$wants_dir/$service"
 }
 
+enable_profile_local_system_service() {
+  local profile_dir=$1
+  local service=$2
+  local wants_dir="$profile_dir/airootfs/etc/systemd/system/multi-user.target.wants"
+
+  install -dm755 "$wants_dir"
+  ln -sfn "/etc/systemd/system/$service" "$wants_dir/$service"
+}
+
 install_live_authorized_key() {
   local profile_dir=$1
   local ssh_dir="$profile_dir/airootfs/home/live/.ssh"
@@ -226,7 +235,18 @@ prepare_profile() {
     "$bundled_repo/installation/archlinux.sh" \
     "$bundled_repo/scripts/build-iso.sh"
 
-  enable_system_service_in_profile "$profile_copy" NetworkManager.service
+  install -Dm644 "$REPO_ROOT/network/iwd/main.conf" "$profile_copy/airootfs/etc/iwd/main.conf"
+  install -Dm644 "$REPO_ROOT/network/systemd/network/20-wired.network" "$profile_copy/airootfs/etc/systemd/network/20-wired.network"
+  install -Dm644 "$REPO_ROOT/network/systemd/host-network-online.service" "$profile_copy/airootfs/etc/systemd/system/host-network-online.service"
+  install -Dm755 "$REPO_ROOT/network/bin/archcfg-wait-network-online" "$profile_copy/airootfs/usr/local/libexec/archcfg-wait-network-online"
+  rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"
+  rm -f "$profile_copy/airootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
+  ln -sfn /run/systemd/resolve/stub-resolv.conf "$profile_copy/airootfs/etc/resolv.conf"
+  rm -f "$profile_copy/airootfs/etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service"
+  enable_system_service_in_profile "$profile_copy" iwd.service
+  enable_system_service_in_profile "$profile_copy" systemd-networkd.service
+  enable_system_service_in_profile "$profile_copy" systemd-resolved.service
+  enable_profile_local_system_service "$profile_copy" host-network-online.service
   enable_system_service_in_profile "$profile_copy" bluetooth.service
   enable_system_service_in_profile "$profile_copy" greetd.service
   enable_system_service_in_profile "$profile_copy" vboxservice.service

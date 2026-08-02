@@ -5,6 +5,7 @@ RESOLV_CONF=/etc/resolv.conf
 STUB_RESOLV_CONF=/run/systemd/resolve/stub-resolv.conf
 
 [[ -L "$RESOLV_CONF" ]] || exit 0
+[[ ! -e /etc/resolv.conf.vpnbackup ]] || exit 0
 
 target=$(readlink -f -- "$RESOLV_CONF") || exit 0
 [[ "$target" == "$STUB_RESOLV_CONF" ]] || exit 0

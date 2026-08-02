@@ -34,22 +34,18 @@ those workspaces within the agent's intended authority.
 
 ## Tool And Host Boundaries
 
-The repository agents are configured for file and process work:
+The effective agent policies must be verified with `openclaw sandbox explain`
+after every OpenClaw upgrade. The intended sandbox boundary is:
 
-- Allowed agent tools: `read`, `write`, `edit`, `apply_patch`, `exec`, and
-  `process`.
-- Denied agent tools: browser, web, gateway, cross-session messaging/spawning,
-  and subagents.
-- Their `exec` host is `sandbox`; `security: "full"` and `ask: "off"` apply
-  inside that sandbox rather than granting host execution.
-- Elevated execution is disabled. Confirm the effective result with
-  `openclaw sandbox explain --agent <id>` after every OpenClaw upgrade.
+- `exec.host` must report `sandbox` for `main`, `labnotes`, and `csap`.
+- `security: "full"` and `ask: "off"` apply inside the Docker sandbox; they
+  do not grant host execution while the effective runtime remains sandboxed.
+- Elevated execution must remain disabled.
+- Browser, gateway, and external messaging tools should remain denied unless a
+  narrowly reviewed workflow needs them.
 
-The `main` agent is an explicit exception: its configuration selects
-`exec.host: "gateway"` with full security and no execution prompt. Treat this
-as host-level authority even though sandbox mode is enabled globally. Do not
-route untrusted or broad automation through that agent without an additional
-approval boundary.
+If an agent ever reports `exec.host: "gateway"` or a non-sandboxed runtime,
+treat it as host-level authority and do not route untrusted work through it.
 
 No extra Docker bind mounts or Docker socket mounts are part of this design.
 Never add `/var/run/docker.sock`, the user's home directory, or credential
@@ -136,6 +132,26 @@ sandbox network policy when it creates containers.
 If an agent needs additional tools, add them to a reviewed image recipe rather
 than running a broad setup command with a writable root filesystem and network
 access.
+
+### Image Smoke Test
+
+Rebuild both targets without cache, then verify their required tools under the
+same non-root user used by the sandbox image:
+
+```bash
+docker compose -f openclaw/compose.yaml build --no-cache
+
+docker run --rm --network none openclaw-sandbox:bookworm-slim sh -lc \
+  'test "$(id -un)" = sandbox && command -v bash curl git jq python3 rg >/dev/null'
+
+docker run --rm --network none openclaw-sandbox-ssh:bookworm-slim sh -lc \
+  'test "$(id -un)" = sandbox && command -v ssh >/dev/null'
+```
+
+This verifies image construction and isolated container startup. It does not
+create or modify an OpenClaw agent sandbox. Confirm configured agent containers
+and their selected image separately with `openclaw sandbox list --json`; only
+recreate an affected agent after preserving its workspace state.
 
 ## Operations
 

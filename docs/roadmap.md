@@ -4,7 +4,7 @@
 
 - Bootable UEFI VM install.
 - Explicit destructive mode with `--vm --disk`.
-- Minimal base system, user creation, GRUB, NetworkManager.
+- Minimal base system, user creation, GRUB, IWD, systemd-networkd, and systemd-resolved.
 
 ## v0.2
 

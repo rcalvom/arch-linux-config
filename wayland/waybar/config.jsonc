@@ -134,6 +134,7 @@
     "format-ethernet": "  Wired",
     "format-disconnected": "  Disconnected",
     "format-icons": ["󰤯", "󰤟", "󰤥", "󰤨"],
+    "on-click": "alacritty -e impala --mode station",
     "tooltip-format-wifi": "{ifname}: {essid} ({signalStrength}%)",
     "tooltip-format-ethernet": "{ifname}: wired"
   },

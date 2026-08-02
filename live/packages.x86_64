@@ -48,8 +48,6 @@ mpv
 mkinitcpio
 mkinitcpio-archiso
 nano
-networkmanager
-network-manager-applet
 neovim
 npm
 noto-fonts
@@ -87,6 +85,7 @@ waybar
 wget
 wdisplays
 wireplumber
+wireless-regdb
 wl-clipboard
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland

@@ -339,7 +339,7 @@ Implement VM mode that can install a bootable Arch system in VirtualBox:
 - Format and mount partitions.
 - Run `pacstrap`.
 - Generate `fstab`.
-- Configure timezone, locale, hostname, user, sudo, NetworkManager, and bootloader.
+- Configure timezone, locale, hostname, user, sudo, IWD, systemd-networkd, systemd-resolved, and bootloader.
 - Reboot successfully.
 
 ### v0.2
@@ -374,7 +374,7 @@ Add dotfile installation:
 
 Add service configuration:
 
-- NetworkManager
+- IWD, systemd-networkd, and systemd-resolved
 - PipeWire
 - Bluetooth
 - Docker if included

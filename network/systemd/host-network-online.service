@@ -1,7 +1,7 @@
 [Unit]
 Description=Wait for a usable network route and DNS
-Wants=NetworkManager.service iwd.service systemd-resolved.service
-After=NetworkManager.service iwd.service systemd-resolved.service
+Wants=iwd.service systemd-networkd.service systemd-resolved.service
+After=iwd.service systemd-networkd.service systemd-resolved.service
 Before=network-online.target
 
 [Service]

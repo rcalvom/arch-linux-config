@@ -97,11 +97,33 @@ run_install() {
         --disk /dev/sda \
         --yes \
         --profile virtualbox \
-        --wifi-interface none \
         --hostname archcfg-e2e \
         --username archcfg-e2e \
         --timezone UTC \
         --user-password-file /run/archcfg-e2e/user-password
+    '
+}
+
+capture_live_screen() {
+  VBoxManage controlvm "$VM_NAME" screenshotpng "$E2E_DIR/live-screen.png"
+  [[ -s "$E2E_DIR/live-screen.png" ]] || vbox_die "Live ISO screenshot was not captured"
+}
+
+run_live_checks() {
+  run_logged "$E2E_DIR/live-runtime.log" \
+    vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
+      set -euo pipefail
+      ping -c 1 -W 3 archlinux.org >/dev/null
+      systemctl is-active --quiet iwd.service
+      systemctl is-active --quiet systemd-networkd.service
+      systemctl is-active --quiet systemd-resolved.service
+      systemctl is-active --quiet host-network-online.service
+      systemctl is-active --quiet greetd.service
+      ! systemctl is-active --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet systemd-networkd-wait-online.service
+      ! pacman -Qq networkmanager >/dev/null 2>&1
+      test "$(readlink -f /etc/resolv.conf)" = /run/systemd/resolve/stub-resolv.conf
     '
 }
 
@@ -134,9 +156,15 @@ wait_for_target_services() {
     if vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
       ping -c 1 -W 3 archlinux.org >/dev/null
-      systemctl is-active --quiet NetworkManager.service
+      systemctl is-active --quiet iwd.service
+      systemctl is-active --quiet systemd-networkd.service
+      systemctl is-active --quiet systemd-resolved.service
       systemctl is-active --quiet greetd.service
       systemctl is-active --quiet vboxservice.service
+      ! systemctl is-active --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet systemd-networkd-wait-online.service
+      ! pacman -Qq networkmanager >/dev/null 2>&1
     ' >/dev/null 2>&1; then
       return 0
     fi
@@ -153,7 +181,6 @@ run_postboot_checks() {
         --repo /opt/arch-linux-config \
         --root / \
         --profile virtualbox \
-        --wifi-interface none \
         --grub-profile classic
     '
 
@@ -171,9 +198,15 @@ run_postboot_checks() {
       findmnt -no FSTYPE /boot | grep -qx vfat
       getent passwd archcfg-e2e >/dev/null
       ping -c 1 -W 3 archlinux.org >/dev/null
-      systemctl is-active --quiet NetworkManager.service
+      systemctl is-active --quiet iwd.service
+      systemctl is-active --quiet systemd-networkd.service
+      systemctl is-active --quiet systemd-resolved.service
       systemctl is-active --quiet greetd.service
       systemctl is-active --quiet vboxservice.service
+      ! systemctl is-active --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet NetworkManager.service
+      ! systemctl is-enabled --quiet systemd-networkd-wait-online.service
+      ! pacman -Qq networkmanager >/dev/null 2>&1
     '
 }
 
@@ -257,7 +290,9 @@ main() {
   vbox_configure_nat_ssh "$VM_NAME" "$SSH_PORT"
   vbox_start_vm "$VM_NAME"
   vbox_wait_for_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Live ISO SSH did not become ready"
+  capture_live_screen
   vbox_wait_for_ssh_network live "$LIVE_SSH_KEY" "$SSH_PORT" 180 || vbox_die "Live ISO network did not become ready"
+  run_live_checks
   vbox_scp_to live "$LIVE_SSH_KEY" "$SSH_PORT" "$TARGET_PASSWORD_FILE" /home/live/target-password
   run_install
   prepare_target_ssh
