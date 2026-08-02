@@ -39,6 +39,7 @@ grep -Fq 'enable_profile_local_system_service "$profile_copy" host-network-onlin
 grep -Fq 'rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO retains a duplicate wired network rule"
 grep -Fq 'disable_service_if_present NetworkManager.service' "$REPO_DIR/scripts/services.sh" || fail "installed systems do not disable NetworkManager"
 grep -Fq 'check_disabled_unit NetworkManager.service' "$REPO_DIR/scripts/verify-system-config.sh" || fail "system verifier does not reject active NetworkManager"
+grep -Fq 'wait_for_live_services' "$REPO_DIR/scripts/vbox-e2e.sh" || fail "E2E does not wait for live network services"
 grep -Fq 'run_live_checks' "$REPO_DIR/scripts/vbox-e2e.sh" || fail "E2E does not verify live networking"
 ! grep -Fq 'enable_system_service_in_profile "$profile_copy" NetworkManager.service' "$REPO_DIR/scripts/build-iso.sh" || fail "live ISO still enables NetworkManager"
 

@@ -109,6 +109,26 @@ capture_live_screen() {
   [[ -s "$E2E_DIR/live-screen.png" ]] || vbox_die "Live ISO screenshot was not captured"
 }
 
+wait_for_live_services() {
+  local deadline=$((SECONDS + 90))
+
+  while ((SECONDS < deadline)); do
+    if vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
+      set -euo pipefail
+      systemctl is-active --quiet iwd.service
+      systemctl is-active --quiet systemd-networkd.service
+      systemctl is-active --quiet systemd-resolved.service
+      systemctl is-active --quiet host-network-online.service
+      systemctl is-active --quiet greetd.service
+    ' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 3
+  done
+
+  vbox_die "Live ISO network services did not become ready within 90 seconds"
+}
+
 run_live_checks() {
   run_logged "$E2E_DIR/live-runtime.log" \
     vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
@@ -292,6 +312,7 @@ main() {
   vbox_wait_for_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Live ISO SSH did not become ready"
   capture_live_screen
   vbox_wait_for_ssh_network live "$LIVE_SSH_KEY" "$SSH_PORT" 180 || vbox_die "Live ISO network did not become ready"
+  wait_for_live_services
   run_live_checks
   vbox_scp_to live "$LIVE_SSH_KEY" "$SSH_PORT" "$TARGET_PASSWORD_FILE" /home/live/target-password
   run_install
