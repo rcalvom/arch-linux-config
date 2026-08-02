@@ -2,14 +2,28 @@
 set -euo pipefail
 
 refresh_mirrors_if_available() {
+  local mirrorlist=${1:-/etc/pacman.d/mirrorlist}
+  local refreshed_mirrorlist
+  local line
+  local official_mirror='Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch'
+
   if ! command -v reflector >/dev/null 2>&1; then
     return 0
   fi
 
   log_info "Refreshing pacman mirrorlist"
-  if ! reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist; then
+  refreshed_mirrorlist=$(mktemp)
+  if ! reflector --latest 20 --protocol https --sort rate --save "$refreshed_mirrorlist"; then
+    rm -f -- "$refreshed_mirrorlist"
     log_warn "Could not refresh mirrorlist; continuing with existing mirrors"
+    return 0
   fi
+
+  printf '%s\n' "$official_mirror" > "$mirrorlist"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf '%s\n' "$line"
+  done < "$refreshed_mirrorlist" >> "$mirrorlist"
+  rm -f -- "$refreshed_mirrorlist"
 }
 
 unmount_installer_target() {
