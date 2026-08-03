@@ -62,7 +62,7 @@ These locations are deliberately not copied wholesale into the repository:
 - Firefox and Thunderbird profiles, cookies, tokens, and runtime data. The repository stores profile templates and `archcfg-*` launchers instead.
 - Application-generated entries in `~/.config/mimeapps.list`, such as `userapp-*` desktop IDs and optional host applications.
 - `~/.config/yazi/flavors/modus-vivendi.yazi/`, which is an unused legacy flavor; the managed `theme.toml` now defines the active Yazi palette.
-- OpenClaw state and `openclaw-gateway.service`, which can contain credentials or host-specific state. Only portable shell completion loading is managed; see [OpenClaw Sandboxes](openclaw-sandboxes.md) for the sanitized security model and recovery procedure.
+- OpenClaw state, credentials, and host-specific service overrides. The portable gateway unit is versioned under `openclaw/systemd/user/`; see [OpenClaw Sandboxes](openclaw-sandboxes.md) for the sanitized security model and recovery procedure.
 - Neovim backups, caches, plugin downloads, and lock updates that have not been deliberately reviewed.
 
 System-wide Greetd, GRUB, networking, and power configuration are source-backed separately under their respective repository directories and checked by `scripts/verify-system-config.sh`. Generated runtime state such as `grub.cfg`, initramfs images, `fstab`, and hardware charge values must not be copied back blindly.

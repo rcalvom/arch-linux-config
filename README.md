@@ -51,6 +51,7 @@ The repository is organized by functional domains (packages, bootloader, desktop
 
 Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
 OpenClaw sandbox boundaries, image recovery, and safe operator checks are documented in [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
+Package-managed OpenCode, its shared local daemon, and built-in skill guidance are documented in [docs/opencode.md](docs/opencode.md).
 Optional OpenCode desktop and Telegram notifications are documented in [docs/opencode-notifier.md](docs/opencode-notifier.md).
 Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
 Disposable ISO build and full-install validation in VirtualBox are documented in [docs/vbox-automation.md](docs/vbox-automation.md).

@@ -26,19 +26,28 @@ previous one rather than stacking.
 
 ## Plugin
 
-Install the plugin globally with OpenCode:
+Install the package-managed plugin instead of letting OpenCode download it from
+npm:
 
 ```bash
-opencode plugin --global @mohak34/opencode-notifier@latest
+yay -S --needed opencode opencode-notifier
 ```
 
-The global `~/.config/opencode/opencode.json` must contain:
+`opencode` is supplied by the official repository and `opencode-notifier` is an
+AUR package. The global `~/.config/opencode/opencode.json` must contain:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@mohak34/opencode-notifier@latest"]
+  "autoupdate": false,
+  "plugin": ["file:///usr/lib/opencode/plugins/opencode-notifier/dist/index.js"]
 }
+```
+
+The file URL keeps the plugin under package ownership. Verify it with:
+
+```bash
+pacman -Qo /usr/lib/opencode/plugins/opencode-notifier/dist/index.js
 ```
 
 Create `~/.config/opencode/opencode-notifier.json` with the selected profile:
@@ -68,11 +77,11 @@ Create `~/.config/opencode/opencode-notifier.json` with the selected profile:
     "client_connected": false
   },
   "messages": {
-    "permission": "🔐 Permiso requerido: {sessionTitle}",
-    "complete": "✅ Tarea completada: {sessionTitle}",
+    "permission": "🔐 Permission required: {sessionTitle}",
+    "complete": "✅ Task completed: {sessionTitle}",
     "error": "🚨 Error: {sessionTitle}",
-    "question": "❓ Pregunta pendiente: {sessionTitle}",
-    "plan_exit": "📝 Plan listo para revisar: {sessionTitle}"
+    "question": "❓ Question pending: {sessionTitle}",
+    "plan_exit": "📝 Plan ready for review: {sessionTitle}"
   },
   "sounds": {
     "permission": "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga",
@@ -149,9 +158,11 @@ the token in a tracked script.
 ## Verification
 
 Restart OpenCode after changing its global configuration, notifier profile, or
-helper script. Verify the plugin is registered with:
+helper script. If OpenCode runs through the shared user service, restart that
+service. Verify the plugin is registered with:
 
 ```bash
+systemctl --user restart opencode-server.service
 opencode debug config
 ```
 

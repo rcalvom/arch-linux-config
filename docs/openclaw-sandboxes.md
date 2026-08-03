@@ -9,6 +9,38 @@ OpenClaw is an optional AUR package declared in `packages/aur.txt`. Its runtime
 configuration is operator-managed because it contains host-specific paths and
 secrets.
 
+## Package-Managed Gateway
+
+Install the OpenClaw core through the reviewed AUR package, then use the
+portable user unit tracked at
+`openclaw/systemd/user/openclaw-gateway.service`:
+
+```bash
+yay -S --needed openclaw
+install -Dm644 openclaw/systemd/user/openclaw-gateway.service \
+  ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user daemon-reload
+systemctl --user enable --now openclaw-gateway.service
+```
+
+The unit invokes `/usr/bin/openclaw gateway run --port 18789` and contains no
+credential values. Keep the gateway bound to configured loopback endpoints in
+the live `~/.openclaw/openclaw.json`; that file remains untracked.
+
+OpenClaw's bundled extensions are included with the AUR package. Some optional
+channel and provider plugins may remain under `~/.openclaw/npm/` when no
+official or AUR package exists. Preserve that directory during upgrades and
+migrations; it is runtime state, not the deprecated global npm installation.
+
+After an OpenClaw package update, restart and check the gateway explicitly:
+
+```bash
+systemctl --user restart openclaw-gateway.service
+openclaw gateway health
+openclaw channels status
+openclaw plugins doctor
+```
+
 ## Topology
 
 The gateway is a user systemd service bound to loopback with token
@@ -78,9 +110,9 @@ openclaw secrets configure
 openclaw secrets audit --check
 ```
 
-Do not commit the live JSON, its backups, deploy keys, or workspace clones.
-The same rule applies to the user gateway unit when it contains a host-specific
-runtime path or environment.
+Do not commit the live JSON, its backups, deploy keys, workspace clones, or
+host-specific service overrides. The tracked gateway unit is safe to version
+because it contains only portable paths and no credential values.
 
 ## Kernel And Docker Bridge
 
