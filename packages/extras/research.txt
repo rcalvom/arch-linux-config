@@ -1,0 +1,12 @@
+# Local research tools; no institution accounts or remote services.
+r
+jupyterlab
+python-numpy
+python-scipy
+python-matplotlib
+gnuplot
+texlive-latexrecommended
+texlive-latexextra
+texlive-fontsrecommended
+texlive-bibtexextra
+biber

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 CONFIG_FILE=${ARCHCFG_CHARGE_LIMIT_CONFIG:-/etc/archcfg/charge-limit.conf}
+SYS_ROOT=${ARCHCFG_POWER_SYS_ROOT:-/sys}
+DEBOUNCE_SECONDS=${ARCHCFG_POWER_DEBOUNCE_SECONDS:-2}
 DRY_RUN=0
 
 die() {
@@ -20,7 +22,7 @@ mains_online() {
   local type
   local online
 
-  for supply in /sys/class/power_supply/*; do
+  for supply in "$SYS_ROOT"/class/power_supply/*; do
     [[ -r "$supply/type" && -r "$supply/online" ]] || continue
     type=$(<"$supply/type")
     online=$(<"$supply/online")
@@ -35,7 +37,7 @@ dock_product() {
   local product
   local pattern=${DOCK_PRODUCT_PATTERN,,}
 
-  for product_file in /sys/bus/usb/devices/*/product; do
+  for product_file in "$SYS_ROOT"/bus/usb/devices/*/product; do
     [[ -r "$product_file" ]] || continue
     product=$(<"$product_file")
     if [[ "${product,,}" == *"$pattern"* ]]; then
@@ -71,7 +73,7 @@ apply_thresholds() {
   local end_path
   local managed=0
 
-  for battery in /sys/class/power_supply/*; do
+  for battery in "$SYS_ROOT"/class/power_supply/*; do
     start_path="$battery/charge_control_start_threshold"
     end_path="$battery/charge_control_end_threshold"
     [[ -e "$start_path" && -e "$end_path" ]] || continue
@@ -113,9 +115,15 @@ main() {
   (( CHARGE_START_THRESHOLD <= AC_CHARGE_END_THRESHOLD )) || die "AC end threshold is below start threshold"
   [[ -n "$DOCK_PRODUCT_PATTERN" ]] || die "dock product pattern is empty"
 
-  local dock
-  if mains_online && dock=$(dock_product); then
-    apply_thresholds "$DOCK_CHARGE_END_THRESHOLD" "dock ($dock)"
+  local dock_before=0 dock_after=0
+  [[ "$DEBOUNCE_SECONDS" =~ ^[0-9]+$ ]] || die "invalid debounce interval"
+  if mains_online && dock_product >/dev/null; then dock_before=1; fi
+  sleep "$DEBOUNCE_SECONDS"
+  if mains_online && dock_product >/dev/null; then dock_after=1; fi
+  # A changing topology is retried by the timer rather than applying stale state.
+  [[ "$dock_before" == "$dock_after" ]] || return 0
+  if (( dock_after )); then
+    apply_thresholds "$DOCK_CHARGE_END_THRESHOLD" "dock"
   else
     apply_thresholds "$AC_CHARGE_END_THRESHOLD" "direct AC or battery"
   fi

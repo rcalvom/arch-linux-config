@@ -1,0 +1,11 @@
+{
+  "id": "local-meeting-audio",
+  "name": "Local Meeting Audio",
+  "description": "Receive-only Teams audio transcription with local Whisper",
+  "contracts": { "tools": ["meeting_audio"] },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

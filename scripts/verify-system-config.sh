@@ -220,8 +220,10 @@ check_disabled_unit() {
 
 check_enabled_global_user_unit() {
   local unit=$1
+  local socket=${2:-}
 
-  if ! global_user_unit_is_enabled "$unit"; then
+  if ! global_user_unit_is_enabled "$unit" &&
+    { [[ -z "$socket" ]] || ! global_user_unit_is_enabled "$socket"; }; then
     report DISABLED "global user unit: $unit"
     ((failures += 1))
   fi
@@ -244,7 +246,18 @@ verify_networking() {
   compare_file "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.path" "$root_prefix/etc/systemd/system/archcfg-reset-resolved-if-stub.path" 0644
   compare_file "$repo_dir/network/bin/archcfg-wait-network-online" "$root_prefix/usr/local/libexec/archcfg-wait-network-online" 0755
   compare_file "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" "$root_prefix/usr/local/libexec/archcfg-reset-resolved-if-stub" 0755
-  compare_link /run/systemd/resolve/stub-resolv.conf "$root_prefix/etc/resolv.conf"
+  # VPN clients may temporarily own resolv.conf. Never print its contents,
+  # backup contents, nameservers, search domains, or alternate symlink targets.
+  if [[ -e "$root_prefix/etc/resolv.conf.vpnbackup" || -L "$root_prefix/etc/resolv.conf.vpnbackup" ]]; then
+    report WARN "VPN resolver backup present; resolver ownership is temporary or stale (contents withheld)"
+    ((warnings += 1))
+    if [[ ! -e "$root_prefix/etc/resolv.conf" && ! -L "$root_prefix/etc/resolv.conf" ]]; then
+      report MISSING "resolver configuration"
+      ((failures += 1))
+    fi
+  else
+    compare_link /run/systemd/resolve/stub-resolv.conf "$root_prefix/etc/resolv.conf"
+  fi
   check_enabled_unit iwd.service
   check_enabled_unit systemd-networkd.service
   check_enabled_unit systemd-resolved.service
@@ -261,9 +274,11 @@ verify_charge_limits() {
   compare_file "$repo_dir/power/charge-limit.conf" "$root_prefix/etc/archcfg/charge-limit.conf" 0644
   compare_file "$repo_dir/power/bin/archcfg-charge-limit" "$root_prefix/usr/local/libexec/archcfg-charge-limit" 0755
   compare_file "$repo_dir/power/systemd/archcfg-charge-limit.service" "$root_prefix/etc/systemd/system/archcfg-charge-limit.service" 0644
+  compare_file "$repo_dir/power/systemd/archcfg-charge-limit.timer" "$root_prefix/etc/systemd/system/archcfg-charge-limit.timer" 0644
   compare_file "$repo_dir/power/udev/99-archcfg-charge-limit.rules" "$root_prefix/etc/udev/rules.d/99-archcfg-charge-limit.rules" 0644
   compare_file "$repo_dir/power/upower/90-archcfg-critical-battery.conf" "$root_prefix/etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf" 0644
   check_enabled_unit archcfg-charge-limit.service
+  check_enabled_unit archcfg-charge-limit.timer
   check_absent "$root_prefix/etc/systemd/system/battery-thresholds.service"
   check_absent "$root_prefix/etc/systemd/system/battery-thresholds.timer"
   check_absent "$root_prefix/usr/local/bin/battery_thresholds.sh"
@@ -295,8 +310,8 @@ verify_desktop() {
   check_absent "$root_prefix/etc/greetd/regreet.toml"
   check_enabled_unit bluetooth.service
   check_enabled_unit greetd.service
-  check_enabled_global_user_unit pipewire.service
-  check_enabled_global_user_unit pipewire-pulse.service
+  check_enabled_global_user_unit pipewire.service pipewire.socket
+  check_enabled_global_user_unit pipewire-pulse.service pipewire-pulse.socket
   check_enabled_global_user_unit wireplumber.service
 
   if [[ "$profile" == developer || "$profile" == virtualbox ]]; then
@@ -428,6 +443,8 @@ esac
 
 verify_networking
 verify_charge_limits
+check_enabled_unit fstrim.timer
+check_enabled_unit systemd-timesyncd.service
 if profile_has_desktop; then
   verify_desktop
 fi

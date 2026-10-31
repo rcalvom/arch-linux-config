@@ -33,6 +33,7 @@ assert_valid_automated_args() {
     set -euo pipefail
     source "$1/lib/log.sh"
     source "$1/lib/args.sh"
+    source "$1/scripts/packages.sh"
     shift
     parse_args "$@"
     [[ "$USER_PASSWORD_FILE" == /run/archcfg-e2e/user-password ]]
@@ -48,6 +49,7 @@ assert_invalid_automated_args() {
     set -euo pipefail
     source "$1/lib/log.sh"
     source "$1/lib/args.sh"
+    source "$1/scripts/packages.sh"
     shift
     parse_args "$@"
   ' _ "$REPO_DIR" "$@" >/dev/null 2>&1
@@ -127,12 +129,13 @@ test_postinstall_shell_invocation() {
     printf '%s\0' "$@" > "$calls"
   }
 
-  run_postinstall /target /opt/arch-linux-config virtualbox archcfg-e2e archcfg-e2e UTC 0
+  run_postinstall /target /opt/arch-linux-config virtualbox archcfg-e2e archcfg-e2e UTC 0 none ricardo research amd
   mapfile -d '' -t call_args < "$calls"
 
   [[ "${call_args[0]}" == /target ]] || fail "postinstall target is incorrect"
   [[ "${call_args[1]}" == /usr/bin/bash ]] || fail "postinstall does not run through bash"
   [[ "${call_args[2]}" == /opt/arch-linux-config/postinstall.sh ]] || fail "postinstall script path is incorrect"
+  [[ " ${call_args[*]} " == *' --microcode none --hardware-profile ricardo --extra research --extra amd '* ]] || fail 'Optional arguments were not forwarded'
   [[ " ${call_args[*]} " != *' --wifi-interface '* ]] || fail "postinstall still receives a Wi-Fi interface selector"
 
   unset -f arch-chroot

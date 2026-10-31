@@ -2,6 +2,7 @@
 set -euo pipefail
 
 require_vm_commands() {
+  require_command readlink
   require_command lsblk
   require_command mountpoint
   require_command wipefs
@@ -18,9 +19,12 @@ unmount_vm_disk_mounts() {
   local disk=$1
   local mount_points=()
   local mount_point
+  local mounts
   local i
 
-  mapfile -t mount_points < <(lsblk -nrpo MOUNTPOINT "$disk")
+  disk=$(validated_disk_path "$disk") || return 1
+  mounts=$(lsblk -nrpo MOUNTPOINT "$disk") || die "Cannot list disk mounts: $disk"
+  mapfile -t mount_points <<<"$mounts"
 
   for ((i = ${#mount_points[@]} - 1; i >= 0; i--)); do
     mount_point=${mount_points[$i]}
@@ -49,6 +53,7 @@ confirm_vm_disk() {
   local yes=$2
   local response
 
+  disk=$(validated_disk_path "$disk") || return 1
   log_warn "VM mode will erase $disk completely."
   log_warn "This mode is intended for VirtualBox, QEMU, VMware, or disposable disks."
   lsblk "$disk"
@@ -65,6 +70,7 @@ confirm_vm_disk() {
 partition_vm_disk() {
   local disk=$1
 
+  disk=$(validated_disk_path "$disk") || return 1
   log_info "Partitioning $disk"
   wipefs -a "$disk"
   sgdisk --zap-all "$disk"
@@ -79,6 +85,7 @@ format_vm_partitions() {
   local efi_part
   local root_part
 
+  disk=$(validated_disk_path "$disk") || return 1
   efi_part=$(partition_path "$disk" 1)
   root_part=$(partition_path "$disk" 2)
 
@@ -95,6 +102,7 @@ mount_vm_partitions() {
   local efi_part
   local root_part
 
+  disk=$(validated_disk_path "$disk") || return 1
   efi_part=$(partition_path "$disk" 1)
   root_part=$(partition_path "$disk" 2)
 

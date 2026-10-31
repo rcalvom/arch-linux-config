@@ -1,6 +1,7 @@
 # Official build and runtime dependencies for the reviewed AUR package set.
 # Update this file together with packages/aur.txt after reviewing .SRCINFO.
 base-devel
+bun
 git
 go
 npm

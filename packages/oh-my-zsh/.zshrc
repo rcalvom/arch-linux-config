@@ -126,7 +126,6 @@ typeset -U path PATH
 # Prepend user-level bins.
 path=(
   "$HOME/.npm-global/bin"
-  "$HOME/.opencode/bin"
   "$HOME/.local/bin"
   $path
 )

@@ -44,8 +44,8 @@ printf '%s\n' 'Server = https://previous.example/$repo/os/$arch' > "$MIRRORLIST"
 refresh_mirrors_if_available "$MIRRORLIST"
 
 mapfile -t mirrors < "$MIRRORLIST"
-[[ "${mirrors[0]}" == 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' ]] || fail "official mirror is not first"
-[[ "${mirrors[1]}" == 'Server = https://selected.example/$repo/os/$arch' ]] || fail "refreshed mirror is not retained"
+[[ "${mirrors[0]}" == 'Server = https://selected.example/$repo/os/$arch' ]] || fail "measured mirror order was overridden"
+[[ "${mirrors[1]}" == 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' ]] || fail "official fallback mirror is not retained"
 [[ "$(<"$REFLECTOR_LOG")" == *'--latest 20 --protocol https --sort rate --save '* ]] || fail "reflector was invoked with unexpected options"
 
 printf '%s\n' 'Server = https://previous.example/$repo/os/$arch' > "$MIRRORLIST"

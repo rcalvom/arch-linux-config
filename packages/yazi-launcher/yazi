@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Alacritty has no image protocol. Force Yazi's native Chafa fallback instead
+# of the unstable Überzug++ Wayland overlay on transparent Hyprland sessions.
+# Preserve the desktop environment for graphical document openers.
+export ARCHCFG_GUI_DISPLAY="${DISPLAY:-}"
+export ARCHCFG_GUI_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}"
+export ARCHCFG_GUI_SESSION_TYPE="${XDG_SESSION_TYPE:-}"
+exec env -u DISPLAY -u WAYLAND_DISPLAY XDG_SESSION_TYPE=tty /usr/bin/yazi "$@"

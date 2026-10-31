@@ -1,5 +1,6 @@
 # Python cache
 __pycache__
+*.py[cod]
 
 # ISO build output
 out/
@@ -7,5 +8,35 @@ work/
 *.iso
 *.iso.sig
 
+# Generated source snapshot artifacts at the repository root
+/source.tar
+/source.tar.sha256
+/.archcfg-source.files
+/.archcfg-source.sha256
+
 # Generated local editor state
 relative-state/
+
+# Private credentials and runtime state must never enter public snapshots.
+.env
+.env.*
+!.env.example
+!.env.sample
+.ssh/
+.gnupg/
+credentials/
+secrets/
+auth.json
+credentials.json
+token.json
+tokens.json
+oauth*.json
+client_secret*
+id_rsa*
+id_ed25519*
+*.pem
+*.key
+*.p12
+*.pfx
+/home-assistant/config/
+*.jsonl

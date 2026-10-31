@@ -28,6 +28,6 @@ general.firstdayofweek=monday
 general.multipledays=no
 general.periodicsave=0
 general.systemevents=no
-notification.command=printf '\a'
+notification.command=notify-send --app-name=Calendar --icon=x-office-calendar --expire-time=0 "Local calendar" "An appointment is coming up. Check your running Calcurse session for details."
 notification.notifyall=flagged-only
 notification.warning=300

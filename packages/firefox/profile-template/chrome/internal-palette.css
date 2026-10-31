@@ -1,0 +1,43 @@
+/* Shared palette for Firefox UI documents, never ordinary website content. */
+@-moz-document url-prefix("chrome://"), url-prefix("about:") {
+  @media not (forced-colors: active) {
+    :root {
+      --color-violet-0: #eff6ff !important;
+      --color-violet-10: #dbeafe !important;
+      --color-violet-20: #bfdbfe !important;
+      --color-violet-30: #93c5fd !important;
+      --color-violet-40: #60a5fa !important;
+      --color-violet-50: #3b82f6 !important;
+      --color-violet-60: #2563eb !important;
+      --color-violet-70: #1d4ed8 !important;
+      --color-violet-80: #1e40af !important;
+      --color-violet-90: #082552 !important;
+      --color-violet-100: #101827 !important;
+      --color-violet-110: #080f1a !important;
+      --color-violet-desaturated-0: #f1f5f9 !important;
+      --color-violet-desaturated-10: #e2e8f0 !important;
+      --color-violet-desaturated-20: #cbd5e1 !important;
+      --color-violet-desaturated-30: #a6b8d0 !important;
+      --color-violet-desaturated-40: #849dbd !important;
+      --color-violet-desaturated-50: #647d9f !important;
+      --color-violet-desaturated-60: #475f80 !important;
+      --color-violet-desaturated-70: #304563 !important;
+      --color-violet-desaturated-80: #1e2d44 !important;
+      --color-violet-desaturated-90: #101827 !important;
+      --color-accent-primary: light-dark(#033e8c, #60a5fa) !important;
+      --color-accent-primary-hover: light-dark(#0a4fa8, #93c5fd) !important;
+      --color-accent-primary-active: light-dark(#062f6b, #3b82f6) !important;
+      --color-accent-primary-selected: var(--color-accent-primary-active) !important;
+      --button-background-color-primary: #033e8c !important;
+      --button-background-color-primary-hover: #0a4fa8 !important;
+      --button-background-color-primary-active: #062f6b !important;
+      --button-background-color-primary-selected: #062f6b !important;
+      --button-text-color-primary: #ffffff !important;
+      --button-text-color-primary-hover: #ffffff !important;
+      --button-text-color-primary-active: #ffffff !important;
+      --button-text-color-primary-selected: #ffffff !important;
+      --focus-outline-color: #3b82f6 !important;
+      accent-color: var(--color-accent-primary) !important;
+    }
+  }
+}

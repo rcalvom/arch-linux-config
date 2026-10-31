@@ -1,8 +1,8 @@
 [Unit]
-Description=Watch resolv.conf for systemd-resolved restoration
+Description=Watch Cisco VPN resolver backup for removal
 
 [Path]
-PathChanged=/etc/resolv.conf
+PathChanged=/etc/resolv.conf.vpnbackup
 Unit=archcfg-reset-resolved-if-stub.service
 
 [Install]

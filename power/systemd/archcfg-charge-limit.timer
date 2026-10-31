@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile battery limits after AC and dock transitions
+
+[Timer]
+OnBootSec=10s
+OnUnitInactiveSec=10s
+AccuracySec=1s
+Unit=archcfg-charge-limit.service
+
+[Install]
+WantedBy=timers.target

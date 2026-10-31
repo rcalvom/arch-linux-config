@@ -22,6 +22,7 @@
 - Conservative `apply-config.sh` for existing Arch installs.
 - Expand optional AUR support after the core flow is reliable.
 - Expand the current live ISO into a more complete test/recovery environment after VM installs are stable.
+- Review host-specific operational findings in the [maintenance backlog](maintenance-backlog.md).
 
 ## Deferred Complex Work
 

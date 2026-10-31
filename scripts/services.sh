@@ -68,6 +68,7 @@ configure_charge_limits() {
   [[ -f "$repo_dir/power/charge-limit.conf" ]] || die "Missing charge limit configuration"
   [[ -f "$repo_dir/power/bin/archcfg-charge-limit" ]] || die "Missing charge limit helper"
   [[ -f "$repo_dir/power/systemd/archcfg-charge-limit.service" ]] || die "Missing charge limit service"
+  [[ -f "$repo_dir/power/systemd/archcfg-charge-limit.timer" ]] || die "Missing charge limit timer"
   [[ -f "$repo_dir/power/udev/99-archcfg-charge-limit.rules" ]] || die "Missing charge limit udev rule"
   [[ -f "$repo_dir/power/upower/90-archcfg-critical-battery.conf" ]] || die "Missing critical battery policy"
 
@@ -75,6 +76,7 @@ configure_charge_limits() {
   install -Dm644 "$repo_dir/power/charge-limit.conf" /etc/archcfg/charge-limit.conf
   install -Dm755 "$repo_dir/power/bin/archcfg-charge-limit" /usr/local/libexec/archcfg-charge-limit
   install -Dm644 "$repo_dir/power/systemd/archcfg-charge-limit.service" /etc/systemd/system/archcfg-charge-limit.service
+  install -Dm644 "$repo_dir/power/systemd/archcfg-charge-limit.timer" /etc/systemd/system/archcfg-charge-limit.timer
   install -Dm644 "$repo_dir/power/udev/99-archcfg-charge-limit.rules" /etc/udev/rules.d/99-archcfg-charge-limit.rules
   install -Dm644 "$repo_dir/power/upower/90-archcfg-critical-battery.conf" /etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf
 
@@ -84,14 +86,19 @@ configure_charge_limits() {
   rm -f /usr/local/bin/battery_thresholds.sh
   systemctl daemon-reload
   enable_service_if_present archcfg-charge-limit.service
+  enable_service_if_present archcfg-charge-limit.timer
 }
 
 enable_core_services() {
   local profile=$1
 
+  # Called in the installed target by postinstall, never by the live ISO builder.
+  # Schedule weekly filesystem-supported TRIM, without running it during install.
+  enable_service_if_present fstrim.timer
+  enable_service_if_present systemd-timesyncd.service
   enable_service_if_present bluetooth.service
-  enable_user_service_globally_if_present pipewire.service
-  enable_user_service_globally_if_present pipewire-pulse.service
+  enable_user_service_globally_if_present pipewire.socket
+  enable_user_service_globally_if_present pipewire-pulse.socket
   enable_user_service_globally_if_present wireplumber.service
 
   case "$profile" in

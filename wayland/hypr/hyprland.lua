@@ -2,7 +2,7 @@
 -- Keep this file as the single source of session behavior; hyprland.conf is legacy.
 
 local terminal = "alacritty"
-local fileManager = "alacritty -e yazi"
+local fileManager = "alacritty -e $HOME/.local/bin/yazi"
 local menu = "rofi -show drun"
 local mainMod = "SUPER"
 local userBin = "$HOME/.local/bin"
@@ -182,8 +182,8 @@ hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO
     { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl --class=backlight -e4 -n2 set 5%+"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight -e4 -n2 set 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -198,3 +198,11 @@ command("Print", "mkdir -p " .. screenshotDir .. " && grim " .. screenshotDir ..
 command("CTRL + Print", "grim - | wl-copy --type image/png")
 command("SHIFT + Print", "mkdir -p " .. screenshotDir .. " && grim -g \"$(slurp)\" " .. screenshotDir .. "/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png")
 command("CTRL + SHIFT + Print", "grim -g \"$(slurp)\" - | wl-copy --type image/png")
+
+-- Hardware-specific settings are deployed only through an explicit profile.
+local hardwareConfig = os.getenv("HOME") .. "/.config/archcfg/hardware.lua"
+local hardwareFile = io.open(hardwareConfig, "r")
+if hardwareFile then
+    hardwareFile:close()
+    dofile(hardwareConfig)
+end

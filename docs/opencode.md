@@ -1,19 +1,32 @@
 # OpenCode on Arch
 
+## October 2026 Personal Setup Update
+
+The personal recipe now installs only the official `opencode` package, not
+`opencode-notifier`. The notifier package was removed from the host; notifications
+use a separate custom plugin. The packaged-plugin commands below describe the
+independent generic optional setup, not the current personal installation.
+See [the personal recipe](recipe-ricardo.md) for its current package selection.
+
+## Generic Package-Managed Setup
+
 This document describes the package-managed OpenCode setup for the local Arch
 workstation. It is separate from `server-bootstrap/`, whose portable server
 setup intentionally uses npm instead of Arch packages.
 
 ## Packages
 
-Install OpenCode from the official repository and the optional notifier from
-the AUR:
+The developer and VirtualBox profiles install OpenCode from the official Arch
+repository. Pass `--aur` to the installer to also build the pinned optional
+notifier package. On an existing system, install both with:
 
 ```bash
 yay -S --needed opencode opencode-notifier
 ```
 
-`opencode` is supplied by `extra`; `opencode-notifier` is an AUR package. Use
+`opencode` is supplied by `extra`; `opencode-notifier` is an AUR package. The
+notifier package installs only plugin files: it does not edit OpenCode
+configuration, create a notifier profile, or enable Telegram forwarding. Use
 the following command for routine upgrades so both sources are updated:
 
 ```bash
@@ -24,16 +37,22 @@ Do not use a standalone installer, `opencode-bin`, or
 `opencode plugin --global` for this setup. Those paths bypass package ownership
 and can leave an npm-managed binary or plugin cache behind.
 
-The global configuration disables OpenCode self-updates and loads the packaged
-plugin directly:
+Disable OpenCode self-updates in the global configuration. OpenCode V2 uses
+the plural `plugins` key. The AUR package currently exports the legacy plugin
+function directly, while V2 requires an object with an ID and `setup`; use the
+reviewed compatibility copy until the package provides that wrapper:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "plugin": ["file:///usr/lib/opencode/plugins/opencode-notifier/dist/index.js"]
+  "plugins": ["file:///home/ricardo/.config/opencode/vendor/opencode-notifier"]
 }
 ```
+
+The compatibility copy differs from the packaged `dist/index.js` only in its
+default-export wrapper. Recheck that assumption after every notifier upgrade;
+do not copy credentials or notifier runtime state into the vendor directory.
 
 Verify package ownership when troubleshooting:
 
@@ -42,45 +61,45 @@ pacman -Qo /usr/bin/opencode \
   /usr/lib/opencode/plugins/opencode-notifier/dist/index.js
 ```
 
-## Shared Daemon
+## Shared Service
 
-`opencode-server.service` is a user-level systemd service that runs the server
-without invoking `opencode web` or opening a browser:
+OpenCode V2 manages a shared background service for terminal clients. Inspect
+and restart it with the supported CLI:
 
-```text
-/usr/bin/opencode serve --hostname 127.0.0.1 --port 4096
+```bash
+opencode service status
+opencode service restart
 ```
 
-It is enabled under `default.target` and restarts on failure. Keep it bound to
-loopback. The API can run shell tools with the user's permissions, so it must
-not be exposed directly to a LAN or the Internet. Use an SSH tunnel or a
-private network with additional authentication for remote access.
-
-In OpenCode 1.18.11, `serve` still delivers the bundled Web UI at `/`. It does
-not create a separate browser process or open a browser automatically, and
-there is no documented CLI or configuration switch to remove that route. An
-API-only HTTP surface would require a separate proxy that filters UI routes;
-that adds complexity without meaningful resource savings.
-
-The local `opencode` wrapper starts the service if needed, then attaches the
-TUI to `http://127.0.0.1:4096`. It also adds `--attach` for `opencode run`.
-The wrapper must invoke `/usr/bin/opencode`; it must not reference a standalone
-path such as `~/.opencode/bin/opencode`.
+Keep the service bound to loopback unless remote access is an explicit and
+reviewed requirement. The API can run tools with the user's permissions, so a
+LAN or private-overlay listener needs authentication, firewall restrictions,
+credential rotation, and periodic exposure review.
 
 Useful checks:
 
 ```bash
-systemctl --user status opencode-server.service
-curl --fail http://127.0.0.1:4096/global/health
-opencode attach http://127.0.0.1:4096
+opencode service status
+opencode api get /api/status
+opencode api get /api/plugin
 ```
 
-After changing `opencode.json`, a plugin, or the service unit, restart the
-daemon so it reloads configuration:
+The terminal client binds `Ctrl+Alt+A` to `permission.mode`, allowing the user
+to toggle automatic permission approval without editing configuration:
+
+```json
+{
+  "keybinds": {
+    "permission.mode": "ctrl+alt+a"
+  }
+}
+```
+
+After changing `opencode.json` or a server plugin, restart the shared service
+after saving active work:
 
 ```bash
-systemctl --user daemon-reload
-systemctl --user restart opencode-server.service
+opencode service restart
 ```
 
 ## State and Cleanup

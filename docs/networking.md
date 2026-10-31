@@ -6,7 +6,8 @@ The system uses one network owner per link:
 - `systemd-networkd` owns wired and USB Ethernet interfaces matched by `en*` or `eth*`.
 - `systemd-resolved` receives DNS data from IWD and networkd.
 - `host-network-online.service` provides the aggregate wait for services such as Docker that require `network-online.target`.
-- Cisco temporarily replaces `/etc/resolv.conf` with tunnel DNS. When it restores the `systemd-resolved` stub on disconnect, `archcfg-reset-resolved-if-stub.path` restarts resolved to discard stale tunnel DNS.
+- Cisco temporarily replaces `/etc/resolv.conf` with tunnel DNS. When it removes `/etc/resolv.conf.vpnbackup` after restoring the `systemd-resolved` stub, `archcfg-reset-resolved-if-stub.path` restarts resolved once to discard stale tunnel DNS.
+- IWD disables Wi-Fi power saving for `ath11k_pci` because it causes frequent carrier loss on affected Qualcomm adapters.
 
 The IWD profile and Wi-Fi passphrase are intentionally not stored in this repository. Click the Waybar network module to open Impala after installation.
 

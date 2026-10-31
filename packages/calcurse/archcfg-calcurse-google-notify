@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+state_home=${XDG_STATE_HOME:-"$HOME/.local/state"}
+profile_dir="$data_home/archcfg/calcurse-google-reminders"
+state_dir="$state_home/archcfg"
+state_file="$state_dir/calcurse-google-reminder.sha256"
+lock_file="$state_dir/calcurse-google-reminder.lock"
+next_appointment=
+line=
+hours=
+minutes=
+title=
+
+command -v calcurse >/dev/null || exit 0
+command -v notify-send >/dev/null || exit 0
+[[ -f "$profile_dir/apts" ]] || exit 0
+
+next_appointment=$(LC_ALL=C calcurse -D "$profile_dir" -C "$profile_dir" -n 2>/dev/null) || exit 0
+while IFS= read -r line; do
+    if [[ $line =~ ^[[:space:]]*\[([0-9]{2}):([0-9]{2})\][[:space:]](.*)$ ]]; then
+        hours=${BASH_REMATCH[1]}
+        minutes=${BASH_REMATCH[2]}
+        title=${BASH_REMATCH[3]}
+        break
+    fi
+done <<<"$next_appointment"
+
+[[ -n "$title" ]] || exit 0
+remaining_minutes=$((10#$hours * 60 + 10#$minutes))
+start_minute=$(($(date +%s) / 60 + remaining_minutes))
+reminder_hash=$(printf '%s\0%s' "$start_minute" "$title" | sha256sum)
+reminder_hash=${reminder_hash%% *}
+
+install -dm700 "$state_dir"
+exec 9>"$lock_file"
+flock 9
+if [[ -f "$state_file" ]] && [[ $(<"$state_file") == "$reminder_hash" ]]; then
+    exit 0
+fi
+
+if ((remaining_minutes == 1)); then
+    timing='Starts in 1 minute.'
+else
+    printf -v timing 'Starts in %d minutes.' "$remaining_minutes"
+fi
+
+notify-send \
+    --app-name=Calendar \
+    --icon=x-office-calendar \
+    --urgency=normal \
+    --expire-time=0 \
+    "$title" "$timing"
+printf '%s\n' "$reminder_hash" >"$state_file"

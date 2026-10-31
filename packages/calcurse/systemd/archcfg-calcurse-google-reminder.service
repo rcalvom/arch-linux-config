@@ -1,0 +1,14 @@
+[Unit]
+Description=Google Calendar reminder daemon
+After=graphical-session.target
+PartOf=graphical-session.target
+ConditionPathExists=%h/.local/share/archcfg/calcurse-google-reminders/apts
+ConditionPathExists=%h/.local/share/archcfg/calcurse-google-reminders/conf
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/calcurse -D %h/.local/share/archcfg/calcurse-google-reminders -C %h/.local/share/archcfg/calcurse-google-reminders --daemon
+ExecStop=/usr/bin/kill -TERM $MAINPID
+Restart=on-failure
+TimeoutStartSec=15
+TimeoutStopSec=15

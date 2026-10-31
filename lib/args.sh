@@ -11,6 +11,13 @@ INSTALL_HOSTNAME="archlinux"
 INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
 USER_PASSWORD_FILE=""
+PACKAGE_EXTRAS=()
+MICROCODE=auto
+HARDWARE_PROFILE=none
+RECIPE=none
+GPU_POLICY=auto
+DEFER_MANUAL=0
+DRY_RUN=0
 
 usage() {
   cat <<'USAGE'
@@ -20,10 +27,18 @@ Options:
   --target <path>       Target mount point. Default: /mnt.
   --profile <name>      Installation profile: minimal, desktop, developer, virtualbox.
                         Default: developer.
+  --recipe <name>       Optional personal package recipe: ricardo (not a hardware profile).
+  --dry-run             Print package selection only; no root, network or target writes.
+  --gpu <policy>        Recipe GPU: auto, amd, intel (Broadwell+), software.
+  --defer-manual         Explicitly defer blocked recipe AUR packages; see recipe docs.
   --vm                  Enable automatic VM/disk installation mode.
   --disk <device>       Disk to wipe and install to in VM mode.
   --yes                 Skip disk erase confirmation. Only valid with --vm.
   --aur                 Install optional AUR packages for the selected profile.
+  --extra <name>        Optional package set (repeatable): dev-extras, research,
+                        multimedia, virtualization, amd, fingerprint.
+  --microcode <policy>  auto (default; skips virtual machines) or none.
+  --hardware-profile <name>  none (default) or ricardo (personal display layouts).
   --hostname <name>     Hostname. Default: archlinux.
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
@@ -51,6 +66,18 @@ require_arg_value() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --recipe)
+        require_arg_value "$1" "${2-}"
+        case "$2" in ricardo) RECIPE=$2 ;; *) die "Invalid recipe: $2" ;; esac
+        shift 2
+        ;;
+      --gpu)
+        require_arg_value "$1" "${2-}"
+        case "$2" in auto | amd | intel | software) GPU_POLICY=$2 ;; *) die "Invalid GPU policy: $2" ;; esac
+        shift 2
+        ;;
+      --defer-manual) DEFER_MANUAL=1; shift ;;
+      --dry-run) DRY_RUN=1; shift ;;
       --target)
         require_arg_value "$1" "${2-}"
         TARGET=$2
@@ -83,6 +110,22 @@ parse_args() {
         INSTALL_HOSTNAME=$2
         shift 2
         ;;
+      --extra)
+        require_arg_value "$1" "${2-}"
+        package_file_for_extra "$2" >/dev/null
+        PACKAGE_EXTRAS+=("$2")
+        shift 2
+        ;;
+      --microcode)
+        require_arg_value "$1" "${2-}"
+        case "$2" in auto | none) MICROCODE=$2 ;; *) die "Invalid microcode policy: $2" ;; esac
+        shift 2
+        ;;
+      --hardware-profile)
+        require_arg_value "$1" "${2-}"
+        case "$2" in none | ricardo) HARDWARE_PROFILE=$2 ;; *) die "Invalid hardware profile: $2" ;; esac
+        shift 2
+        ;;
       --username)
         require_arg_value "$1" "${2-}"
         INSTALL_USERNAME=$2
@@ -108,9 +151,12 @@ parse_args() {
     esac
   done
 
+  validate_recipe_options
+
   if [[ "$YES" -eq 1 && "$VM_MODE" -ne 1 ]]; then
     die "--yes is only valid with --vm"
   fi
+  [[ "$HARDWARE_PROFILE" == none || "$PROFILE" != minimal ]] || die 'Hardware display profiles require a desktop profile'
 
   if [[ "$VM_MODE" -eq 1 && -z "$DISK" ]]; then
     die "--vm requires --disk"

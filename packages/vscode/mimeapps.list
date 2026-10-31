@@ -1,0 +1,11 @@
+# Optional fragment: merge only when code.desktop is installed.
+[Default Applications]
+text/plain=code.desktop;
+text/markdown=code.desktop;
+text/x-python=code.desktop;
+text/x-csrc=code.desktop;
+text/x-chdr=code.desktop;
+text/x-c++src=code.desktop;
+text/x-c++hdr=code.desktop;
+application/json=code.desktop;
+application/x-shellscript=code.desktop;

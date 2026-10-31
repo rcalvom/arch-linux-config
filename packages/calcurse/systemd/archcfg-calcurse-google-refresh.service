@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh Google Calendar reminder data
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=%E/vdirsyncer/config
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/archcfg-calcurse-google --refresh
+ExecStartPost=/usr/bin/systemctl --user reload-or-restart archcfg-calcurse-google-reminder.service

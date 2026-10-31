@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenCode
+Comment=Open the OpenCode terminal interface in Alacritty
+Exec=alacritty --title OpenCode -e opencode
+TryExec=opencode
+Icon=archcfg-opencode
+Terminal=false
+StartupNotify=false
+Categories=Development;
+Keywords=AI;Coding;Assistant;Terminal;

@@ -3,4 +3,5 @@ Description=Set Hyprsunset strong warm temperature for night
 
 [Service]
 Type=oneshot
+TimeoutStartSec=30
 ExecStart=%h/.local/bin/hyprsunset-set temperature 3500

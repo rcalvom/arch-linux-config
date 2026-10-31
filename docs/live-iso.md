@@ -29,13 +29,23 @@ Use `--fast --jobs 1` on memory-constrained builders to limit compression to one
 
 The output is written to `out/`.
 
-The build script copies the committed Git tree into the ISO and applies the classic repository GRUB theme, matching the host boot menu, to the live boot menu. Commit changes before building if you want those changes included.
+Work and output directories must be new or carry the builder's ownership marker
+(`.archcfg-build-iso`). Existing unmarked directories, including those from older
+builds, are refused: choose new paths with `--work-dir` and `--out-dir` rather
+than marking existing data manually. `--clean` deletes only validated, marked
+directories. Symlinks, overlapping paths, protected paths, and directories
+containing mount points are refused. Build directories are root-owned with mode
+`700`; use sudo to access the resulting ISO. Keep their parent directories
+trusted and do not modify paths or mounts concurrently with a build; shell path
+checks do not protect against concurrent filesystem replacement.
+
+The build script copies a verified source snapshot or clean Git tree into the ISO and applies the classic repository GRUB theme. Dirty direct builds are refused; use `scripts/vbox-build.sh --snapshot-worktree` to include current changes without commits, entirely inside a disposable VM.
 
 All live boot entries include `fbcon=nodefer` so the framebuffer console is bound before the TUI greeter draws.
 
 For a disposable regular-user VirtualBox build and installation loop, see
-[VirtualBox ISO Automation](vbox-automation.md). It builds from committed
-`HEAD` inside a builder VM instead of using the root-owned local `out/` and
+[VirtualBox ISO Automation](vbox-automation.md). It builds from clean
+`HEAD` or an explicit worktree snapshot inside a builder VM instead of using the root-owned local `out/` and
 `work/` directories.
 
 ## Test In VirtualBox

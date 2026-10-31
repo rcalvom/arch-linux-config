@@ -8,6 +8,13 @@ INSTALL_USERNAME="ricardo"
 TIMEZONE="America/Bogota"
 REPO_DIR="$SCRIPT_DIR"
 ENABLE_AUR=0
+PACKAGE_EXTRAS=()
+MICROCODE=auto
+HARDWARE_PROFILE=none
+RECIPE=none
+GPU_POLICY=auto
+DEFER_MANUAL=0
+DRY_RUN=0
 
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
@@ -31,12 +38,20 @@ usage() {
 Usage: postinstall.sh [options]
 
 Options:
+  --recipe <name>       Optional personal package recipe: ricardo.
+  --dry-run             Print selection without changing the target.
+  --gpu <policy>        Recipe GPU: auto, amd, intel (Broadwell+), software.
+  --defer-manual         Explicitly defer blocked recipe AUR packages.
   --profile <name>      Installation profile: minimal, desktop, developer, virtualbox.
   --hostname <name>     Hostname. Default: archlinux.
   --username <name>     Initial user. Default: ricardo.
   --timezone <zone>     Timezone. Default: America/Bogota.
   --repo-dir <path>     Repository path inside the target system.
   --aur                 Install optional AUR packages for the selected profile.
+  --extra <name>         Add an opt-in package set (repeatable): dev-extras, research,
+                         multimedia, virtualization, amd, fingerprint.
+  --microcode <policy>  CPU microcode: auto (default), none. Runs in the target.
+  --hardware-profile <name>  none (default) or ricardo (personal display layouts).
   --help                Print this help.
 USAGE
 }
@@ -53,6 +68,18 @@ require_postinstall_value() {
 parse_postinstall_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --recipe)
+        require_postinstall_value "$1" "${2-}"
+        case "$2" in ricardo) RECIPE=$2 ;; *) die "Invalid recipe: $2" ;; esac
+        shift 2
+        ;;
+      --gpu)
+        require_postinstall_value "$1" "${2-}"
+        case "$2" in auto | amd | intel | software) GPU_POLICY=$2 ;; *) die "Invalid GPU policy: $2" ;; esac
+        shift 2
+        ;;
+      --defer-manual) DEFER_MANUAL=1; shift ;;
+      --dry-run) DRY_RUN=1; shift ;;
       --profile)
         require_postinstall_value "$1" "${2-}"
         PROFILE=$2
@@ -82,6 +109,25 @@ parse_postinstall_args() {
         ENABLE_AUR=1
         shift
         ;;
+      --extra)
+        require_postinstall_value "$1" "${2-}"
+        package_file_for_extra "$2" >/dev/null
+        PACKAGE_EXTRAS+=("$2")
+        shift 2
+        ;;
+      --microcode)
+        require_postinstall_value "$1" "${2-}"
+        case "$2" in
+          auto | none) MICROCODE=$2 ;;
+          *) die "Invalid microcode policy: $2" ;;
+        esac
+        shift 2
+        ;;
+      --hardware-profile)
+        require_postinstall_value "$1" "${2-}"
+        case "$2" in none | ricardo) HARDWARE_PROFILE=$2 ;; *) die "Invalid hardware profile: $2" ;; esac
+        shift 2
+        ;;
       --help)
         usage
         exit 0
@@ -91,6 +137,8 @@ parse_postinstall_args() {
         ;;
     esac
   done
+  validate_recipe_options
+  [[ "$HARDWARE_PROFILE" == none || "$PROFILE" != minimal ]] || die 'Hardware display profiles require a desktop profile'
 }
 
 configure_timezone() {
@@ -170,18 +218,25 @@ profile_has_desktop() {
 
 main() {
   parse_postinstall_args "$@"
+  validate_profile "$PROFILE"
+  if [[ "$DRY_RUN" == 1 ]]; then
+    print_package_plan "$REPO_DIR"
+    return
+  fi
   require_root
   validate_profile "$PROFILE"
+  validate_recipe_installation
 
   configure_timezone "$TIMEZONE"
   configure_locale
   configure_hostname "$INSTALL_HOSTNAME"
-  install_packages_for_profile "$PROFILE" "$REPO_DIR"
+  install_packages_for_profile "$PROFILE" "$REPO_DIR" "${PACKAGE_EXTRAS[@]}"
+  install_cpu_microcode "$MICROCODE"
   configure_bootloader "$REPO_DIR"
   configure_initial_user "$INSTALL_USERNAME" "$PROFILE"
 
   if profile_has_desktop "$PROFILE"; then
-    install_wayland_dotfiles "$REPO_DIR" "$INSTALL_USERNAME"
+    install_wayland_dotfiles "$REPO_DIR" "$INSTALL_USERNAME" "$HARDWARE_PROFILE"
     configure_wayland_desktop "$PROFILE" "$REPO_DIR"
   fi
 
@@ -189,7 +244,14 @@ main() {
   configure_charge_limits "$REPO_DIR"
   enable_core_services "$PROFILE"
   install_aur_packages_for_profile "$PROFILE" "$REPO_DIR" "$INSTALL_USERNAME" "$ENABLE_AUR"
+  if [[ "$RECIPE" == ricardo ]]; then
+    install -dm755 /var/lib/archcfg
+    print_package_plan "$REPO_DIR" > /var/lib/archcfg/recipe-selection.txt
+    log_warn 'Personal recipe installed with explicit deferred selections; review /var/lib/archcfg/recipe-selection.txt (AUR requires --aur; manual packages remain pending)'
+  fi
   log_info "Post-install configuration finished"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

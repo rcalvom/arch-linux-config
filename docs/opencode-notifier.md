@@ -5,7 +5,34 @@ events and can forward attention-required events to a private Telegram chat.
 It is intentionally documented rather than deployed by the installer because
 the Telegram destination and credentials are personal state.
 
-## Behavior
+## Current Personal Status (October 2026)
+
+The `opencode-notifier` package is no longer installed on the host or selected by
+the personal recipe. Notifications now use the separate custom
+`~/.config/opencode/plugins/opencode-notifier-v2.js` plugin. The compatibility-copy
+setup below is historical; do not reinstall or activate it alongside the custom
+plugin as a routine dependency update. The personal-assistant bridge remains
+separate. This repository update does not export or modify either private runtime.
+
+## Historical Personal Runtime Contract
+
+Ricardo's earlier OpenCode V2 configuration referenced a reviewed compatibility copy
+under `~/.config/opencode/vendor/opencode-notifier`. That setup used the AUR package as the
+upstream source, rather than referencing its legacy default export directly
+until it provides the V2 `{ id, setup }` wrapper. The separate auto-loaded
+`~/.config/opencode/plugins/personal-assistant-live.js` integration and the
+`~/.local/bin/opencode-live-event` / `~/.local/bin/opencode-telegram-notify`
+helpers use a private runtime bridge. Installing the packaged plugin does not
+replace that custom integration.
+
+The receiver, private `runtime.conf`, authentication and destination are not
+exported here. This document is a contract, not delivery evidence or a host
+configuration audit. Do not overwrite either helper, add a second forwarding
+route, or remove overlapping paths until the receiver and deduplication behavior
+are validated privately. No host OpenCode configuration was changed by this
+documentation update.
+
+## Example Local Behavior
 
 The recommended local configuration uses five-second notifications, matching
 the battery notices configured in Waybar and Mako. Notifications include the
@@ -22,33 +49,49 @@ event type and session title, but do not use an icon.
 
 Notifications are suppressed while the OpenCode terminal is focused. Linux
 notification grouping is enabled, so a new OpenCode notice replaces the
-previous one rather than stacking.
+previous one rather than stacking. OpenCode's native CLI attention notifications
+and sounds must remain disabled in `~/.config/opencode/cli.json`; the notifier
+plugin is the only owner of local desktop notifications and sounds. Keep the
+bundled CLI notification plugin explicitly disabled as well:
+
+```json
+{
+  "attention": { "notifications": false, "sound": false },
+  "plugins": ["-opencode.notifications"]
+}
+```
 
 ## Plugin
 
-Install the package-managed plugin instead of letting OpenCode download it from
-npm:
+Install the package-managed plugin source instead of letting OpenCode download
+it from npm. The repository builds it only when the installer receives `--aur`;
+on an existing system, install it with:
 
 ```bash
 yay -S --needed opencode opencode-notifier
 ```
 
 `opencode` is supplied by the official repository and `opencode-notifier` is an
-AUR package. The global `~/.config/opencode/opencode.json` must contain:
+AUR package. Installing the package does not load the plugin, create a notifier
+profile, or configure Telegram. To opt in, add the packaged plugin to the
+global `~/.config/opencode/opencode.json`:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "plugin": ["file:///usr/lib/opencode/plugins/opencode-notifier/dist/index.js"]
+  "plugins": ["file:///home/ricardo/.config/opencode/vendor/opencode-notifier"]
 }
 ```
 
-The file URL keeps the plugin under package ownership. Verify it with:
+Verify the upstream package ownership with:
 
 ```bash
 pacman -Qo /usr/lib/opencode/plugins/opencode-notifier/dist/index.js
 ```
+
+The compatibility copy must contain the same package release and differ only in
+the V2 default-export wrapper. Rebuild and review it after package upgrades.
 
 Create `~/.config/opencode/opencode-notifier.json` with the selected profile:
 
@@ -65,23 +108,23 @@ Create `~/.config/opencode/opencode-notifier.json` with the selected profile:
   "suppressWhenFocused": true,
   "linux": { "grouping": true },
   "events": {
-    "permission": { "sound": true, "notification": true, "command": true, "bell": false },
+    "permission": { "sound": true, "notification": true, "command": false, "bell": false },
     "complete": { "sound": true, "notification": true, "command": false, "bell": false },
     "subagent_complete": false,
-    "error": { "sound": true, "notification": true, "command": true, "bell": false },
-    "question": { "sound": true, "notification": true, "command": true, "bell": false },
+    "error": { "sound": true, "notification": true, "command": false, "bell": false },
+    "question": { "sound": true, "notification": true, "command": false, "bell": false },
     "user_cancelled": false,
-    "plan_exit": { "sound": true, "notification": true, "command": true, "bell": false },
+    "plan_exit": { "sound": true, "notification": true, "command": false, "bell": false },
     "session_started": false,
     "user_message": false,
     "client_connected": false
   },
   "messages": {
-    "permission": "🔐 Permission required: {sessionTitle}",
-    "complete": "✅ Task completed: {sessionTitle}",
-    "error": "🚨 Error: {sessionTitle}",
-    "question": "❓ Question pending: {sessionTitle}",
-    "plan_exit": "📝 Plan ready for review: {sessionTitle}"
+    "permission": "OpenCode needs permission to continue: {sessionTitle}",
+    "complete": "OpenCode finished the task. Review the result: {sessionTitle}",
+    "error": "OpenCode encountered an error. Open the session to review it: {sessionTitle}",
+    "question": "OpenCode needs your answer before it can continue: {sessionTitle}",
+    "plan_exit": "The implementation plan is ready for your review: {sessionTitle}"
   },
   "sounds": {
     "permission": "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga",
@@ -93,80 +136,27 @@ Create `~/.config/opencode/opencode-notifier.json` with the selected profile:
 }
 ```
 
-Add the `command` block described below when Telegram forwarding is wanted. The
-plugin must be restarted after configuration changes.
+The example above is not a replacement for Ricardo's runtime configuration.
+The notifier command route stays disabled. Ricardo's auto-loaded
+`personal-assistant-live.js` plugin owns private bridge events for permission and
+question requests, preserving the session ID and avoiding duplicate delivery.
 
 ## Telegram Forwarding
 
-The notifier's command hook can call a local script. The script accepts the
-event name and rendered notification message, then sends the message through
-the Telegram Bot API. It requires `curl`; `jq` is useful when discovering the
-chat ID.
-
-Keep credentials outside the repository:
-
-```text
-~/.config/opencode/secrets/                     mode 700
-~/.config/opencode/secrets/telegram-bot.token   mode 600
-~/.config/opencode/secrets/telegram-chat-id     mode 600
-~/.local/bin/opencode-telegram-notify           mode 700
-```
-
-Create the bot through BotFather, send `/start` to it from the intended private
-chat, then obtain that chat's numeric ID through the Bot API. Do not commit or
-paste bot tokens into configuration files, shell history, issue trackers, or
-chat transcripts. Revoke any token that has been exposed.
-
-Configure the command hook as follows. Set `command: false` for events that
-must remain local-only, such as `complete`.
-
-```json
-{
-  "command": {
-    "enabled": true,
-    "path": "/home/USER/.local/bin/opencode-telegram-notify",
-    "args": ["{event}", "{message}"],
-    "minDuration": 0
-  }
-}
-```
-
-Use this helper as `~/.local/bin/opencode-telegram-notify`:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-token_file="$HOME/.config/opencode/secrets/telegram-bot.token"
-chat_id_file="$HOME/.config/opencode/secrets/telegram-chat-id"
-
-[[ $# -eq 2 && -r "$token_file" && -r "$chat_id_file" ]] || exit 0
-
-token=$(<"$token_file")
-chat_id=$(<"$chat_id_file")
-
-curl --fail --silent --show-error --max-time 15 \
-  --data-urlencode "chat_id=$chat_id" \
-  --data-urlencode "text=$2" \
-  --data-urlencode "disable_web_page_preview=true" \
-  "https://api.telegram.org/bot${token}/sendMessage" >/dev/null
-```
-
-Make the helper executable with mode `700`. Do not print either secret or place
-the token in a tracked script.
+The previous direct Bot API helper example was not a description of Ricardo's
+bridge route and must not replace the existing helper. Forwarding is optional
+private provisioning, not part of package installation or ISO generation.
+Keep runtime credentials and addresses outside Git and source snapshots, in
+owner-only directories/files (0700/0600). Never include them in command logs,
+debug-configuration dumps, reports or screenshots. No replacement transport
+code is shipped until its receiver contract has been established.
 
 ## Verification
 
-Restart OpenCode after changing its global configuration, notifier profile, or
-helper script. If OpenCode runs through the shared user service, restart that
-service. Verify the plugin is registered with:
-
-```bash
-systemctl --user restart opencode-server.service
-opencode debug config
-```
-
-For a local Telegram check, invoke the helper with a harmless test message.
-The command should exit successfully and the private chat should receive one
-message. Keep OpenCode unfocused when testing local notifications; focus
-suppression is enabled by design.
+In a separately approved runtime session, validate each event using synthetic
+non-sensitive content. Check local delivery, bridge acknowledgment, receiver
+delivery and duplicate suppression independently; a zero helper exit status is
+not proof of Telegram delivery. Do not export session titles or prompts merely
+to test the route. Keep local focus suppression in mind. Restart OpenCode only
+after an actual approved configuration change; no restart is needed for this
+documentation-only correction.

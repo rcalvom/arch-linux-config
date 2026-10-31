@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh Google Calendar reminders every five minutes
+
+[Timer]
+OnStartupSec=30s
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

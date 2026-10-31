@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Yazi File Manager
+Comment=Open local folders and reveal files in Yazi with Alacritty
+Icon=yazi
+Exec=archcfg-file-manager %U
+Terminal=false
+Type=Application
+MimeType=inode/directory;
+Categories=System;FileManager;FileTools;
+Keywords=File;Manager;Explorer;Browser;

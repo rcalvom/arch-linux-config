@@ -9,7 +9,7 @@ This folder records the active Wayland/Hyprland setup used by the installer. Qti
 - Hyprland session as the primary desktop target.
 - Waybar as the status bar.
 - Rofi as the app launcher.
-- Calcurse for local TODOs and notes, with a separate read-only Google Calendar view.
+- Calcurse for persistent local TODOs and notes, with a disposable Google Calendar event view.
 - Wdisplays for one-off graphical output adjustments.
 - Firefox and Thunderbird with square browser chrome.
 - Yazi as terminal file manager.
@@ -25,13 +25,15 @@ Important packages added/used:
 - `hyprpaper`
 - `hyprlock`
 - `hyprsunset`
-- `fprintd`
+- `fprintd` (optional `fingerprint` extra; no automatic enrollment or authentication changes)
 - `waybar`
 - `mako`
 - `wdisplays`
 - `wl-clipboard`
 - `rofi`
 - `calcurse`
+- `xournalpp`
+- `rnote`
 - `thunderbird`
 - `yazi`
 - `noto-fonts`
@@ -74,12 +76,22 @@ Current important program variables:
 
 ```lua
 local terminal    = "alacritty"
-local fileManager = "alacritty -e yazi"
+local fileManager = "alacritty -e $HOME/.local/bin/yazi"
 local menu        = "rofi -show drun"
 local browser     = "$HOME/.local/bin/archcfg-firefox"
 local displayMenu = "$HOME/.local/bin/hypr-display-menu"
 local audioSelector = "$HOME/.local/bin/hypr-audio-selector"
 ```
+
+### Drawing tablet
+
+The mapping below is personal and requires `--hardware-profile ricardo` in the
+installer or `apply-config.sh`. It lives in `hardware/ricardo/hardware.lua`;
+generic installations keep the compositor's tablet output defaults.
+
+The One by Wacom Small CTL-472 uses the in-kernel `wacom` HID driver and Hyprland's native Wayland tablet support. Its full 16:10 active area is mapped to the laptop's 16:10 `eDP-1` display, avoiding coordinate distortion when external monitors extend the desktop. Pressure range, orientation, and active area remain at their hardware defaults; stylus button behavior is left to each drawing application. Xournal++ provides page-based handwriting and PDF annotation, while Rnote provides a flexible canvas for sketches and diagrams.
+
+`libinput` and `libwacom` provide the required userspace support. Do not install `xf86-input-wacom` or use `xsetwacom` for this native Wayland session; those target X.Org. `libinput-tools` and `wev` are optional diagnostics, not runtime requirements.
 
 Important bindings:
 
@@ -110,7 +122,7 @@ ALT + Ctrl+1..9 -> move the active window without following it
 Yazi is terminal-based, so the file manager command is:
 
 ```bash
-alacritty -e yazi
+alacritty -e ~/.local/bin/yazi
 ```
 
 ## Application profiles
@@ -123,14 +135,14 @@ Calcurse, Vdirsyncer, and VS Code settings are also versioned under `packages/`.
 
 ## Monitor layout
 
-`hypr-display-layout` reacts to Hyprland monitor add/remove and configuration-reload events. It matches the laptop panel and the two Dell displays by their physical descriptions, so dock connector names such as `DP-10` can change without breaking the layout. The selected mode/profile is stored in `~/.local/state/archcfg/display-layout.json` and reconciled after those events.
+`hypr-display-layout` reacts to Hyprland monitor add/remove and configuration-reload events. Generic installations discover outputs automatically; the personal `--hardware-profile ricardo` opt-in supplies the Dell/Lenovo layouts below, matched by physical description prefixes rather than transient dock connector names. The selected mode/profile is stored in `~/.local/state/archcfg/display-layout.json` and reconciled after those events.
 
 ```text
 [ Dell P2419H ][ Dell P2422H ]
      [ Lenovo laptop panel ]
 ```
 
-Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays. When no valid saved selection exists, the controller first attempts `Desk - 3 displays` and falls back safely to Extend if those monitors are unavailable.
+Extend mode places the laptop panel at `0x0`, then each external display immediately to the right of the previous output. The `Dock - 3 displays` profile retains its dedicated layout with the laptop panel centered below the two Dell displays. When no valid saved selection exists, the controller defaults to generic Extend, not `Desk - 3 displays`. Named profiles require the personal opt-in; an unavailable saved profile falls back to Extend without replacing the saved choice.
 
 `Desk - 3 displays` maps Dell P2422H `HDFJ5V3` to the left of the laptop panel and Dell P2422H `H3G8XB3` to its right. It matches the monitors by their physical descriptions rather than transient connector names.
 
@@ -142,7 +154,7 @@ Profiles -> Dock - 3 displays
           Desk - 3 displays
 ```
 
-Single monitor opens an output picker and disables the other connected outputs. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then reconciles the saved selection without replacing it. The `Dock - 3 displays` profile restores the layout shown above.
+Single monitor opens an output picker and disables the other connected outputs. Extend displays persists a generic horizontal layout independently from the named profiles. Mirror / Duplicate first selects a source, then one target or all other connected outputs. The Profiles tab only lists layouts compatible with the connected physical displays. The controller selects a common available mode before mirroring; if a saved profile or mirror source is unavailable later, it falls back to a safe extended layout. A newly connected monitor waits briefly for DRM modesetting, then reconciles the saved selection without replacing it. The `Dock - 3 displays` profile restores the layout shown above.
 
 Manual changes through Wdisplays remain in effect until the next display-menu action, monitor hotplug event, configuration reload, or Hyprland session start.
 
@@ -256,7 +268,7 @@ Snapshot:
 wayland/hypr/hyprlock.conf
 ```
 
-Hyprlock is a session-preserving lock, not a logout. It uses a solid black terminal-style layout with no blur or animations. The date uses Waybar's UbuntuMono Nerd Font and textual weekday/month format; the time uses the same vector font, includes seconds, and is above the password field. The clock/date group is separated from the `LOCKED` label and password field by a wide gap, with `LOCKED` directly above the field. Fingerprint authentication is enabled through `fprintd`, with the normal password/PAM fallback retained. The lock screen shows the live fingerprint prompt below the field and uses Hyprlock's unified `$FAIL` value for both password and fingerprint failures; the red failure state remains visible for four seconds.
+Hyprlock preserves the session and uses the managed wallpaper behind a 94% x 94% black panel at 80% opacity, with 3% margins and a 2 px blue border matching GRUB. UbuntuMono Nerd Font renders a bold cyan `Session locked` heading, a larger white clock, and a separate full English date without blur or animations. Keyboard-layout and Caps Lock hints are omitted. Password/PAM authentication and the four-second failure display are unchanged. The native `auth.fingerprint.enabled` setting defaults to false; existing fingerprint hosts must retain their opt-in when adopting the visuals. Native fingerprint prompts and failures have separate lines below the field. See [lock-screen design and review](../docs/lock-screen.md) for real VM captures, fingerprint limitations, the observed post-resize error-text issue, and safe manual adoption; see `docs/perfiles-portables.md` for enrollment and recovery limits.
 
 Bound in Hyprland as:
 
@@ -294,13 +306,15 @@ progress-color=#20a5ba
 
 ## Calendar
 
-Calcurse opens the read-only Google Calendar mirror in Alacritty through the familiar binding:
+Calcurse opens the Google Calendar mirror with persistent local TODOs in Alacritty through the familiar binding:
 
 ```text
 SUPER + C -> alacritty -e archcfg-calcurse-google
 ```
 
-The launcher refreshes the local mirror with Vdirsyncer, rebuilds a separate Calcurse profile, and opens it with `--read-only`. Calcurse remains available manually for its local TODOs and notes.
+The launcher displays concise synchronization status, refreshes the local mirror with Vdirsyncer, and fingerprints the mirrored `.ics` files. It rebuilds the separate Calcurse profile only when that fingerprint changes; otherwise it reuses the last verified generation. The temporary session links its TODO file to the normal local Calcurse data and preserves TODO notes, while any changes to Google appointments are discarded. Routine synchronization details remain hidden.
+
+`archcfg-calcurse-google-refresh.timer` updates the mirror every five minutes and restarts the reminder daemon. The daemon reads the complete generated appointment database with a 15-minute warning setting, but the helper queries only the next appointment with `calcurse --next`. Simultaneous appointments can be omitted, and appointments less than 15 minutes apart may be announced late; a reminder for every appointment is not guaranteed. A persistent hash suppresses repeats of the last notified occurrence. Calendar notifications remain visible until dismissed with a left click. Google and imported Outlook calendars do not consistently expose inherited alarms, while all-day events and TODOs do not have timed daemon reminders. Separately, local Calcurse shows a generic appointment alert directing you to its running session, without querying potentially stale on-disk appointment details.
 
 ## Screenshots
 
@@ -371,7 +385,7 @@ The nine workspaces are visible on every output. Their custom Waybar buttons use
 
 The clock shows the localized textual date (`%A, %d %B %Y`) and refreshes every second so its seconds stay current.
 
-The `BAT0` module checks battery state every 15 seconds. While discharging, it turns yellow at 20% or below and red at 10% or below. Waybar sends a normal `Battery low` notification at 20% and a critical `Battery critical` notification at 10%; both expire after five seconds. The events re-arm after charging or plugging in, while restarting Waybar below a threshold can send that threshold's notification again. `libnotify` provides `notify-send` and Mako displays the notifications.
+The native `battery` module autodetects system batteries and checks their state every 15 seconds; it stays hidden when none are found. While discharging, it turns yellow at 20% or below and red at 10% or below. Waybar sends a normal `Battery low` notification at 20% and a critical `Battery critical` notification at 10%; both expire after five seconds. The events re-arm after charging or plugging in, while restarting Waybar below a threshold can send that threshold's notification again. `libnotify` provides `notify-send` and Mako displays the notifications. Backlight detection is also native, without a GPU-specific device name. See [desktop hardware defaults](../docs/desktop-hardware.md) for selection and testing limits.
 
 To reload Waybar manually:
 
@@ -416,7 +430,9 @@ Live location:
 ~/.config/yazi/
 ```
 
-Yazi uses a three-pane layout, natural sorting with directories first, and the desktop's black/blue color palette. Text files open in Neovim; PDFs and media open in Evince and mpv. Image previews are disabled while browsing; press Enter on an image to render it with Chafa in the current terminal, then press any key to return to Yazi. Its built-in previewers use `ffmpeg`, `7zip`, `jq`, `poppler`, `resvg`, ImageMagick, and Ueberzug++ to show video, archive, JSON, PDF, SVG, and font previews in Alacritty under Hyprland.
+Yazi uses a three-pane layout, natural sorting with directories first, and the same transparent blue/cyan palette as Neovim. Text files open in Neovim; PDFs and media open in Evince and mpv. PDF, Office, and OpenDocument previews are rendered as text in the preview pane.
+
+`packages/yazi-launcher/yazi` is installed as `~/.local/bin/yazi` and is the command used by `SUPER + E`. It intentionally makes Yazi select its native Chafa fallback rather than the Überzug++ Wayland overlay. Alacritty has no image protocol and Überzug++ flickers with this transparent Hyprland session; Chafa displays stable, colored Unicode-block image previews directly in the right pane. This is not pixel-exact rendering, but avoids external overlay windows. Invoking `/usr/bin/yazi` directly bypasses the launcher and may reintroduce the flicker.
 
 Useful bindings:
 
@@ -432,7 +448,7 @@ g f          -> find files, including hidden files except .git
 g /          -> search file contents with ripgrep
 ```
 
-The `y` Zsh function starts Yazi and changes the parent shell into the directory selected on exit. Use `yazi` directly when that directory change is not needed.
+The `y` Zsh function starts Yazi and changes the parent shell into the directory selected on exit. Use `yazi` directly when that directory change is not needed; shell sessions whose `PATH` does not include `~/.local/bin` can invoke `~/.local/bin/yazi` explicitly.
 
 ## Font fallback
 

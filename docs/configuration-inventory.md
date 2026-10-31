@@ -14,9 +14,13 @@ For every persistent configuration change:
 
 Do not commit credentials, browser profiles, application caches, shell history, generated desktop IDs, or machine-local service state. Store a sanitized template and documented provisioning steps instead.
 
+Use the [personal setup recipe](ricardo-setup.md) for reconstruction decisions, the [deployment matrix](host-deployment.md) for dated implementation/ISO/host evidence and the [recovery inventory](recovery.md) for private state and first login. A frozen worktree snapshot can identify a historical test artifact without proving that later source changes were validated or deployed.
+
 ## Managed User Configuration
 
-`packages/*/files.conf` deploys per-application files, including Alacritty, Calcurse, Firefox and Thunderbird launchers/templates, Neovim, Oh My Zsh, VS Code, and Yazi.
+`packages/*/files.conf` deploys per-application files, including Alacritty, Calcurse, Firefox and Thunderbird launchers/templates, Neovim, Oh My Zsh, tmux, VS Code, and Yazi. The tmux manifest installs `~/.tmux.conf` with the Alacritty normal blue (`#008ec4`) status background and bright-white (`#f1f1f1`) text.
+
+Both installed-system deployment in `scripts/dotfiles.sh` and live-session deployment in `live/airootfs/usr/local/bin/archcfg-live-session` consume these manifests. The live image carries and deploys the tmux configuration but deliberately does not add tmux to the lightweight live package set. The `ricardo` installation recipe installs tmux on the target system.
 
 `scripts/dotfiles.sh` deploys the Wayland configuration:
 
@@ -26,6 +30,40 @@ Do not commit credentials, browser profiles, application caches, shell history, 
 - `wayland/mimeapps.list` as a baseline for a fresh account.
 
 The active Hyprland source is `wayland/hypr/hyprland.lua`; `hyprland.conf` remains a legacy reference only.
+
+`scripts/apply-printing.sh` generates `~/.cups/client.conf` from a private configuration supplied with `--config`. The tracked `printing/printing.conf` is empty and cannot configure a site or account until explicitly provisioned. Keep the local configuration and generated client file out of Git. See [Printing](printing.md) for provisioning and historical privacy limits.
+
+### Firefox Internal Page Styling
+
+See the [Firefox CSS customization guide](../packages/firefox/README.md) for the
+palette, managed files, deployment, temporary disabling and update checks.
+
+The Firefox template separates browser controls from internal page content:
+
+- `packages/firefox/profile-template/chrome/userChrome.css` styles the browser
+  toolbars and tabs with square controls and blue accents.
+- `packages/firefox/profile-template/chrome/userContent.css` applies blue accents
+  and square controls to session restoration and the built-in PDF viewer.
+  Updating `userChrome.css` alone does not style these content documents.
+- `packages/firefox/profile-template/user.js` enables
+  `toolkit.legacyUserProfileCustomizations.stylesheets`.
+
+The manifest deploys the template to `~/.local/share/archcfg/firefox-template`.
+The `archcfg-firefox` launcher copies both stylesheets into the selected profile's
+`chrome/` directory before starting Firefox. Fully exit Firefox and reopen it
+after changing either stylesheet; reloading a tab is insufficient.
+
+The content rules identify session restoration by its
+`chrome://browser/skin/aboutSessionRestore.css` stylesheet and PDF.js by
+`resource://pdf.js/web/viewer.css`. PDF.js keeps the opened document's URL, so
+matching only a `resource://pdf.js/` document URL would miss ordinary PDF tabs.
+Color overrides respect forced-colors mode. Ordinary websites are outside the
+intended scope of these selectors.
+
+On 2026-10-05, CSS parsing, launcher syntax, deployment-copy equality and
+`git diff --check` passed. Ricardo confirmed that the visual fix worked after
+restarting Firefox. If a Firefox update changes the internal stylesheet URLs or
+design tokens, recheck these selectors against the installed browser resources.
 
 ## Verification
 
@@ -66,3 +104,7 @@ These locations are deliberately not copied wholesale into the repository:
 - Neovim backups, caches, plugin downloads, and lock updates that have not been deliberately reviewed.
 
 System-wide Greetd, GRUB, networking, and power configuration are source-backed separately under their respective repository directories and checked by `scripts/verify-system-config.sh`. Generated runtime state such as `grub.cfg`, initramfs images, `fstab`, and hardware charge values must not be copied back blindly.
+
+The optional personal Home Assistant deployment is source-backed under `home-assistant/`. Its Compose definition and loopback-only nftables policy are tracked, while its runtime `config/` volume is intentionally excluded because it can contain credentials, integration state, device identifiers, and databases. See [Home Assistant](home-assistant.md).
+
+Printing is source-backed under `printing/` but is **not** covered by `scripts/verify-system-config.sh` yet. The `/etc/nsswitch.conf` edit, the enabled CUPS and Avahi units, and the PaperCut queues are applied by `scripts/apply-printing.sh` and must be reviewed manually with `lpstat -a` and `lpstat -p`.

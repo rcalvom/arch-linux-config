@@ -1,0 +1,15 @@
+# Reviewed through 2026-09-18. Build only the named package, not all split outputs.
+# Selection updated 2026-10-31: notifier removed; Slack deferred.
+cliamp|92fb021a1c78f75043cbbd402aca8b515af069ec
+openclaw|da9be28d1bc4df03cd5109e227bf2dd240778823
+visual-studio-code-bin|4e46b8b4ca50f6aed23c848aa4f2d16fbd2432e5
+google-chrome|b4ac2efe57f6e1bf9dc80167c6cdde1c8a1935f7
+zoom|8c5a785574ae7a413a0c96b55dd7ba5d98f9b099
+zotero-bin|ad38eacf58068069f72f34b857566dc0224af928
+claude-code|27f61daa48ebdca87c9b2c7c83c162100d233ccc
+chatgpt-desktop|467c33e81f45af06912f0d316debc6b891dda3d9
+spotify|0af779c21295d2875d06b07f8760a0e98256f3e4
+android-studio|5251f8131b6ac23ff07bc50eaceada0f2c1910fa
+google-cloud-cli|ed2a1ea507b457fcfbe554d37210f38c7baef180
+gogcli|e0de529847b2d39311b71e8eb4994091460e04ae
+yay|cb43f84828ab4f9700f7c6f9c6d7a923d4cfaff0

@@ -1,5 +1,5 @@
 {
-    "security.workspace.trust.untrustedFiles": "open",
+    "security.workspace.trust.untrustedFiles": "prompt",
     "files.autoSave": "afterDelay",
     "editor.fontSize": 16,
     "window.zoomLevel": 1,
@@ -20,12 +20,5 @@
     "extensions.ignoreRecommendations": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
-    },
-    "github.copilot.enable": {
-        "*": false,
-        "plaintext": false,
-        "markdown": true,
-        "scminput": false
-    },
-    "claudeCode.preferredLocation": "panel"
+    }
 }

@@ -1,0 +1,14 @@
+[Unit]
+Description=Restrict Home Assistant web UI to loopback
+Documentation=https://www.home-assistant.io/installation/linux#install-home-assistant-container
+Before=docker.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/nft -c -f /etc/nftables.d/home-assistant-loopback.nft
+ExecStart=/usr/bin/nft -f /etc/nftables.d/home-assistant-loopback.nft
+ExecStop=-/usr/bin/nft delete table inet home_assistant_loopback
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

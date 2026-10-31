@@ -7,6 +7,8 @@ MANIFEST=""
 KEEP_ON_FAILURE=1
 VM_CREATED=0
 SUCCESS=0
+SNAPSHOT_WORKTREE=0
+INSTALL_MODE=vm
 
 # shellcheck source=../lib/vbox.sh
 source "$REPO_ROOT/lib/vbox.sh"
@@ -21,6 +23,8 @@ SSH. The test never modifies pre-existing VMs.
 
 Options:
   --manifest <path>      Artifact manifest emitted by scripts/vbox-build.sh.
+  --snapshot-worktree    Accept a worktree snapshot instead of requiring clean HEAD.
+  --safe                 Test installation on manually prepared virtual partitions.
   --discard-on-failure   Delete the test VM instead of retaining it for diagnosis.
   --help                 Print this help.
 USAGE
@@ -45,7 +49,10 @@ cleanup() {
 
   trap - EXIT HUP INT TERM
   set +e
-  rm -f -- "${LIVE_SSH_KEY:-}" "${LIVE_SSH_KEY:-}.pub" "${TARGET_PASSWORD_FILE:-}"
+  if [[ "$SUCCESS" -ne 1 ]]; then
+    printf 'result=failed\nexit_code=%s\ninstall_mode=%s\n' "$exit_code" "$INSTALL_MODE" > "$E2E_DIR/result"
+  fi
+  rm -f -- "${TARGET_PASSWORD_FILE:-}"
 
   if [[ "$VM_CREATED" -eq 1 ]]; then
     vbox_power_off_vm "$VM_NAME" || true
@@ -65,6 +72,14 @@ cleanup() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --snapshot-worktree)
+        SNAPSHOT_WORKTREE=1
+        shift
+        ;;
+      --safe)
+        INSTALL_MODE=safe
+        shift
+        ;;
       --manifest)
         require_value "$1" "${2-}"
         MANIFEST=$2
@@ -86,6 +101,27 @@ parse_args() {
 }
 
 run_install() {
+  run_logged "$E2E_DIR/recipe-metadata.log" \
+    vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" \
+    'sudo bash /opt/arch-linux-config/scripts/verify-recipe-metadata.sh'
+  if [[ "$INSTALL_MODE" == safe ]]; then
+    run_logged "$E2E_DIR/safe-prepare.log" \
+      vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" \
+      'sudo bash /opt/arch-linux-config/scripts/e2e-prepare-safe.sh --vm --disk /dev/sda'
+    run_logged "$E2E_DIR/installer.log" \
+      vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
+        set -euo pipefail
+        archcfg-install --target /mnt --profile virtualbox --hostname archcfg-e2e --username archcfg-e2e --timezone UTC </dev/null
+        sudo bash -c '\''set -euo pipefail
+          sfdisk --dump /dev/sda > /run/archcfg-safe-after
+          cmp /run/archcfg-safe-before /run/archcfg-safe-after
+          sha256sum -c /run/archcfg-safe-witnesses
+          { printf "archcfg-e2e:"; cat /home/live/target-password; } | arch-chroot /mnt chpasswd
+          rm /home/live/target-password
+        '\''
+      '
+    return
+  fi
   run_logged "$E2E_DIR/installer.log" \
     vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
@@ -146,27 +182,34 @@ run_live_checks() {
   run_logged "$E2E_DIR/live-runtime.log" \
     vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
-      ping -c 1 -W 3 archlinux.org >/dev/null
-      systemctl is-active --quiet iwd.service
-      systemctl is-active --quiet systemd-networkd.service
-      systemctl is-active --quiet systemd-resolved.service
-      systemctl is-active --quiet host-network-online.service
-      systemctl is-active --quiet greetd.service
-      ! systemctl is-active --quiet NetworkManager.service
-      ! systemctl is-enabled --quiet NetworkManager.service
-      ! systemctl is-enabled --quiet systemd-networkd-wait-online.service
-      ! pacman -Qq networkmanager >/dev/null 2>&1
-      test "$(readlink -f /etc/resolv.conf)" = /run/systemd/resolve/stub-resolv.conf
+      exec sudo /usr/bin/bash /opt/arch-linux-config/scripts/e2e-guest-smoke.sh --mode live
     '
 }
 
+login_live_desktop() {
+  local deadline=$((SECONDS + 120))
+  # The shipped greeter preselects live. Its public ISO password is also live.
+  VBoxManage controlvm "$VM_NAME" keyboardputstring live
+  vbox_console_press_enter "$VM_NAME"
+  while ((SECONDS < deadline)); do
+    if vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" \
+      'pgrep -u live -x Hyprland >/dev/null && systemctl --user is-active --quiet waybar.service && hyprctl -j instances | jq -e "length == 1" >/dev/null' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 3
+  done
+  capture_live_screen
+  vbox_die 'Live graphical login did not become ready within 120 seconds'
+}
+
 prepare_target_ssh() {
+  # shellcheck disable=SC2016 # Expressions are evaluated only inside the guest.
   run_logged "$E2E_DIR/target-ssh.log" \
     vbox_ssh live "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
       target=/mnt
-      sudo mount /dev/sda2 "$target"
-      sudo mount /dev/sda1 "$target/boot"
+      mountpoint -q "$target" || sudo mount /dev/sda2 "$target"
+      mountpoint -q "$target/boot" || sudo mount /dev/sda1 "$target/boot"
       cleanup_target_mount() {
         sudo sync
         if ! sudo umount -R "$target"; then
@@ -180,6 +223,43 @@ prepare_target_ssh() {
       sudo install -m600 -o "$target_uid" -g "$target_gid" /home/live/.ssh/authorized_keys "$target/home/archcfg-e2e/.ssh/authorized_keys"
       sudo systemctl enable --root "$target" sshd.service
     '
+}
+
+login_installed_desktop() {
+  local deadline=$((SECONDS + 120))
+  # The installed la-latin1 console maps the US slash key to a hyphen.
+  VBoxManage controlvm "$VM_NAME" keyboardputstring archcfg
+  VBoxManage controlvm "$VM_NAME" keyboardputscancode 35 b5
+  VBoxManage controlvm "$VM_NAME" keyboardputstring e2e
+  sleep 1
+  vbox_console_press_enter "$VM_NAME"
+  sleep 2
+  VBoxManage controlvm "$VM_NAME" keyboardputstring "$(<"$TARGET_PASSWORD_FILE")"
+  sleep 1
+  vbox_console_press_enter "$VM_NAME"
+  while ((SECONDS < deadline)); do
+    if vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" \
+      'pgrep -u archcfg-e2e -x Hyprland >/dev/null && systemctl --user is-active --quiet waybar.service && systemctl --user is-active --quiet wireplumber.service' >/dev/null 2>&1; then
+      run_logged "$E2E_DIR/installed-desktop.log" \
+        vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
+          set -euo pipefail
+          instances=$(hyprctl -j instances)
+          test "$(jq length <<< "$instances")" = 1
+          export HYPRLAND_INSTANCE_SIGNATURE
+          HYPRLAND_INSTANCE_SIGNATURE=$(jq -r ".[0].instance" <<< "$instances")
+          hyprctl -j monitors | jq -e "length > 0 and all(.[]; .width > 0 and .height > 0)"
+          hyprctl -j configerrors | jq -e '\''type == "array" and all(.[]; . == "")'\''
+          test ! -e "$HOME/.config/archcfg/hardware.lua"
+          test ! -e "$HOME/.config/archcfg/display-profiles.json"
+          printf "PASS: installed graphical login, monitor IPC, zero config errors, generic desktop\n"
+        '
+      VBoxManage controlvm "$VM_NAME" screenshotpng "$E2E_DIR/installed-screen.png"
+      return 0
+    fi
+    sleep 3
+  done
+  VBoxManage controlvm "$VM_NAME" screenshotpng "$E2E_DIR/installed-screen.png"
+  vbox_die 'Installed graphical login did not become ready within 120 seconds'
 }
 
 wait_for_target_services() {
@@ -208,6 +288,23 @@ wait_for_target_services() {
 }
 
 run_postboot_checks() {
+  local hardware_status=0
+  run_logged "$E2E_DIR/docker-sudo.log" \
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" \
+    'sudo -S -p "" bash /opt/arch-linux-config/scripts/e2e-docker.sh archcfg-e2e' < "$TARGET_PASSWORD_FILE"
+  run_logged "$E2E_DIR/recipe-tests.log" \
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" \
+    'bash /opt/arch-linux-config/tests/recipe.sh'
+  run_logged "$E2E_DIR/verify-hardware.json" \
+    vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" \
+    'exec bash /opt/arch-linux-config/scripts/verify-hardware.sh --profile virtualbox --json' || hardware_status=$?
+  printf 'exit_code=%s\n' "$hardware_status" > "$E2E_DIR/verify-hardware-status"
+  case "$hardware_status" in
+    0) ;;
+    3) vbox_log_warn 'Hardware verification is incomplete (unknown observations); see verify-hardware.json' ;;
+    *) return "$hardware_status" ;;
+  esac
+
   run_logged "$E2E_DIR/verify-system.log" \
     vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       exec /usr/bin/bash /opt/arch-linux-config/scripts/verify-system-config.sh \
@@ -227,19 +324,9 @@ run_postboot_checks() {
   run_logged "$E2E_DIR/runtime.log" \
     vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
-      test -d /sys/firmware/efi
-      findmnt -no FSTYPE /boot | grep -qx vfat
-      getent passwd archcfg-e2e >/dev/null
-      ping -c 1 -W 3 archlinux.org >/dev/null
-      systemctl is-active --quiet iwd.service
-      systemctl is-active --quiet systemd-networkd.service
-      systemctl is-active --quiet systemd-resolved.service
-      systemctl is-active --quiet greetd.service
-      systemctl is-active --quiet vboxservice.service
-      ! systemctl is-active --quiet NetworkManager.service
-      ! systemctl is-enabled --quiet NetworkManager.service
-      ! systemctl is-enabled --quiet systemd-networkd-wait-online.service
-      ! pacman -Qq networkmanager >/dev/null 2>&1
+      exec /usr/bin/bash /opt/arch-linux-config/scripts/e2e-guest-smoke.sh \
+        --mode installed \
+        --username archcfg-e2e
     '
 }
 
@@ -247,6 +334,8 @@ write_result() {
   {
     printf 'result=passed\n'
     printf 'run_id=%s\n' "$RUN_ID"
+    printf 'install_mode=%s\n' "$INSTALL_MODE"
+    printf 'source_tree_sha256=%s\n' "$SOURCE_TREE_SHA256"
     printf 'manifest=%s\n' "$MANIFEST"
     printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$E2E_DIR/result"
@@ -254,10 +343,8 @@ write_result() {
 }
 
 main() {
-  local artifact_commit
   local artifact_directory
   local artifact_size
-  local current_commit
   local manifest_directory
   local schema
   local iso_path
@@ -269,16 +356,23 @@ main() {
   parse_args "$@"
   [[ -n "$MANIFEST" && -f "$MANIFEST" ]] || vbox_die "--manifest must name an existing file"
 
-  "$SCRIPT_DIR/vbox-preflight.sh"
+  local preflight_args=()
+  [[ "$SNAPSHOT_WORKTREE" -ne 1 ]] || preflight_args+=(--snapshot-worktree)
+  "$SCRIPT_DIR/vbox-preflight.sh" "${preflight_args[@]}"
 
   RUN_ID=$(vbox_manifest_value "$MANIFEST" run_id) || vbox_die "Manifest is missing a valid run_id"
   vbox_run_id_is_valid "$RUN_ID" || vbox_die "Manifest contains an invalid run ID: $RUN_ID"
   schema=$(vbox_manifest_value "$MANIFEST" schema) || vbox_die "Manifest is missing a schema version"
-  [[ "$schema" == 1 ]] || vbox_die "Unsupported artifact manifest schema: $schema"
-  artifact_commit=$(vbox_manifest_value "$MANIFEST" commit) || vbox_die "Manifest is missing a commit"
-  [[ "$artifact_commit" =~ ^[[:xdigit:]]{40}$ ]] || vbox_die "Manifest contains an invalid commit"
-  current_commit=$(git -C "$REPO_ROOT" rev-parse HEAD)
-  [[ "$artifact_commit" == "$current_commit" ]] || vbox_die "Manifest commit does not match the current checkout"
+  [[ "$schema" == 2 ]] || vbox_die "Unsupported artifact manifest schema: $schema; rebuild with source verification"
+  local source_mode base_commit source_checksum
+  source_mode=$(vbox_manifest_value "$MANIFEST" source_mode)
+  base_commit=$(vbox_manifest_value "$MANIFEST" base_commit)
+  [[ "$base_commit" =~ ^[a-f0-9]{40}$ ]] || vbox_die "Invalid base commit"
+  case "$source_mode" in
+    worktree) [[ "$SNAPSHOT_WORKTREE" -eq 1 ]] || vbox_die "Worktree artifact requires --snapshot-worktree" ;;
+    head) [[ "$base_commit" == "$(git -C "$REPO_ROOT" rev-parse HEAD)" ]] || vbox_die "HEAD mismatch" ;;
+    *) vbox_die "Invalid source mode" ;;
+  esac
 
   artifact_directory="$ARCHCFG_VBOX_STATE_ROOT/artifacts/$RUN_ID"
   [[ -d "$artifact_directory" ]] || vbox_die "Artifact directory does not exist for run: $RUN_ID"
@@ -286,6 +380,11 @@ main() {
   manifest_directory=$(cd -- "$(dirname -- "$MANIFEST")" && pwd -P)
   [[ "$manifest_directory" == "$artifact_directory" && "${MANIFEST##*/}" == manifest ]] || vbox_die "Manifest is outside the managed artifact directory"
   MANIFEST="$manifest_directory/manifest"
+  source_checksum=$(vbox_manifest_value "$MANIFEST" source_sha256)
+  [[ "$source_checksum" =~ ^[a-f0-9]{64}$ &&
+     "$(vbox_file_sha256 "$artifact_directory/source.tar")" == "$source_checksum" ]] || vbox_die "Source archive checksum mismatch"
+  SOURCE_TREE_SHA256=$(vbox_manifest_value "$MANIFEST" source_tree_sha256)
+  [[ "$SOURCE_TREE_SHA256" =~ ^[a-f0-9]{64}$ ]] || vbox_die "Invalid source tree checksum"
 
   iso_path=$(vbox_manifest_value "$MANIFEST" iso) || vbox_die "Manifest is missing an ISO path"
   expected_checksum=$(vbox_manifest_value "$MANIFEST" iso_sha256) || vbox_die "Manifest is missing an ISO checksum"
@@ -305,8 +404,8 @@ main() {
   [[ "$LIVE_SSH_KEY" == "$expected_live_ssh_key" && -f "$LIVE_SSH_KEY" && ! -L "$LIVE_SSH_KEY" ]] || vbox_die "Live SSH key is outside the managed run state"
   [[ "$(stat -c '%a' -- "$LIVE_SSH_KEY")" == 600 ]] || vbox_die "Live SSH key must have mode 0600"
 
-  E2E_DIR="$ARCHCFG_VBOX_STATE_ROOT/runs/$RUN_ID/e2e"
-  VM_NAME="archcfg-e2e-test-$RUN_ID"
+  E2E_DIR="$ARCHCFG_VBOX_STATE_ROOT/runs/$RUN_ID/e2e-$INSTALL_MODE"
+  VM_NAME="archcfg-e2e-test-$RUN_ID-$INSTALL_MODE"
   TARGET_PASSWORD_FILE="$E2E_DIR/target-password"
   [[ ! -e "$E2E_DIR" ]] || vbox_die "E2E results already exist for run: $RUN_ID"
   vbox_prepare_directory "$E2E_DIR"
@@ -317,7 +416,7 @@ main() {
   vbox_generate_password_file "$TARGET_PASSWORD_FILE"
 
   vbox_log_info "Creating disposable installation VM: $VM_NAME"
-  vbox_create_efi_vm "$VM_NAME" 2048 2 24576 "$iso_path"
+  vbox_create_efi_vm "$VM_NAME" 3072 2 24576 "$iso_path"
   VM_CREATED=1
   SSH_PORT=$(vbox_find_ssh_port) || vbox_die "Could not allocate a localhost SSH port"
   vbox_configure_nat_ssh "$VM_NAME" "$SSH_PORT"
@@ -326,7 +425,10 @@ main() {
   capture_live_screen
   vbox_wait_for_ssh_network live "$LIVE_SSH_KEY" "$SSH_PORT" 180 || vbox_die "Live ISO network did not become ready"
   wait_for_live_services
+  verify_guest_source live "$E2E_DIR/live-source.log"
+  login_live_desktop
   run_live_checks
+  capture_live_screen
   vbox_scp_to live "$LIVE_SSH_KEY" "$SSH_PORT" "$TARGET_PASSWORD_FILE" /home/live/target-password
   run_install
   prepare_target_ssh
@@ -336,6 +438,13 @@ main() {
   vbox_start_vm "$VM_NAME"
   vbox_wait_for_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" 300 || vbox_die "Installed system SSH did not become ready"
   wait_for_target_services
+  verify_guest_source archcfg-e2e "$E2E_DIR/installed-source.log"
+  login_installed_desktop
+  if [[ "$INSTALL_MODE" == safe ]]; then
+    # shellcheck disable=SC2016 # Read the witness inside the installed guest.
+    run_logged "$E2E_DIR/safe-postboot.log" vbox_ssh archcfg-e2e "$LIVE_SSH_KEY" "$SSH_PORT" \
+      'test "$(cat /archcfg-safe-witness)" = archcfg-safe-preserve-root'
+  fi
   run_postboot_checks
   write_result
 
@@ -343,4 +452,16 @@ main() {
   vbox_log_info "VirtualBox E2E validation passed: $E2E_DIR/result"
 }
 
-main "$@"
+verify_guest_source() {
+  run_logged "$2" vbox_ssh "$1" "$LIVE_SSH_KEY" "$SSH_PORT" "
+    set -euo pipefail
+    source /opt/arch-linux-config/lib/source-snapshot.sh
+    source_tree_verify /opt/arch-linux-config || { printf 'Source snapshot verification failed\\n' >&2; exit 1; }
+    test \"\$(cat /opt/arch-linux-config/.archcfg-source.sha256)\" = '$SOURCE_TREE_SHA256'
+    printf 'source_tree_sha256=%s\\n' '$SOURCE_TREE_SHA256'
+  "
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

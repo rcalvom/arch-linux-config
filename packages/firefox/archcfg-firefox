@@ -32,6 +32,8 @@ fi
 install -dm700 "$profile_path/chrome"
 install -m644 "$template_root/user.js" "$profile_path/user.js"
 install -m644 "$template_root/chrome/userChrome.css" "$profile_path/chrome/userChrome.css"
+install -m644 "$template_root/chrome/userContent.css" "$profile_path/chrome/userContent.css"
+install -m644 "$template_root/chrome/internal-palette.css" "$profile_path/chrome/internal-palette.css"
 
 if [[ "$managed_profile" -eq 1 && ! -e "$profiles_ini" ]]; then
   install -dm700 "$config_root"

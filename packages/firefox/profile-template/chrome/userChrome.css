@@ -1,3 +1,5 @@
+@import url("internal-palette.css");
+
 /* Hyprland owns window actions, so Firefox does not render its own controls. */
 .titlebar-buttonbox-container {
   display: none !important;
@@ -10,8 +12,19 @@
 
 /* Square the browser chrome without changing page content. */
 :root {
-  --tab-block-margin: 0px !important;
+  /* History sidebar search, cards and menu controls use shared design tokens. */
+  --border-radius-xsmall: 0px !important;
+  --border-radius-small: 0px !important;
+  --border-radius-medium: 0px !important;
+  --border-radius-large: 0px !important;
+  --border-radius-xlarge: 0px !important;
+  --input-text-border-radius: 0px !important;
+  --input-search-border-radius: 0px !important;
+  /* Preserve the address-bar row height when sizing the horizontal tab strip. */
+  --tab-margin-block: max(0px, calc((var(--urlbar-height, 32px) + 2 * var(--urlbar-container-padding-block, 4px) - var(--tab-min-height, 32px)) / 2)) !important;
+  --tab-block-margin: var(--tab-margin-block) !important;
   --tab-overflow-clip-margin: 0px !important;
+  --tab-border-radius: 0px !important;
   --tab-selected-shadow: none !important;
   --toolbarbutton-border-radius: 0px !important;
   --urlbar-border-radius: 0px !important;
@@ -20,6 +33,53 @@
   --panel-border-radius: 0px !important;
   --panel-menuitem-border-radius: 0px !important;
   --button-border-radius: 0px !important;
+  --tab-background-color-selected: #082552 !important;
+  --tab-border-color-accent: #033e8c !important;
+  --button-background-color-primary: #033e8c !important;
+  --button-background-color-primary-hover: #0a4fa8 !important;
+  --button-background-color-primary-active: #062f6b !important;
+  /* Keep primary dialog buttons legible on the custom blue background. */
+  --button-text-color-primary: #ffffff !important;
+  --button-text-color-primary-hover: #ffffff !important;
+  --button-text-color-primary-active: #ffffff !important;
+  --focus-outline-color: #3b82f6 !important;
+}
+
+/* Close-window confirmations use the shared dialog's accent and control tokens. */
+@-moz-document url("chrome://global/content/commonDialog.xhtml") {
+  @media not (forced-colors: active) {
+    :root {
+      --color-accent-primary: #3b82f6 !important;
+      --color-accent-primary-hover: #60a5fa !important;
+      --color-accent-primary-active: #2563eb !important;
+      --color-accent-primary-selected: #2563eb !important;
+      --button-background-color-primary-selected: #062f6b !important;
+      --button-text-color-primary-selected: #ffffff !important;
+      --button-border-color-primary: #033e8c !important;
+      --button-border-color-primary-hover: #0a4fa8 !important;
+      --button-border-color-primary-active: #062f6b !important;
+      --button-border-color-primary-selected: #062f6b !important;
+      --button-background-color: light-dark(#e2e8f0, #253247) !important;
+      --button-background-color-hover: light-dark(#dbeafe, #082552) !important;
+      --button-background-color-active: light-dark(#bfdbfe, #062f6b) !important;
+      --button-text-color: light-dark(#101827, #ffffff) !important;
+      --button-text-color-hover: light-dark(#101827, #ffffff) !important;
+      --button-text-color-active: light-dark(#101827, #ffffff) !important;
+      accent-color: #3b82f6 !important;
+    }
+
+    .checkbox-check {
+      accent-color: #3b82f6 !important;
+    }
+  }
+}
+
+/* Hide browser shortcuts that are not part of this workflow. */
+#moz-vpn-toolbarbutton,
+#vpn-button,
+#sidebar-button,
+#sidebar-button-box {
+  display: none !important;
 }
 
 #tabbrowser-tabs .tab-background,
@@ -31,7 +91,45 @@ panel[type="arrow"] > .panel-arrowcontainer > .panel-arrowcontent {
   border-radius: 0 !important;
 }
 
+/* Remove the outer inline padding between horizontal tab backgrounds. */
+#tabbrowser-tabs[orient="horizontal"] {
+  --tab-margin-overflow-clip: 0px !important;
+}
+
+/* Paint the full row instead of leaving unpainted margins above/below tabs. */
+#tabbrowser-tabs[orient="horizontal"] .tab-background {
+  margin-block: 0 !important;
+  min-height: var(--tabstrip-min-height) !important;
+}
+
+/* Firefox Nova uses direct radii on toolbar controls and tab groups. */
+#navigator-toolbox toolbarbutton > .toolbarbutton-badge-stack,
+#navigator-toolbox toolbarbutton > .toolbarbutton-icon,
+#identity-box,
+.urlbarView-row-inner,
+tab-group,
+tab-group > .tab-group-label-container {
+  border-radius: 0 !important;
+}
+
 /* Firefox inserts this separator before the horizontal tab strip. */
 #tabbrowser-tabs[orient="horizontal"]::before {
   display: none !important;
+}
+
+/* The sidebar frame can have its own radius outside the embedded document. */
+#sidebar-box,
+#sidebar,
+#sidebar-search-container,
+#search-box {
+  border-radius: 0 !important;
+}
+
+/* Private-mode artwork contains literal purple fills rather than UI tokens. */
+@media not (forced-colors: active) {
+  .private-browsing-indicator,
+  .private-browsing-indicator-icon,
+  .tab-icon-image[src*="privatebrowsing"] {
+    filter: hue-rotate(-45deg) !important;
+  }
 }
