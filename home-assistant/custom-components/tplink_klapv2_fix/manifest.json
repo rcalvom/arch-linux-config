@@ -1,0 +1,8 @@
+{
+  "domain": "tplink_klapv2_fix",
+  "name": "TP-Link KLAP v2 compatibility fix",
+  "version": "0.1.1",
+  "documentation": "https://github.com/python-kasa/python-kasa/pull/1692",
+  "integration_type": "helper",
+  "iot_class": "local_polling"
+}

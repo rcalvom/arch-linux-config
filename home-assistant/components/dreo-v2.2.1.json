@@ -1,0 +1,9 @@
+{
+  "component": "dreo",
+  "source": "https://github.com/dreo-team/hass-dreoverse/releases/download/v2.2.1/dreo-v2.2.1-release.zip",
+  "version": "2.2.1",
+  "sha256": "5894282659f1379c382ef60808907cf4235761040a74ae1538bf601372fabee4",
+  "dependency": "pydreo-cloud==1.0.0",
+  "installation": "Manual copy to /config/custom_components/dreo; HACS is not required.",
+  "security": "Cloud-polling component. It stores the Dreo API-required password hash in Home Assistant runtime state; do not commit that state."
+}

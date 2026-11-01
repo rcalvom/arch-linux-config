@@ -1,27 +1,52 @@
 # Roadmap
 
-## v0.1
+Status reviewed November 1, 2026. Implementation status does not certify a fresh
+installation; see [validation evidence](validation.md) for tested scope.
 
-- Bootable UEFI VM install.
-- Explicit destructive mode with `--vm --disk`.
-- Minimal base system, user creation, GRUB, NetworkManager.
+## Implemented
 
-## v0.2
+- Explicit UEFI VM installation with `--vm --disk`, target validation, base
+  installation, user creation, GRUB, and network services.
+- Safe installation on a validated, manually mounted target.
+- `minimal`, `desktop`, `developer`, and `virtualbox` profiles, optional package
+  sets, an opt-in personal recipe, and separate hardware profiles.
+- Hyprland configuration, service setup, and manifest-based file deployment.
+- Conservative `apply-config.sh` previews, backups, and conflict-aware rollback.
+- Optional archiso builds and disposable VirtualBox build/install runners.
+- Revision-pinned optional AUR recipes with explicit build dependencies.
+- Headless Calcurse regression coverage and a fix for inherited session locks.
+- A shared local check command and GitHub Actions workflows for regressions,
+  error-level ShellCheck, and credential scanning. Remote execution remains to
+  be verified.
 
-- Safe install mode using a mounted target.
-- No disk operations outside VM mode.
+## Validation and Release Work
 
-## v0.3
+- [x] Run the isolated local regression suite, including Calcurse.
+- [x] Verify the official bootstrap ISO signature and VirtualBox preflight.
+- [ ] Complete a fresh ISO build and installation/reboot checks in both VM and
+  safe modes; retain source hashes and mode-specific evidence.
+- [ ] Verify the published GitHub Actions runs and address lint failures.
+- [x] Review all 17 AUR pins and source availability; repair Spotify's unavailable
+  download after signature and checksum verification.
+- [ ] Build automatic AUR selections in a disposable current Arch environment.
+- [x] Document tools installed outside pacman and their reconstruction limits.
+- [x] Index operational guides separately from personal selections and historical
+  run records. New commands belong in guides; dated results belong in evidence.
+- [ ] Establish provenance and redistribution terms for remaining wallpapers
+  and GRUB icon masks; see [asset review](assets.md).
+- [ ] Broaden hardware validation beyond the existing VM and host observations.
 
-- Package profiles: `minimal`, `desktop`, `developer`, `virtualbox`.
-- Wayland/Hyprland as the desktop target.
+## Deferred Integrations and Maintenance
 
-## Later
-
-- Broader hardware support.
-- Conservative `apply-config.sh` for existing Arch installs.
-- Expand optional AUR support after the core flow is reliable.
-- Expand the current live ISO into a more complete test/recovery environment after VM installs are stable.
+- Google Drive MCP remains deferred; external integrations remain disabled by
+  default and require task-specific authorization.
+- Design a project-local environment for `rzstyle` and review overlapping user
+  Python packages before migration.
+- Add the requested help bar inside Yazi. The optional portal file chooser is
+  configured separately and is not part of the automatic recipe.
+- Expand the live ISO's recovery tools after fresh installation checks pass.
+- Recheck dated host findings in the [maintenance backlog](maintenance-backlog.md)
+  before changing an existing machine.
 
 ## Deferred Complex Work
 

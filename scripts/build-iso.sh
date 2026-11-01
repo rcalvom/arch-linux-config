@@ -19,14 +19,14 @@ Usage: scripts/build-iso.sh [options]
 Options:
   --out-dir <path>      ISO output directory. Default: ./out.
   --work-dir <path>     mkarchiso work directory. Default: ./work/archiso.
-  --clean               Remove work/output directories before building.
+  --clean               Remove only marked work/output directories before building.
   --fast                Use faster rootfs compression for local test builds.
   --jobs <count>        Limit --fast compression workers. Default: detected CPUs.
   --live-authorized-key-file <path>
                         One-use live SSH public key for VirtualBox E2E automation.
   --help                Print this help.
 
-The ISO includes the committed repository tree at /opt/arch-linux-config and
+The ISO includes the verified source snapshot (or clean Git HEAD) at /opt/arch-linux-config and
 adds archcfg-install as a shortcut for /opt/arch-linux-config/install.sh.
 USAGE
 }
@@ -131,6 +131,69 @@ detect_worker_count() {
   printf '%s\n' "$workers"
 }
 
+prepare_build_directories() {
+  local path parent role marker expected mounted
+  local -a paths=("$WORK_DIR" "$OUT_DIR")
+
+  for path in "${paths[@]}"; do
+    [[ "$path" == /* ]] || path="$PWD/$path"
+    [[ "$(realpath -m -- "$path")" == "$(realpath -ms -- "$path")" ]] ||
+      die "Build paths must not contain symlinks: $path"
+    parent=$path
+    while [[ "$parent" != / ]]; do
+      [[ ! -L "$parent" ]] || die "Build paths must not contain symlinks: $parent"
+      parent=$(dirname -- "$parent")
+    done
+  done
+  WORK_DIR=$(realpath -m -- "$WORK_DIR")
+  OUT_DIR=$(realpath -m -- "$OUT_DIR")
+  [[ "$WORK_DIR/" != "$OUT_DIR/"* && "$OUT_DIR/" != "$WORK_DIR/"* ]] ||
+    die "Work and output directories must not overlap"
+
+  for role in work out; do
+    path=$WORK_DIR
+    [[ "$role" != out ]] || path=$OUT_DIR
+    case "$path" in
+      /|/home|/root|/tmp|/var|/var/tmp|/etc|/etc/*|/usr|/usr/*|/boot|/boot/*|/dev|/dev/*|/proc|/proc/*|/sys|/sys/*|/run|/run/*|/bin|/bin/*|/sbin|/sbin/*|/lib|/lib/*|/lib64|/lib64/*)
+        die "Unsafe build directory: $path" ;;
+    esac
+    for parent in "$REPO_ROOT" "$PWD" "${HOME:-/}"; do
+      parent=$(realpath -m -- "$parent")
+      [[ "$parent/" != "$path/"* ]] || die "Build directory contains a protected path: $path"
+    done
+    marker="$path/.archcfg-build-iso"
+    expected=$(printf '%s\n%s\n%s' "$REPO_ROOT" "$role" "$path")
+    if [[ -e "$path" ]]; then
+      [[ -d "$path" && -f "$marker" && ! -L "$marker" ]] ||
+        die "Refusing unmarked build directory: $path; choose a new directory"
+      [[ "$(stat -c %u -- "$path")" == "$EUID" && "$(stat -c %u -- "$marker")" == "$EUID" &&
+         "$(stat -c %a -- "$path")" == 700 && "$(stat -c %a -- "$marker")" == 600 &&
+         "$(<"$marker")" == "$expected" ]] || die "Invalid build ownership marker: $path"
+    fi
+    mounted=$(findmnt -rn --raw -o TARGET) || die "Cannot inspect mount points"
+    while IFS= read -r parent; do
+      # findmnt --raw hex-escapes whitespace and backslashes in mount paths.
+      printf -v parent '%b' "$parent"
+      [[ "$parent/" != "$path/"* ]] || die "Build directory contains a mount point: $parent"
+    done <<< "$mounted"
+  done
+
+  # Validate both destinations before removing either one.
+  for role in work out; do
+    path=$WORK_DIR
+    [[ "$role" != out ]] || path=$OUT_DIR
+    if [[ "$CLEAN" -eq 1 && -d "$path" ]]; then
+      log_info "Cleaning owned build directory: $path"
+      rm -rf --one-file-system --preserve-root=all -- "$path"
+    fi
+    if [[ ! -e "$path" ]]; then
+      mkdir -p -- "$(dirname -- "$path")"
+      mkdir -m700 -- "$path"
+      (umask 077; printf '%s\n%s\n%s\n' "$REPO_ROOT" "$role" "$path" > "$path/.archcfg-build-iso")
+    fi
+  done
+}
+
 cleanup_temp_dir() {
   if [[ -n "$TEMP_DIR" ]]; then
     rm -rf -- "$TEMP_DIR"
@@ -169,6 +232,16 @@ enable_system_service_in_profile() {
   ln -sfn "/usr/lib/systemd/system/$service" "$wants_dir/$service"
 }
 
+enable_profile_local_system_service() {
+  local profile_dir=$1
+  local service=$2
+  local target=${3:-multi-user.target}
+  local wants_dir="$profile_dir/airootfs/etc/systemd/system/$target.wants"
+
+  install -dm755 "$wants_dir"
+  ln -sfn "/etc/systemd/system/$service" "$wants_dir/$service"
+}
+
 install_live_authorized_key() {
   local profile_dir=$1
   local ssh_dir="$profile_dir/airootfs/home/live/.ssh"
@@ -194,16 +267,38 @@ copy_committed_repo_tree() {
 
   install -dm755 "$destination"
 
-  if git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" archive --format=tar HEAD | tar -C "$destination" -xf -
+  if [[ -e "$REPO_ROOT/.archcfg-source.sha256" ]]; then
+    # Never re-export HEAD over a supplied, verified worktree snapshot.
+    # shellcheck source=../lib/source-snapshot.sh
+    source "$REPO_ROOT/lib/source-snapshot.sh"
+    source_tree_verify "$REPO_ROOT" || die "Source snapshot checksum mismatch"
+    tar --no-recursion -C "$REPO_ROOT" --null -T "$REPO_ROOT/.archcfg-source.files" \
+      -cf - -- .archcfg-source.files .archcfg-source.sha256 | tar -C "$destination" -xf -
+    source_tree_verify "$destination" || die "Bundled source checksum mismatch"
+  elif git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    [[ -z "$(git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" status --porcelain)" ]] ||
+      die "Dirty checkout: use vbox-build.sh --snapshot-worktree"
+    # Clean checkouts need the same metadata as worktree builds so the live
+    # installer can verify and transfer its bundled source without Git history.
+    source "$REPO_ROOT/lib/source-snapshot.sh"
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$REPO_ROOT" \
+      source_snapshot_create "$REPO_ROOT" "$TEMP_DIR/source.tar" head "$TEMP_DIR"
+    tar -xpf "$TEMP_DIR/source.tar" -C "$destination"
+    source_tree_verify "$destination" || die 'Bundled HEAD source checksum mismatch'
   else
-    tar \
-      --exclude='.git' \
-      --exclude='./out' \
-      --exclude='./work' \
-      -C "$REPO_ROOT" \
-      -cf - . | tar -C "$destination" -xf -
+    die "Source must be a verified snapshot or clean Git checkout"
   fi
+}
+
+preserve_bundled_source_permissions() {
+  local profile=$1 file relative mode
+  local bundled="$profile/airootfs/opt/arch-linux-config"
+  # archiso otherwise normalizes every regular file to 0644, including scripts.
+  while IFS= read -r -d '' file; do
+    relative=${file#"$profile/airootfs"}
+    mode=$(stat -c %a -- "$file")
+    printf 'file_permissions[%q]=%q\n' "$relative" "0:0:$mode" >> "$profile/profiledef.sh"
+  done < <(find "$bundled" -type f -print0)
 }
 
 prepare_profile() {
@@ -225,8 +320,22 @@ prepare_profile() {
     "$bundled_repo/postinstall.sh" \
     "$bundled_repo/installation/archlinux.sh" \
     "$bundled_repo/scripts/build-iso.sh"
+  preserve_bundled_source_permissions "$profile_copy"
 
-  enable_system_service_in_profile "$profile_copy" NetworkManager.service
+  install -Dm644 "$REPO_ROOT/network/iwd/main.conf" "$profile_copy/airootfs/etc/iwd/main.conf"
+  install -Dm644 "$REPO_ROOT/network/systemd/network/20-wired.network" "$profile_copy/airootfs/etc/systemd/network/20-wired.network"
+  install -Dm644 "$REPO_ROOT/network/systemd/host-network-online.service" "$profile_copy/airootfs/etc/systemd/system/host-network-online.service"
+  install -Dm755 "$REPO_ROOT/network/bin/archcfg-wait-network-online" "$profile_copy/airootfs/usr/local/libexec/archcfg-wait-network-online"
+  printf '\nfile_permissions["/usr/local/libexec/archcfg-wait-network-online"]="0:0:755"\n' >> "$profile_copy/profiledef.sh"
+  rm -f "$profile_copy/airootfs/etc/systemd/network/20-ethernet.network"
+  rm -f "$profile_copy/airootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
+  ln -sfn /run/systemd/resolve/stub-resolv.conf "$profile_copy/airootfs/etc/resolv.conf"
+  rm -f "$profile_copy/airootfs/etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service"
+  enable_system_service_in_profile "$profile_copy" iwd.service
+  enable_system_service_in_profile "$profile_copy" systemd-networkd.service
+  enable_system_service_in_profile "$profile_copy" systemd-resolved.service
+  enable_system_service_in_profile "$profile_copy" network-online.target
+  enable_profile_local_system_service "$profile_copy" host-network-online.service network-online.target
   enable_system_service_in_profile "$profile_copy" bluetooth.service
   enable_system_service_in_profile "$profile_copy" greetd.service
   enable_system_service_in_profile "$profile_copy" vboxservice.service
@@ -242,18 +351,16 @@ main() {
   require_command mkarchiso
   require_command git
   require_command tar
+  require_command realpath
+  require_command findmnt
+
+  prepare_build_directories
 
   TEMP_DIR=$(mktemp -d)
   trap cleanup_temp_dir EXIT
   profile_copy="$TEMP_DIR/profile"
   install -dm755 "$profile_copy"
 
-  if [[ "$CLEAN" -eq 1 ]]; then
-    log_info "Cleaning $WORK_DIR and $OUT_DIR"
-    rm -rf "$WORK_DIR" "$OUT_DIR"
-  fi
-
-  install -dm755 "$WORK_DIR" "$OUT_DIR"
   prepare_profile "$profile_copy"
 
   log_info "Building ISO"
@@ -261,4 +368,6 @@ main() {
   log_info "ISO output directory: $OUT_DIR"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

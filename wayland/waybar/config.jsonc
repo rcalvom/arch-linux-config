@@ -123,7 +123,6 @@
     "max-volume": 100
   },
   "backlight": {
-    "device": "amdgpu_bl1",
     "interval": 1,
     "format": "{icon}  {percent}%",
     "format-icons": ["󰃞", "󰃟", "󰃠"]
@@ -134,11 +133,11 @@
     "format-ethernet": "  Wired",
     "format-disconnected": "  Disconnected",
     "format-icons": ["󰤯", "󰤟", "󰤥", "󰤨"],
+    "on-click": "alacritty -e impala --mode station",
     "tooltip-format-wifi": "{ifname}: {essid} ({signalStrength}%)",
     "tooltip-format-ethernet": "{ifname}: wired"
   },
   "battery": {
-    "bat": "BAT0",
     "interval": 15,
     "states": {
       "warning": 20,

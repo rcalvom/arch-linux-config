@@ -132,4 +132,6 @@ printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 : > "$VBOX_MOCK_LOG"
 vbox_bootstrap_official_ssh test-vm "$bootstrap_key" 22222 1
 [[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputstring install -dm700 /root/.ssh'* ]] || fail "official ISO SSH bootstrap command was not sent"
-[[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 30'* ]] || fail "official ISO console wait was not applied"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'sleep 45'* ]] || fail "official ISO console wait was not applied"
+[[ "$(<"$VBOX_MOCK_LOG")" == *'keyboardputscancode 1d 2e ae 9d'* ]] || fail 'Partial console input was not cancelled'
+[[ "$(<"$VBOX_MOCK_LOG")" != *"printf '"* ]] || fail 'Bootstrap can leave an open quote after truncated input'

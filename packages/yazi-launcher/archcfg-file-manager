@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+"""Open local paths in a graphical terminal, or serve FileManager1 requests."""
+from pathlib import Path
+import subprocess
+import sys
+from urllib.parse import unquote, urlsplit
+
+
+def local_path(value):
+    if value.startswith('file:'):
+        uri = urlsplit(value)
+        if uri.netloc not in ('', 'localhost') or uri.query or uri.fragment:
+            raise ValueError('Only local file URIs are supported')
+        value = unquote(uri.path)
+    elif '://' in value:
+        raise ValueError('Only local paths are supported')
+    path = Path(value).expanduser().absolute()
+    if not path.exists():
+        raise ValueError('The requested path does not exist')
+    return path
+
+
+def open_paths(values, folders=False):
+    paths = [local_path(str(value)) for value in values]
+    if folders and any(not path.is_dir() for path in paths):
+        raise ValueError('ShowFolders requires directories')
+    for path in dict.fromkeys(paths):
+        subprocess.Popen(
+            ['/usr/bin/alacritty', '-e', str(Path.home() / '.local/bin/yazi'), '--', str(path)],
+            start_new_session=True,
+        )
+
+
+def serve():
+    import dbus
+    import dbus.service
+    from dbus.mainloop.glib import DBusGMainLoop
+    from gi.repository import GLib
+
+    interface = 'org.freedesktop.FileManager1'
+    DBusGMainLoop(set_as_default=True)
+    bus = dbus.SessionBus()
+    name = dbus.service.BusName(interface, bus=bus, do_not_queue=True)
+
+    class FileManager(dbus.service.Object):
+        def dispatch(self, uris, folders=False):
+            try:
+                open_paths(uris, folders)
+            except (ValueError, OSError) as error:
+                raise dbus.exceptions.DBusException(
+                    str(error), name='org.freedesktop.DBus.Error.Failed'
+                ) from error
+
+        @dbus.service.method(interface, in_signature='ass', out_signature='')
+        def ShowFolders(self, uris, startup_id):
+            self.dispatch(uris, folders=True)
+
+        @dbus.service.method(interface, in_signature='ass', out_signature='')
+        def ShowItems(self, uris, startup_id):
+            # Yazi accepts a file path and selects it in its parent directory.
+            self.dispatch(uris)
+
+        @dbus.service.method(interface, in_signature='ass', out_signature='')
+        def ShowItemProperties(self, uris, startup_id):
+            # Yazi has no graphical properties dialog; reveal the item instead.
+            self.dispatch(uris)
+
+    manager = FileManager(name, '/org/freedesktop/FileManager1')
+    GLib.MainLoop().run()
+
+
+if __name__ == '__main__':
+    if sys.argv[1:] == ['--dbus']:
+        serve()
+    else:
+        try:
+            open_paths(sys.argv[1:] or [str(Path.home())])
+        except (ValueError, OSError) as error:
+            print(error, file=sys.stderr)
+            sys.exit(1)

@@ -7,19 +7,117 @@ state_home=${XDG_STATE_HOME:-"$HOME/.local/state"}
 vdir_config="$config_home/vdirsyncer/config"
 calendar_dir="$data_home/vdirsyncer/calendars"
 calcurse_config_dir="$config_home/calcurse"
+calcurse_data_dir="$data_home/calcurse"
 profile_dir="$data_home/archcfg/calcurse-google"
 generations_dir="$profile_dir/generations"
 current_profile="$profile_dir/current"
+reminder_profile="$data_home/archcfg/calcurse-google-reminders"
 state_dir="$state_home/archcfg"
-lock_file="$state_dir/calcurse-google.lock"
+profile_lock_file="$state_dir/calcurse-google-refresh.lock"
+session_lock_file="$state_dir/calcurse-google-session.lock"
 build_dir=
 file_list=
 import_config_dir=
 session_dir=
+calcurse_pid=
+terminal_monitor_pid=
+refresh_only=false
+
+print_header() {
+    "$refresh_only" && return 0
+
+    if [[ -t 1 ]]; then
+        printf '\n  \033[1;36m📅 Calendar Sync\033[0m\n'
+    else
+        printf '\n  📅 Calendar Sync\n'
+    fi
+}
+
+print_status() {
+    local color=$1
+    local icon=$2
+    local message=$3
+
+    "$refresh_only" && return 0
+
+    if [[ -t 1 ]]; then
+        printf '  \033[%sm%s %s\033[0m\n' "$color" "$icon" "$message"
+    else
+        printf '  %s %s\n' "$icon" "$message"
+    fi
+}
+
+copy_todo_notes() {
+    local todo_file=$1
+    local source_dir=$2
+    local destination_dir=$3
+    local note_reference
+    local note_hash
+
+    [[ -f "$todo_file" && -d "$source_dir" ]] || return 0
+    install -dm700 "$destination_dir" || return 1
+
+    while IFS= read -r note_reference; do
+        note_hash=${note_reference#>}
+        [[ -f "$source_dir/$note_hash" ]] || continue
+        cp -p -- "$source_dir/$note_hash" "$destination_dir/$note_hash" || return 1
+    done < <(grep -oE '>[0-9a-f]{40}' "$todo_file" | sort -u || true)
+}
+
+persist_session_todo_notes() {
+    local path=$1
+
+    [[ -f "$path/.archcfg-persist-todos" ]] || return 0
+    copy_todo_notes "$calcurse_data_dir/todo" "$path/notes" "$calcurse_data_dir/notes"
+}
+
+stop_session_processes() {
+    local pid
+
+    for pid in "$terminal_monitor_pid" "$calcurse_pid"; do
+        [[ -n "$pid" ]] || continue
+        # The child may already have exited; termination and wait are best effort.
+        kill -TERM "$pid" 2>/dev/null || :
+        wait "$pid" 2>/dev/null || :
+    done
+    terminal_monitor_pid=
+    calcurse_pid=
+}
+
+run_calcurse() {
+    local terminal launcher_pid=$BASHPID status=0
+    terminal=$(tty) || return 1
+
+    # Explicit stdin preserves keyboard input for the asynchronous child.
+    calcurse -D "$session_dir" <&0 &
+    calcurse_pid=$!
+    (
+        trap - EXIT HUP INT TERM
+        # Neither the monitor nor its sleep child owns the session/profile locks.
+        # Otherwise a surviving sleep can keep the next session locked out.
+        exec 8>&- 9>&-
+        while [[ -e "$terminal" ]]; do
+            sleep 1
+        done
+        kill -HUP "$launcher_pid" 2>/dev/null || :
+    ) &
+    terminal_monitor_pid=$!
+
+    # Unlike a foreground command, wait lets Bash handle trapped signals promptly.
+    wait "$calcurse_pid" || status=$?
+    calcurse_pid=
+    stop_session_processes
+    return "$status"
+}
 
 cleanup() {
     local path
 
+    stop_session_processes
+    if [[ -n "$session_dir" && -d "$session_dir" ]] && ! persist_session_todo_notes "$session_dir"; then
+        printf 'Could not preserve Calcurse TODO notes; keeping recovery session: %s\n' "$session_dir" >&2
+        session_dir=
+    fi
     for path in "$build_dir" "$file_list" "$import_config_dir" "$session_dir"; do
         [[ -z "$path" || ! -e "$path" ]] || rm -rf -- "$path"
     done
@@ -60,6 +158,10 @@ cleanup_stale_workdirs() {
         [[ -f "$path/.archcfg-owner-pid" ]] || continue
         owner_pid=$(<"$path/.archcfg-owner-pid")
         [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null && continue
+        if ! persist_session_todo_notes "$path"; then
+            printf 'Could not preserve Calcurse TODO notes; keeping recovery session: %s\n' "$path" >&2
+            continue
+        fi
         rm -rf -- "$path"
     done
     shopt -u nullglob
@@ -68,8 +170,10 @@ cleanup_stale_workdirs() {
 build_profile() {
     local -a calendar_files=()
     local calendar_file
+    local fingerprint_file
     local generation_name
     local generation_dir
+    local mirror_fingerprint
     local next_link
 
     if ! file_list=$(mktemp "$state_dir/calcurse-google-files.XXXXXX"); then
@@ -92,6 +196,19 @@ build_profile() {
         return 1
     fi
 
+    if ! mirror_fingerprint=$(xargs -0 sha256sum <"$file_list" | sha256sum); then
+        printf 'Could not fingerprint the Google Calendar mirror; keeping the last verified Calcurse view.\n' >&2
+        return 1
+    fi
+    mirror_fingerprint=${mirror_fingerprint%% *}
+    fingerprint_file="$current_profile/.archcfg-mirror-fingerprint"
+
+    if [[ -f "$fingerprint_file" ]] &&
+        [[ $(<"$fingerprint_file") == "$mirror_fingerprint" ]] &&
+        calcurse -D "$current_profile" --read-only -G >/dev/null; then
+        return 0
+    fi
+
     if ! build_dir=$(mktemp -d "$generations_dir/.build.XXXXXX"); then
         printf 'Could not create a Calcurse Google view.\n' >&2
         return 1
@@ -102,7 +219,7 @@ build_profile() {
         return 1
     fi
 
-    printf 'Building Calcurse Google view from %d calendar files.\n' "${#calendar_files[@]}"
+    print_status 34 '•' 'Updating calendar view...'
 
     for calendar_file in "${calendar_files[@]}"; do
         if ! calcurse -D "$build_dir" -C "$import_config_dir" -q -i "$calendar_file"; then
@@ -114,6 +231,11 @@ build_profile() {
     if { [[ ! -s "$build_dir/apts" ]] && [[ ! -s "$build_dir/todo" ]]; } ||
         ! calcurse -D "$build_dir" -C "$import_config_dir" --read-only -G >/dev/null; then
         printf 'Generated Calcurse Google view failed validation; keeping the last verified view.\n' >&2
+        return 1
+    fi
+
+    if ! printf '%s\n' "$mirror_fingerprint" >"$build_dir/.archcfg-mirror-fingerprint"; then
+        printf 'Could not record the Google Calendar mirror fingerprint; keeping the last verified view.\n' >&2
         return 1
     fi
 
@@ -140,6 +262,27 @@ build_profile() {
     cleanup_generations
 }
 
+prepare_reminder_profile() {
+    [[ -f "$current_profile/apts" ]] || {
+        printf 'No verified Google Calendar reminder view is available yet.\n' >&2
+        return 1
+    }
+
+    install -dm700 "$reminder_profile" "$reminder_profile/notes" || return 1
+    # Regenerate even on cache hits so local settings never select Google's notification policy.
+    if ! sed '/^notification\./d' "$calcurse_config_dir/conf" >"$reminder_profile/conf.new" ||
+        ! printf '%s\n' \
+            'notification.command="$HOME/.local/bin/archcfg-calcurse-google-notify"' \
+            'notification.notifyall=all' \
+            'notification.warning=900' >>"$reminder_profile/conf.new" ||
+        ! mv -f -- "$reminder_profile/conf.new" "$reminder_profile/conf"; then
+        printf 'Could not prepare the Google Calendar notification configuration.\n' >&2
+        return 1
+    fi
+    [[ -f "$reminder_profile/todo" ]] || install -m600 /dev/null "$reminder_profile/todo" || return 1
+    ln -sfn ../calcurse-google/current/apts "$reminder_profile/apts"
+}
+
 prepare_session() {
     local generation
 
@@ -149,32 +292,68 @@ prepare_session() {
     fi
 
     if ! session_dir=$(mktemp -d "$state_dir/calcurse-google-session.XXXXXX"); then
-        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        printf 'Could not prepare the Calcurse session.\n' >&2
         return 1
     fi
 
     if ! printf '%s\n' "$$" >"$session_dir/.archcfg-owner-pid"; then
-        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        printf 'Could not prepare the Calcurse session.\n' >&2
         return 1
     fi
 
-    # Calcurse can write note files even with --read-only, so never open a retained generation directly.
+    if ! install -dm700 "$calcurse_data_dir" "$calcurse_data_dir/notes"; then
+        printf 'Could not prepare persistent Calcurse TODOs.\n' >&2
+        return 1
+    fi
+    if [[ ! -f "$calcurse_data_dir/todo" ]] &&
+        ! install -m600 /dev/null "$calcurse_data_dir/todo"; then
+        printf 'Could not prepare persistent Calcurse TODOs.\n' >&2
+        return 1
+    fi
+
+    # Calendar edits stay in the disposable session while TODOs use the persistent local data file.
     if ! cp -a -- "$generation/." "$session_dir/" ||
-        ! cp -a -- "$calcurse_config_dir/conf" "$calcurse_config_dir/keys" "$session_dir/"; then
-        printf 'Could not prepare the read-only Calcurse session.\n' >&2
+        ! cp -a -- "$reminder_profile/conf" "$calcurse_config_dir/keys" "$session_dir/" ||
+        ! rm -f -- "$session_dir/todo" ||
+        ! ln -s "$calcurse_data_dir/todo" "$session_dir/todo"; then
+        printf 'Could not prepare the Calcurse session.\n' >&2
+        return 1
+    fi
+
+    if ! copy_todo_notes "$calcurse_data_dir/todo" "$calcurse_data_dir/notes" "$session_dir/notes" ||
+        ! touch "$session_dir/.archcfg-persist-todos"; then
+        printf 'Could not prepare persistent Calcurse TODOs.\n' >&2
         return 1
     fi
 }
 
+case ${1:-} in
+    '')
+        ;;
+    --refresh)
+        refresh_only=true
+        shift
+        ;;
+    *)
+        printf 'Usage: %s [--refresh]\n' "${0##*/}" >&2
+        exit 2
+        ;;
+esac
+
 [[ $# -eq 0 ]] || {
-    printf 'Usage: %s\n' "${0##*/}" >&2
+    printf 'Usage: %s [--refresh]\n' "${0##*/}" >&2
     exit 2
 }
 
-[[ -f "$calcurse_config_dir/conf" && -f "$calcurse_config_dir/keys" ]] || {
+[[ -f "$calcurse_config_dir/conf" ]] || {
     printf 'Calcurse is not configured.\n' >&2
     exit 1
 }
+
+if ! "$refresh_only" && [[ ! -f "$calcurse_config_dir/keys" ]]; then
+    printf 'Calcurse is not configured.\n' >&2
+    exit 1
+fi
 
 command -v calcurse >/dev/null || {
     printf 'calcurse is not installed.\n' >&2
@@ -193,24 +372,43 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-exec 9>"$lock_file"
-if ! flock -n 9; then
-    printf 'Another Calcurse Google refresh is already running.\n' >&2
-    exit 1
+if ! "$refresh_only"; then
+    exec 9>"$session_lock_file"
+    if ! flock -n 9; then
+        printf 'Another Calcurse Google session is already running.\n' >&2
+        exit 1
+    fi
+fi
+
+exec 8>"$profile_lock_file"
+if "$refresh_only"; then
+    flock -n 8 || exit 0
+else
+    flock 8
 fi
 
 cleanup_stale_workdirs
 
+print_header
+print_status 33 '↻' 'Syncing calendars...'
 if ! command -v vdirsyncer >/dev/null; then
     printf 'vdirsyncer is not installed; opening the last verified Calcurse view.\n' >&2
 elif [[ ! -f "$vdir_config" ]]; then
     printf 'Google Calendar is not configured; opening the last verified Calcurse view.\n' >&2
-elif ! vdirsyncer --config "$vdir_config" sync; then
+elif ! vdirsyncer --config "$vdir_config" sync >/dev/null 2>&1; then
     printf 'Google Calendar sync failed; opening the last verified Calcurse view.\n' >&2
 elif [[ ! -d "$calendar_dir" ]]; then
     printf 'Google Calendar mirror is unavailable; opening the last verified Calcurse view.\n' >&2
 elif ! build_profile; then
     :
+fi
+
+if ! prepare_reminder_profile; then
+    exit 1
+fi
+
+if "$refresh_only"; then
+    exit 0
 fi
 
 if ! prepare_session; then
@@ -220,10 +418,12 @@ fi
 rm -rf -- "$file_list" "$import_config_dir"
 file_list=
 import_config_dir=
+flock -u 8
 
-flock -u 9
+print_status 32 '✓' 'Calendar ready.'
+printf '\n'
 set +e
-calcurse -D "$session_dir" --read-only
+run_calcurse
 calcurse_status=$?
 set -e
 exit "$calcurse_status"

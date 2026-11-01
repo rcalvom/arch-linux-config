@@ -4,13 +4,16 @@ openssh
 wget
 unzip
 neovim
+opencode
 btop
 fastfetch
 lazygit
 docker
 docker-compose
+docker-buildx
 lazydocker
 python-pip
+uv
 gcc
 jdk-openjdk
 npm

@@ -9,7 +9,7 @@ source "$REPO_ROOT/lib/vbox.sh"
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/vbox-preflight.sh
+Usage: scripts/vbox-preflight.sh [--snapshot-worktree]
 
 Checks that regular-user VirtualBox ISO automation can run safely. It does not
 repair the host driver, create a VM, or modify the repository.
@@ -18,7 +18,7 @@ USAGE
 
 main() {
   case "${1-}" in
-    "" )
+    "" | --snapshot-worktree)
       ;;
     --help)
       usage
@@ -38,7 +38,10 @@ main() {
   [[ -r /dev/vboxdrvu && -w /dev/vboxdrvu ]] || vbox_die "Current user cannot access /dev/vboxdrvu. Ask an administrator to grant the required VirtualBox device access."
   VBoxManage list vms >/dev/null
 
-  [[ -z "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all)" ]] || vbox_die "Working tree is not clean; commit changes before building an ISO from HEAD"
+  [[ $# -le 1 ]] || vbox_die "Too many arguments"
+  if [[ "${1-}" != --snapshot-worktree ]]; then
+    [[ -z "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all)" ]] || vbox_die "Working tree is not clean; use --snapshot-worktree to include current changes without commits"
+  fi
 
   vbox_log_info "VirtualBox preflight passed"
   vbox_log_info "Runtime state: $ARCHCFG_VBOX_STATE_ROOT"

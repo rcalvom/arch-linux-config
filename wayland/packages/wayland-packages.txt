@@ -43,7 +43,6 @@ slurp
 brightnessctl
 playerctl
 polkit-kde-agent
-network-manager-applet
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 greetd

@@ -8,9 +8,12 @@ RUN_ID=""
 KEEP_ON_FAILURE=1
 VM_CREATED=0
 SUCCESS=0
+SOURCE_MODE="head"
 
 # shellcheck source=../lib/vbox.sh
 source "$REPO_ROOT/lib/vbox.sh"
+# shellcheck source=../lib/source-snapshot.sh
+source "$REPO_ROOT/lib/source-snapshot.sh"
 
 usage() {
   cat <<'USAGE'
@@ -22,6 +25,7 @@ must be an official Arch ISO with its automatic root console login.
 Options:
   --bootstrap-iso <path>  Official Arch ISO used only as the builder environment.
   --run-id <id>           Safe lowercase run identifier. Default: generated.
+  --snapshot-worktree     Freeze current tracked and non-ignored untracked files.
   --discard-on-failure    Delete the builder VM instead of retaining it for diagnosis.
   --help                  Print this help.
 USAGE
@@ -46,6 +50,7 @@ cleanup() {
 
   trap - EXIT HUP INT TERM
   set +e
+  printf 'success=%s\nexit_code=%s\n' "$SUCCESS" "$exit_code" > "$RUN_DIR/build-result"
   rm -f -- "${BUILDER_SSH_KEY:-}" "${BUILDER_SSH_KEY:-}.pub" "${LIVE_AUTHORIZED_KEY_FILE:-}"
   if [[ "$SUCCESS" -ne 1 ]]; then
     rm -f -- "${LIVE_SSH_KEY:-}" "${LIVE_SSH_KEY:-}.pub"
@@ -63,16 +68,16 @@ cleanup() {
     fi
   fi
 
-  if [[ "$SUCCESS" -eq 1 ]]; then
-    rm -f -- "$SOURCE_ARCHIVE"
-  fi
-
   exit "$exit_code"
 }
 
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --snapshot-worktree)
+        SOURCE_MODE=worktree
+        shift
+        ;;
       --bootstrap-iso)
         require_value "$1" "${2-}"
         BOOTSTRAP_ISO=$2
@@ -99,9 +104,13 @@ parse_args() {
 }
 
 prepare_builder_disk() {
+  # shellcheck disable=SC2016 # Expressions are evaluated only inside the guest.
   run_logged "$RUN_DIR/builder-prepare.log" \
     vbox_ssh root "$BUILDER_SSH_KEY" "$SSH_PORT" '
       set -euo pipefail
+      [[ $(systemd-detect-virt) == oracle ]]
+      [[ $(lsblk -dn -o MODEL /dev/sda) == VBOX* ]]
+      [[ $(lsblk -dn -o TYPE /dev/sda) == disk ]]
       wipefs -a /dev/sda
       sgdisk --zap-all /dev/sda
       sgdisk -n 1:0:0 -t 1:8300 -c 1:archcfg-builder /dev/sda
@@ -132,6 +141,8 @@ build_iso_in_guest() {
       set -euo pipefail
       install -dm755 /mnt/archcfg-builder/root/opt/archcfg-source
       tar -xf /mnt/archcfg-builder/source.tar -C /mnt/archcfg-builder/root/opt/archcfg-source
+      source /mnt/archcfg-builder/root/opt/archcfg-source/lib/source-snapshot.sh
+      source_tree_verify /mnt/archcfg-builder/root/opt/archcfg-source
       cleanup_builder_root() {
         swapoff /mnt/archcfg-builder/swapfile || true
         umount /mnt/archcfg-builder/root || true
@@ -155,15 +166,17 @@ write_manifest() {
   local iso_checksum
   local iso_size
 
-  commit=$(git -C "$REPO_ROOT" rev-parse HEAD)
+  commit=$BASE_COMMIT
   source_checksum=$(vbox_file_sha256 "$SOURCE_ARCHIVE")
   iso_checksum=$(vbox_file_sha256 "$ISO_PATH")
   iso_size=$(stat -c '%s' -- "$ISO_PATH")
 
   {
-    printf 'schema=1\n'
+    printf 'schema=2\n'
     printf 'run_id=%s\n' "$RUN_ID"
-    printf 'commit=%s\n' "$commit"
+    printf 'source_mode=%s\n' "$SOURCE_MODE"
+    printf 'base_commit=%s\n' "$commit"
+    printf 'source_tree_sha256=%s\n' "$(<"$ARTIFACT_DIR/source-tree.sha256")"
     printf 'source_sha256=%s\n' "$source_checksum"
     printf 'iso=%s\n' "$ISO_PATH"
     printf 'iso_sha256=%s\n' "$iso_checksum"
@@ -181,7 +194,9 @@ main() {
   [[ -n "$BOOTSTRAP_ISO" ]] || vbox_die "--bootstrap-iso is required"
   [[ -r "$BOOTSTRAP_ISO" && -f "$BOOTSTRAP_ISO" ]] || vbox_die "Bootstrap ISO is not readable: $BOOTSTRAP_ISO"
 
-  "$SCRIPT_DIR/vbox-preflight.sh"
+  local preflight_args=()
+  [[ "$SOURCE_MODE" != worktree ]] || preflight_args+=(--snapshot-worktree)
+  "$SCRIPT_DIR/vbox-preflight.sh" "${preflight_args[@]}"
 
   [[ -n "$RUN_ID" ]] || RUN_ID=$(vbox_new_run_id)
   vbox_run_id_is_valid "$RUN_ID" || vbox_die "Invalid run ID: $RUN_ID"
@@ -189,7 +204,7 @@ main() {
   RUN_DIR="$ARCHCFG_VBOX_STATE_ROOT/runs/$RUN_ID"
   ARTIFACT_DIR="$ARCHCFG_VBOX_STATE_ROOT/artifacts/$RUN_ID"
   VM_NAME="archcfg-e2e-build-$RUN_ID"
-  SOURCE_ARCHIVE="$RUN_DIR/source.tar"
+  SOURCE_ARCHIVE="$ARTIFACT_DIR/source.tar"
   BUILDER_SSH_KEY="$RUN_DIR/builder-ssh-key"
   LIVE_SSH_KEY="$RUN_DIR/live-ssh-key"
   LIVE_AUTHORIZED_KEY_FILE="$RUN_DIR/live-authorized-key.pub"
@@ -201,7 +216,9 @@ main() {
   trap 'exit 130' INT
   trap 'exit 143' TERM
 
-  git -C "$REPO_ROOT" archive --format=tar HEAD > "$SOURCE_ARCHIVE"
+  BASE_COMMIT=$(git -C "$REPO_ROOT" rev-parse HEAD)
+  source_snapshot_create "$REPO_ROOT" "$SOURCE_ARCHIVE" "$SOURCE_MODE" "$ARTIFACT_DIR"
+  sha256sum "$SOURCE_ARCHIVE" > "$ARTIFACT_DIR/source.tar.sha256"
   chmod 600 "$SOURCE_ARCHIVE"
   vbox_generate_ssh_key "$BUILDER_SSH_KEY"
   vbox_generate_ssh_key "$LIVE_SSH_KEY"
@@ -234,4 +251,6 @@ main() {
   vbox_log_info "Manifest: $ARTIFACT_DIR/manifest"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

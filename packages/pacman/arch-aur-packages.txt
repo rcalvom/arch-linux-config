@@ -1,6 +1,18 @@
-# Inventory only; packages/aur.txt controls installer AUR input.
+# Inventory only: explicitly installed foreign packages, not verified AUR sources.
+# Installer selections are maintained separately in packages/aur.txt and packages/recipes/.
+android-studio
+artcraft-launcher
+chatgpt-desktop
+claude-code
+cliamp
+flutter-bin
+google-chrome
+openclaw
 slack-desktop
+spotify
+verapdf
 visual-studio-code-bin
+xdg-desktop-portal-termfilechooser-hunkyburrito-git
 yay-bin
-yay-bin-debug
 zoom
+zotero

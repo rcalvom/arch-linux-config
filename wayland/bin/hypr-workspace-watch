@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 
@@ -19,6 +20,23 @@ WORKSPACE_EVENTS = {
     "movewindowv2",
 }
 STATE_SCRIPT = Path(__file__).with_name("hypr-workspace-state")
+WINDOW_LOG = Path.home() / ".local/state/archcfg/hypr-window-events.log"
+WINDOW_LOG_LIMIT = 1024 * 1024
+
+
+def log_window_event(event: str, payload: str) -> None:
+    if os.environ.get("HYPR_WINDOW_EVENT_LOG") != "1":
+        return
+    WINDOW_LOG.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    timestamp = datetime.now().astimezone().isoformat(timespec="milliseconds")
+    payload = payload[:1024].replace("\n", " ").replace("\r", " ")
+    line = f"{timestamp}\t{event}\t{payload.rstrip()}\n"
+    if WINDOW_LOG.exists() and WINDOW_LOG.stat().st_size + len(line.encode("utf-8")) > WINDOW_LOG_LIMIT:
+        WINDOW_LOG.replace(WINDOW_LOG.with_suffix(".log.1"))
+    descriptor = os.open(WINDOW_LOG, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
+    os.fchmod(descriptor, 0o600)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as log:
+        log.write(line)
 
 
 def refresh_and_notify() -> None:
@@ -50,7 +68,10 @@ def main() -> int:
                 refresh_and_notify()
                 with client.makefile("r", encoding="utf-8", errors="replace") as events:
                     for line in events:
-                        if line.partition(">>")[0] in WORKSPACE_EVENTS:
+                        event, _, payload = line.partition(">>")
+                        if event in {"openwindow", "closewindow"}:
+                            log_window_event(event, payload)
+                        if event in WORKSPACE_EVENTS:
                             refresh_and_notify()
         except FileNotFoundError:
             return 0

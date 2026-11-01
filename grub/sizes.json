@@ -1,0 +1,5 @@
+{
+  "compact": {"title": 24, "menu": 22, "footer": 18, "icon": 24, "row": 36, "spacing": 6, "padding": 4, "rows": 3, "menu_left": "30%-120", "menu_width": "40%+240", "menu_offset": 48, "counter_gap": 16, "resolutions": [[640, 480], [800, 600], [1024, 768]]},
+  "normal": {"title": 30, "menu": 28, "footer": 22, "icon": 30, "row": 44, "spacing": 8, "padding": 5, "rows": 5, "menu_left": "50%-330", "menu_width": "660", "menu_offset": 72, "counter_gap": 20, "resolutions": [[1280, 720], [1366, 768], [1600, 900]]},
+  "large": {"title": 36, "menu": 32, "footer": 24, "icon": 36, "row": 48, "spacing": 8, "padding": 6, "rows": 5, "menu_left": "50%-380", "menu_width": "760", "menu_offset": 88, "counter_gap": 24, "resolutions": [[1920, 1080], [1920, 1200], [2560, 1440]]}
+}

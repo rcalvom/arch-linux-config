@@ -2,9 +2,10 @@
 
 [mgr]
 ratio = [1, 4, 3]
-sort_by = "natural"
+# Show the most recently modified entries first within each directory/file group.
+sort_by = "mtime"
 sort_sensitive = false
-sort_reverse = false
+sort_reverse = true
 sort_dir_first = true
 linemode = "size"
 show_hidden = false
@@ -22,7 +23,8 @@ image_quality = 80
 [opener]
 edit = [{ run = "nvim %s", block = true, desc = "Edit in Neovim", for = "unix" }]
 open = [{ run = "xdg-open %s", orphan = true, desc = "Open with default application", for = "unix" }]
-pdf = [{ run = "evince %s", orphan = true, desc = "Open PDF with Evince", for = "unix" }]
+# The Chafa launcher hides the display from Yazi; restore it for Evince only.
+pdf = [{ run = 'env DISPLAY="${ARCHCFG_GUI_DISPLAY:-$DISPLAY}" WAYLAND_DISPLAY="${ARCHCFG_GUI_WAYLAND_DISPLAY:-$WAYLAND_DISPLAY}" XDG_SESSION_TYPE="${ARCHCFG_GUI_SESSION_TYPE:-$XDG_SESSION_TYPE}" evince %s', orphan = true, desc = "Open PDF with Evince", for = "unix" }]
 image = [{ run = "bash ~/.config/yazi/preview-image %s", block = true, desc = "View image in terminal", for = "unix" }]
 media = [{ run = "mpv %s", orphan = true, desc = "Play with mpv", for = "unix" }]
 
@@ -38,8 +40,11 @@ prepend_rules = [
 
 [plugin]
 prepend_previewers = [
-  # Images are intentionally shown only through the Enter opener above.
-  { mime = "image/*", run = "noop" },
+  { mime = "application/pdf", run = "pdf-text" },
+  { url = "*.{pptx,potx}", run = "pptx-text" },
+  { url = "*.{docx,dotx}", run = "docx-text" },
+  { url = "*.{xlsx,xlsm,xltx}", run = "xlsx-text" },
+  { url = "*.{odt,ott,ods,ots,odp,otp}", run = "odf-text" },
 ]
 
 [input]

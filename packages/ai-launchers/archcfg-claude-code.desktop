@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Claude Code
+Comment=Open the Claude Code terminal interface in Alacritty
+Exec=alacritty --title "Claude Code" -e claude
+TryExec=claude
+Icon=archcfg-claude-code
+Terminal=false
+StartupNotify=false
+Categories=Development;
+Keywords=AI;Anthropic;Coding;Assistant;Terminal;

@@ -1,0 +1,3 @@
+# Temporary workaround for python-kasa IOT KLAP v2 authentication.
+# Remove when Home Assistant includes upstream python-kasa PR #1692 or equivalent.
+tplink_klapv2_fix:

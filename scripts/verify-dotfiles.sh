@@ -6,9 +6,10 @@ home_dir=$HOME
 show_diff=false
 failures=0
 warnings=0
+context=installed
 
 usage() {
-  printf 'Usage: %s [--repo PATH] [--home PATH] [--diff]\n' "${0##*/}"
+  printf 'Usage: %s [--repo PATH] [--home PATH] [--diff] [--context installed|user]\n' "${0##*/}"
 }
 
 report() {
@@ -116,7 +117,7 @@ compare_tree() {
     relative=${file#"$source_root"/}
     [[ "${relative##*/}" == "files.conf" ]] && continue
     compare_file "$file" "$destination_root/$relative" "$expected_mode"
-  done < <(find "$source_root" -type f -print0)
+  done < <(find "$source_root" -name __pycache__ -prune -o -type f ! -name '*.py[co]' -print0)
 
   while IFS= read -r -d '' file; do
     relative=${file#"$destination_root"/}
@@ -124,7 +125,7 @@ compare_tree() {
     is_ignored_extra "$destination_root" "$relative" && continue
     report WARN "extra local file: $file"
     ((warnings += 1))
-  done < <(find "$destination_root" -type f -print0)
+  done < <(find "$destination_root" -name __pycache__ -prune -o -type f ! -name '*.py[co]' -print0)
 }
 
 check_manifest() {
@@ -137,6 +138,10 @@ check_manifest() {
 
     case "$kind" in
       user_file)
+        if [[ "$destination" == .config/mimeapps.list ]]; then
+          warn_file "$package_dir/$source" "$home_dir/$destination"
+          continue
+        fi
         compare_file "$package_dir/$source" "$home_dir/$destination" "$mode"
         ;;
       user_tree)
@@ -168,6 +173,12 @@ while (($#)); do
       show_diff=true
       shift
       ;;
+    --context)
+      (($# >= 2)) || { usage >&2; exit 2; }
+      [[ "$2" == installed || "$2" == user ]] || { usage >&2; exit 2; }
+      context=$2
+      shift 2
+      ;;
     --help | -h)
       usage
       exit 0
@@ -187,39 +198,10 @@ for manifest in "$repo_dir"/packages/*/files.conf; do
   check_manifest "$manifest"
 done
 
-while IFS='|' read -r source destination mode; do
-  compare_file "$repo_dir/$source" "$home_dir/$destination" "$mode"
-done <<'EOF'
-wayland/hypr/hyprland.lua|.config/hypr/hyprland.lua|0644
-wayland/hypr/hyprpaper.conf|.config/hypr/hyprpaper.conf|0644
-wayland/hypr/xdph.conf|.config/hypr/xdph.conf|0644
-wayland/hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf|0644
-wayland/hypr/hypridle.conf|.config/hypr/hypridle.conf|0644
-wayland/hypr/hyprlock.conf|.config/hypr/hyprlock.conf|0644
-wayland/wallpapers/wallpaper.png|Pictures/wallpaper2.png|0644
-wayland/waybar/config.jsonc|.config/waybar/config.jsonc|0644
-wayland/waybar/style.css|.config/waybar/style.css|0644
-wayland/rofi/config.rasi|.config/rofi/config.rasi|0644
-wayland/rofi/share-picker.rasi|.config/rofi/share-picker.rasi|0644
-wayland/mako/config|.config/mako/config|0644
-wayland/fontconfig/conf.d/99-ubuntu-fallback.conf|.config/fontconfig/conf.d/99-ubuntu-fallback.conf|0644
-EOF
+check_manifest "$repo_dir/wayland/files.conf"
 
-compare_tree "$repo_dir/wayland/rofi/share-picker-icons" "$home_dir/.config/rofi/share-picker-icons"
-
-for source in "$repo_dir"/wayland/bin/*; do
-  [[ -f "$source" ]] || continue
-  compare_file "$source" "$home_dir/.local/bin/${source##*/}" 0755
-done
-
-for source in "$repo_dir"/wayland/systemd/user/*; do
-  [[ -f "$source" ]] || continue
-  compare_file "$source" "$home_dir/.config/systemd/user/${source##*/}" 0644
-done
-
-compare_file "$repo_dir/wayland/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" "$home_dir/.config/systemd/user/xdg-desktop-portal-hyprland.service.d/share-picker.conf" 0644
-
-for timer in hyprsunset-day.timer hyprsunset-night.timer; do
+for timer in hyprsunset-day.timer hyprsunset-night.timer archcfg-calcurse-google-refresh.timer; do
+  [[ "$context" == installed ]] || continue
   destination="$home_dir/.config/systemd/user/timers.target.wants/$timer"
   expected="$home_dir/.config/systemd/user/$timer"
   if [[ ! -e "$destination" && ! -L "$destination" ]]; then
@@ -233,9 +215,6 @@ for timer in hyprsunset-day.timer hyprsunset-night.timer; do
     ((failures += 1))
   fi
 done
-
-# Desktop MIME handlers are expanded by installed applications and are local state.
-warn_file "$repo_dir/wayland/mimeapps.list" "$home_dir/.config/mimeapps.list"
 
 if git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 && [[ -n $(git -C "$repo_dir" status --porcelain) ]]; then
   report WARN "working tree has uncommitted changes; HEAD is not a complete reconstruction snapshot"

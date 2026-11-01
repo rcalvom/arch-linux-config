@@ -1,113 +1,113 @@
-[app]
-overall = { bg = "#000000" }
+# Matches ~/.config/nvim/lua/ricardo/colors.lua. Backgrounds are omitted where
+# possible so Yazi inherits Alacritty's transparency.
 
 [mgr]
-cwd = { fg = "#f1ffff", bold = true }
+cwd = { fg = "#f1f1f1", bold = true }
 find_keyword = { fg = "#20a5ba", bold = true }
-find_position = { fg = "#f1ffff", bg = "#033e8c", bold = true }
-symlink_target = { fg = "#4c566a" }
+find_position = { fg = "#2c2c2c", bg = "#f3e430", bold = true }
+symlink_target = { fg = "#818181" }
 marker_copied = { fg = "#20a5ba", bold = true }
-marker_cut = { fg = "#ff5555", bold = true }
-marker_marked = { fg = "#f1ffff", bg = "#012340" }
-marker_selected = { fg = "#f1ffff", bg = "#033e8c" }
-count_copied = { fg = "#000000", bg = "#20a5ba" }
-count_cut = { fg = "#000000", bg = "#ff5555" }
-count_selected = { fg = "#f1ffff", bg = "#033e8c" }
+marker_cut = { fg = "#fb007a", bold = true }
+marker_marked = { fg = "#f1f1f1", bg = "#2c2c2c" }
+marker_selected = { fg = "#f1f1f1", bg = "#005f87", bold = true }
+count_copied = { fg = "#2c2c2c", bg = "#20a5ba" }
+count_cut = { fg = "#f1f1f1", bg = "#c30771" }
+count_selected = { fg = "#f1f1f1", bg = "#005f87" }
 border_symbol = "│"
-border_style = { fg = "#033e8c" }
+border_style = { fg = "#005f87" }
 
 [indicator]
-parent = { fg = "#d6d6d6", bg = "#012340" }
-current = { fg = "#f1ffff", bg = "#033e8c", bold = true }
-preview = { fg = "#f1ffff", bg = "#000e29" }
+parent = { fg = "#d6d6d6" }
+current = { fg = "#f1f1f1", bg = "#005f87", bold = true }
+preview = { fg = "#d6d6d6" }
 padding = { open = " ", close = " " }
 
 [tabs]
-active = { fg = "#f1ffff", bg = "#033e8c", bold = true }
-inactive = { fg = "#d6d6d6", bg = "#012340" }
+active = { fg = "#f1f1f1", bg = "#2c2c2c", bold = true }
+inactive = { fg = "#818181" }
 sep_inner = { open = "", close = "" }
 sep_outer = { open = "", close = "" }
 
 [mode]
-normal_main = { fg = "#000000", bg = "#20a5ba", bold = true }
-normal_alt = { fg = "#f1ffff", bg = "#012340" }
-select_main = { fg = "#000000", bg = "#f3e430", bold = true }
-select_alt = { fg = "#f1ffff", bg = "#012340" }
-unset_main = { fg = "#f1ffff", bg = "#4c566a", bold = true }
-unset_alt = { fg = "#f1ffff", bg = "#012340" }
+normal_main = { fg = "#f1f1f1", bg = "#005f87", bold = true }
+normal_alt = { fg = "#d6d6d6" }
+select_main = { fg = "#2c2c2c", bg = "#f3e430", bold = true }
+select_alt = { fg = "#d6d6d6" }
+unset_main = { fg = "#f1f1f1", bg = "#6855de", bold = true }
+unset_alt = { fg = "#d6d6d6" }
 
 [status]
-overall = { fg = "#d6d6d6", bg = "#000e29" }
+overall = { fg = "#d6d6d6" }
 sep_left = { open = "", close = "" }
 sep_right = { open = "", close = "" }
 perm_type = { fg = "#20a5ba" }
 perm_read = { fg = "#10a778" }
 perm_write = { fg = "#f3e430" }
 perm_exec = { fg = "#20bbfc" }
-perm_sep = { fg = "#4c566a" }
-progress_label = { fg = "#f1ffff", bold = true }
-progress_normal = { fg = "#20a5ba", bg = "#012340" }
-progress_error = { fg = "#ff5555", bg = "#012340" }
+perm_sep = { fg = "#818181" }
+progress_label = { fg = "#f1f1f1", bold = true }
+progress_normal = { fg = "#20bbfc", bg = "#2c2c2c" }
+progress_error = { fg = "#fb007a", bg = "#2c2c2c" }
 
 [which]
 cols = 2
-mask = { bg = "#000000" }
-cand = { fg = "#20a5ba", bold = true }
-rest = { fg = "#f1ffff" }
+mask = { bg = "#212121" }
+cand = { fg = "#20bbfc", bold = true }
+rest = { fg = "#f1f1f1" }
 desc = { fg = "#d6d6d6" }
 separator = " -> "
-separator_style = { fg = "#4c566a" }
+separator_style = { fg = "#818181" }
 
 [confirm]
-border = { fg = "#033e8c" }
-title = { fg = "#f1ffff", bold = true }
+border = { fg = "#005f87" }
+title = { fg = "#f1f1f1", bold = true }
 body = { fg = "#d6d6d6" }
-list = { fg = "#f1ffff" }
-btn_yes = { fg = "#000000", bg = "#20a5ba", bold = true }
-btn_no = { fg = "#f1ffff", bg = "#4c566a" }
+list = { fg = "#f1f1f1" }
+btn_yes = { fg = "#2c2c2c", bg = "#10a778", bold = true }
+btn_no = { fg = "#f1f1f1", bg = "#c30771" }
 btn_labels = [" Yes ", " No "]
 
 [spot]
-border = { fg = "#033e8c" }
-title = { fg = "#f1ffff", bold = true }
-tbl_col = { fg = "#f1ffff", bg = "#012340" }
-tbl_cell = { fg = "#f1ffff", bg = "#033e8c" }
+border = { fg = "#005f87" }
+title = { fg = "#f1f1f1", bold = true }
+tbl_col = { fg = "#f1f1f1", bg = "#2c2c2c" }
+tbl_cell = { fg = "#f1f1f1", bg = "#005f87" }
 
 [notify]
-title_info = { fg = "#20a5ba", bold = true }
+title_info = { fg = "#20bbfc", bold = true }
 title_warn = { fg = "#f3e430", bold = true }
-title_error = { fg = "#ff5555", bold = true }
+title_error = { fg = "#fb007a", bold = true }
 
 [pick]
-border = { fg = "#033e8c" }
-active = { fg = "#f1ffff", bg = "#033e8c", bold = true }
+border = { fg = "#005f87" }
+active = { fg = "#f1f1f1", bg = "#005f87", bold = true }
 inactive = { fg = "#d6d6d6" }
 
 [input]
-border = { fg = "#033e8c" }
-title = { fg = "#f1ffff", bold = true }
-value = { fg = "#f1ffff" }
-selected = { fg = "#f1ffff", bg = "#033e8c" }
+border = { fg = "#005f87" }
+title = { fg = "#f1f1f1", bold = true }
+value = { fg = "#f1f1f1" }
+selected = { fg = "#2c2c2c", bg = "#20bbfc" }
 
 [cmp]
-border = { fg = "#033e8c" }
-active = { fg = "#f1ffff", bg = "#033e8c", bold = true }
+border = { fg = "#005f87" }
+active = { fg = "#f1f1f1", bg = "#005f87", bold = true }
 inactive = { fg = "#d6d6d6" }
 icon_file = ""
 icon_folder = ""
 icon_command = ""
 
 [tasks]
-border = { fg = "#033e8c" }
-title = { fg = "#f1ffff", bold = true }
-hovered = { fg = "#f1ffff", bg = "#033e8c" }
+border = { fg = "#005f87" }
+title = { fg = "#f1f1f1", bold = true }
+hovered = { fg = "#f1f1f1", bg = "#005f87" }
 
 [help]
-on = { fg = "#20a5ba", bold = true }
-run = { fg = "#f1ffff" }
+on = { fg = "#20bbfc", bold = true }
+run = { fg = "#f1f1f1" }
 desc = { fg = "#d6d6d6" }
-hovered = { fg = "#f1ffff", bg = "#033e8c" }
-footer = { fg = "#4c566a" }
+hovered = { fg = "#f1f1f1", bg = "#005f87" }
+footer = { fg = "#818181" }
 icon_info = ""
 icon_warn = ""
 icon_error = ""
@@ -116,8 +116,8 @@ icon_error = ""
 rules = [
   { mime = "image/*", fg = "#f3e430" },
   { mime = "{audio,video}/*", fg = "#20a5ba" },
-  { mime = "application/pdf", fg = "#ff5555" },
-  { mime = "inode/empty", fg = "#4c566a" },
-  { url = "*", is = "orphan", fg = "#ff5555" },
+  { mime = "application/pdf", fg = "#fb007a" },
+  { mime = "inode/empty", fg = "#818181" },
+  { url = "*", is = "orphan", fg = "#fb007a" },
   { url = "*/", fg = "#20bbfc", bold = true },
 ]

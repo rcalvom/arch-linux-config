@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "profiles": {
+    "dock-three-screen": {
+      "label": "Dock - 3 displays",
+      "description": "Dell P2419H + Dell P2422H + Lenovo laptop panel",
+      "rows": [
+        ["description-prefix:Dell Inc. DELL P2419H 3B0FPD3", "description-prefix:Dell Inc. DELL P2422H 8V9K8T3"],
+        ["description-prefix:Lenovo Group Limited 0x41B5"]
+      ]
+    },
+    "desk-three-screen": {
+      "label": "Desk - 3 displays",
+      "description": "Dell P2422H HDFJ5V3 + Lenovo laptop panel + Dell P2422H H3G8XB3",
+      "rows": [
+        ["description-prefix:Dell Inc. DELL P2422H HDFJ5V3", "description-prefix:Lenovo Group Limited 0x41B5", "description-prefix:Dell Inc. DELL P2422H H3G8XB3"]
+      ]
+    }
+  }
+}

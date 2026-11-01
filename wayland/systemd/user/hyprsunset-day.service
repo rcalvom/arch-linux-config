@@ -3,4 +3,5 @@ Description=Reset Hyprsunset during daytime
 
 [Service]
 Type=oneshot
+TimeoutStartSec=30
 ExecStart=%h/.local/bin/hyprsunset-set identity

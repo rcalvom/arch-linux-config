@@ -1,0 +1,2 @@
+# Hardware support only. Enrollment and PAM changes remain manual.
+fprintd

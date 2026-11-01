@@ -13,12 +13,12 @@ dbus
 dosfstools
 e2fsprogs
 efibootmgr
+evince
 fd
 ffmpeg
 firefox
 file
 fzf
-gcc
 git
 greetd
 greetd-tuigreet
@@ -28,7 +28,6 @@ grub
 hyprland
 hypridle
 hyprlock
-hyprlauncher
 hyprpaper
 hyprsunset
 hyperv
@@ -36,7 +35,6 @@ iputils
 impala
 imagemagick
 iwd
-jdk-openjdk
 jq
 less
 libnotify
@@ -48,10 +46,7 @@ mpv
 mkinitcpio
 mkinitcpio-archiso
 nano
-networkmanager
-network-manager-applet
 neovim
-npm
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
@@ -74,7 +69,7 @@ resvg
 rofi
 slurp
 syslinux
-thunderbird
+terminus-font
 ttf-nerd-fonts-symbols
 ttf-ubuntu-font-family
 ttf-ubuntu-mono-nerd
@@ -87,6 +82,7 @@ waybar
 wget
 wdisplays
 wireplumber
+wireless-regdb
 wl-clipboard
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland

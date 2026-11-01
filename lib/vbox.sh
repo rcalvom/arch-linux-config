@@ -34,7 +34,7 @@ vbox_new_run_id() {
 }
 
 vbox_managed_vm_name_is_valid() {
-  [[ "$1" =~ ^archcfg-e2e-(build|test)-[a-z0-9][a-z0-9._-]{0,63}$ ]]
+  [[ "$1" =~ ^archcfg-e2e-(build|test)-[a-z0-9][a-z0-9._-]{0,63}(-vm|-safe)?$ ]]
 }
 
 vbox_require_managed_vm_name() {
@@ -361,12 +361,16 @@ vbox_bootstrap_official_ssh() {
   [[ -f "$key_path.pub" ]] || vbox_die "Missing public SSH key: $key_path.pub"
   public_key=$(<"$key_path.pub")
   [[ "$public_key" =~ ^ssh-ed25519[[:space:]][A-Za-z0-9+/=]+[[:space:]]archcfg-e2e$ ]] || vbox_die "Unexpected generated SSH public key format"
-  command="install -dm700 /root/.ssh; printf '%s\\n' '$public_key' > /root/.ssh/authorized_keys; chmod 600 /root/.ssh/authorized_keys; systemctl start sshd"
+  # The validated key contains only shell-safe words. Avoid quotes: input sent
+  # during console initialization can be truncated and leave a continuation prompt.
+  command="install -dm700 /root/.ssh; echo $public_key > /root/.ssh/authorized_keys; chmod 600 /root/.ssh/authorized_keys; systemctl start sshd"
   vbox_log_info "Waiting for the official ISO root console"
-  sleep 30
+  sleep 45
   deadline=$((SECONDS + timeout_seconds))
 
   while ((SECONDS < deadline)); do
+    VBoxManage controlvm "$vm" keyboardputscancode 1d 2e ae 9d
+    sleep 1
     vbox_console_run "$vm" "$command"
     if vbox_ssh root "$key_path" "$port" true >/dev/null 2>&1; then
       return 0

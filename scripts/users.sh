@@ -3,7 +3,6 @@ set -euo pipefail
 
 configure_initial_user() {
   local username=$1
-  local profile=${2:-}
   local password_file="/root/.archcfg-user-password"
   local home_dir
   local zsh_path
@@ -16,12 +15,7 @@ configure_initial_user() {
     user_exists=1
   fi
 
-  # Docker membership is root-equivalent, so only developer profiles receive it.
-  if [[ "$profile" == developer || "$profile" == virtualbox ]] && getent group docker >/dev/null; then
-    supplementary_groups+=",docker"
-  elif (( user_exists )) && getent group docker >/dev/null && [[ " $(id -nG "$username") " == *" docker "* ]]; then
-    gpasswd -d "$username" docker
-  fi
+  # Docker is root-equivalent: use sudo, and preserve existing memberships.
 
   if (( user_exists )); then
     usermod -aG "$supplementary_groups" "$username"

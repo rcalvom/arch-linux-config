@@ -1,0 +1,10 @@
+# Additional development tools, never selected implicitly.
+clang
+cmake
+ninja
+gdb
+valgrind
+go
+rust
+shellcheck
+shfmt

@@ -1,0 +1,5 @@
+# Selected, reviewed, pinned, but NOT approved for automatic execution.
+# See docs/recipe-ricardo.md. --defer-manual acknowledges these omissions.
+davinci-resolve|7d1bc43caefe97d4494704c520699c8c73ba460a
+flutter-bin|e4e335de1f1705be2e84b394ec55e9275842072b
+verapdf|56779236ad6854b8f6472bdbf9ef97f3a1e1239d

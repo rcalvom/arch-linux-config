@@ -2,61 +2,111 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-REPO_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
-BACKUP_ROOT=/var/lib/arch-linux-config/network-backups
-WIFI_INTERFACE="auto"
+REPO_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd -P)
+ROLLBACK_DELAY=10m
 
-# shellcheck source=lib/log.sh
-source "$REPO_DIR/lib/log.sh"
-# shellcheck source=lib/network.sh
-source "$REPO_DIR/lib/network.sh"
-
-usage() {
-  printf '%s\n' "Usage: apply-iwd-wlan0.sh [--wifi-interface <auto|name>]"
+die() {
+  printf '[ERROR] %s\n' "$*" >&2
+  exit 1
 }
 
 require_root() {
-  [[ $EUID -eq 0 ]] || die "Run this script with sudo"
-}
-
-require_file() {
-  [[ -f "$1" ]] || die "Missing required file: $1"
+  [[ ${EUID:-$(id -u)} -eq 0 ]] || die 'Run this script as root.'
 }
 
 backup_path() {
-  local path=$1
-  local destination="$BACKUP_DIR/files$path"
+  local source=$1
+  local destination=$2
 
-  if [[ -e "$path" || -L "$path" ]]; then
+  if [[ -e "$source" || -L "$source" ]]; then
     install -dm700 "$(dirname -- "$destination")"
-    cp -a -- "$path" "$destination"
+    cp -a --no-dereference "$source" "$destination"
   else
-    printf '%s\n' "$path" >> "$BACKUP_DIR/absent-paths"
+    : >"$destination.absent"
   fi
 }
 
-save_enabled_state() {
-  local unit=$1
+write_personal_profile() {
+  local connection=$1
+  local ssid
+  local passphrase
+  local profile_path
+  local safe_ssid_pattern='^[[:alnum:]_ -]+$'
 
-  if systemctl is-enabled --quiet "$unit"; then
-    touch "$BACKUP_DIR/enabled-$unit"
-  fi
+  ssid=$(nmcli -g 802-11-wireless.ssid connection show "$connection")
+  passphrase=$(nmcli --show-secrets -g 802-11-wireless-security.psk connection show "$connection")
+  [[ -n "$ssid" && -n "$passphrase" ]] || die "NetworkManager profile $connection has no usable Wi-Fi passphrase"
+  [[ "$ssid" =~ $safe_ssid_pattern ]] || die "SSID $ssid needs an explicitly encoded IWD filename"
+  profile_path="/var/lib/iwd/$ssid.psk"
+  umask 077
+  printf '[Settings]\nAutoConnect=true\n\n[Security]\nPassphrase=%s\n' "$passphrase" >"$profile_path"
+  chown root:root "$profile_path"
+  chmod 600 "$profile_path"
+  unset passphrase
+}
+
+write_eduroam_profile() {
+  local connection=$1
+  local identity
+  local password
+  local ca_path
+  local domain
+
+  identity=$(nmcli -g 802-1x.identity connection show "$connection")
+  password=$(nmcli --show-secrets -g 802-1x.password connection show "$connection")
+  ca_path=$(nmcli -g 802-1x.ca-cert connection show "$connection")
+  domain=$(nmcli -g 802-1x.domain-suffix-match connection show "$connection")
+  ca_path=${ca_path#file://}
+  [[ -n "$identity" && -n "$password" && -n "$ca_path" && -f "$ca_path" && -n "$domain" ]] || die 'The eduroam NetworkManager profile is missing identity, password, CA, or domain validation'
+  install -Dm644 "$ca_path" /etc/iwd/eduroam-ca.pem
+  umask 077
+  cat > /var/lib/iwd/eduroam.8021x <<EOF
+[Settings]
+AutoConnect=true
+
+[Security]
+EAP-Method=PEAP
+EAP-Identity=$identity
+EAP-PEAP-CACert=/etc/iwd/eduroam-ca.pem
+EAP-PEAP-ServerDomainMask=$domain
+EAP-PEAP-Phase2-Method=MSCHAPV2
+EAP-PEAP-Phase2-Identity=$identity
+EAP-PEAP-Phase2-Password=$password
+EOF
+  chown root:root /var/lib/iwd/eduroam.8021x
+  chmod 600 /var/lib/iwd/eduroam.8021x
+  unset password
+}
+
+find_eduroam_connection() {
+  local connection
+
+  while IFS= read -r connection; do
+    [[ $(nmcli -g 802-11-wireless.ssid connection show "$connection") == eduroam ]] && {
+      printf '%s\n' "$connection"
+      return 0
+    }
+  done < <(nmcli -t -f NAME,TYPE connection show | while IFS=: read -r name type; do
+    [[ "$type" == 802-11-wireless ]] && printf '%s\n' "$name"
+  done)
+  return 1
 }
 
 main() {
-  local confirmation
   local wifi_interface
-  local selection_status
+  local active_connection
+  local eduroam_connection
+  local backup_dir
 
-  while [[ $# -gt 0 ]]; do
+  while (($#)); do
     case "$1" in
-      --wifi-interface)
-        [[ -n "${2-}" ]] || die "--wifi-interface requires a value"
-        WIFI_INTERFACE=$2
+      --rollback-delay)
+        [[ -n ${2-} ]] || die '--rollback-delay requires a value'
+        ROLLBACK_DELAY=$2
         shift 2
         ;;
       --help)
-        usage
+        printf 'Usage: %s [--rollback-delay SYSTEMD-TIME]\n' "${0##*/}"
         exit 0
         ;;
       *)
@@ -66,81 +116,62 @@ main() {
   done
 
   require_root
-  require_file "$REPO_DIR/network/iwd/main.conf"
-  require_file "$REPO_DIR/network/systemd/host-network-online.service"
-  require_file "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.service"
-  require_file "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.path"
-  require_file "$REPO_DIR/network/bin/archcfg-wait-network-online"
-  require_file "$REPO_DIR/network/bin/archcfg-reset-resolved-if-stub"
-  command -v iwctl >/dev/null 2>&1 || die "Install iwd before migration"
-  command -v impala >/dev/null 2>&1 || die "Install impala before migration"
-  command -v resolvectl >/dev/null 2>&1 || die "systemd-resolved is required"
-  if wifi_interface=$(select_wifi_interface "$WIFI_INTERFACE"); then
-    :
-  else
-    selection_status=$?
-    case "$selection_status" in
-      1) die "No Wi-Fi interface was detected" ;;
-      2) die "Multiple Wi-Fi interfaces were detected; pass --wifi-interface <name>" ;;
-      4) die "Wi-Fi interface $WIFI_INTERFACE is not wireless" ;;
-      *) die "Invalid Wi-Fi interface: $WIFI_INTERFACE" ;;
-    esac
-  fi
-  [[ "$wifi_interface" != "none" ]] || die "--wifi-interface none cannot migrate Wi-Fi"
-  wifi_interface_is_wireless "$wifi_interface" || die "Wi-Fi interface $wifi_interface was not found"
+  [[ ! -e /sys/class/net/cscotun0 ]] || die 'Disconnect Cisco Secure Client before migrating.'
+  wifi_interface=$(nmcli -t -f DEVICE,TYPE,STATE device status | awk -F: '$2 == "wifi" && $3 == "connected" { print $1; exit }')
+  [[ -n "$wifi_interface" ]] || die 'No NetworkManager-connected Wi-Fi interface was found.'
+  active_connection=$(nmcli -g GENERAL.CONNECTION device show "$wifi_interface")
+  [[ -n "$active_connection" && "$active_connection" != '--' ]] || die 'Could not identify the active NetworkManager Wi-Fi profile.'
 
-  if ip link show cscotun0 >/dev/null 2>&1 && ip link show cscotun0 | grep -q '<.*UP'; then
-    die "Disconnect the Cisco VPN before migrating Wi-Fi"
-  fi
+  backup_dir="/var/lib/arch-linux-config/network-backups/$(date +%Y%m%d-%H%M%S)-iwd-only"
+  install -dm700 "$backup_dir"
+  backup_path /etc/resolv.conf "$backup_dir/resolv.conf"
+  backup_path /etc/iwd "$backup_dir/iwd"
+  backup_path /etc/systemd/network "$backup_dir/network"
+  backup_path /etc/systemd/system/iwd.service "$backup_dir/iwd.service"
+  backup_path /etc/systemd/system/host-network-online.service "$backup_dir/host-network-online.service"
+  backup_path /etc/systemd/system/archcfg-reset-resolved-if-stub.service "$backup_dir/archcfg-reset-resolved-if-stub.service"
+  backup_path /etc/systemd/system/archcfg-reset-resolved-if-stub.path "$backup_dir/archcfg-reset-resolved-if-stub.path"
+  backup_path /usr/local/libexec/archcfg-wait-network-online "$backup_dir/archcfg-wait-network-online"
+  backup_path /usr/local/libexec/archcfg-reset-resolved-if-stub "$backup_dir/archcfg-reset-resolved-if-stub"
+  systemctl is-enabled NetworkManager.service >"$backup_dir/networkmanager.enabled" 2>&1 || true
+  systemctl is-enabled iwd.service >"$backup_dir/iwd.enabled" 2>&1 || true
+  cp -a /etc/NetworkManager/system-connections "$backup_dir/networkmanager-connections"
 
-  log_warn "This will disconnect NetworkManager from $wifi_interface and hand it to IWD/Impala."
-  log_warn "Keep this terminal open and have your Wi-Fi passphrase available."
-  printf 'Type MIGRATE to continue: '
-  read -r confirmation
-  [[ "$confirmation" == "MIGRATE" ]] || die "Migration cancelled"
-
-  BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%dT%H%M%S)"
-  install -dm700 "$BACKUP_DIR"
-  : > "$BACKUP_DIR/absent-paths"
-
-  backup_path /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
-  backup_path /etc/iwd/main.conf
-  backup_path /etc/systemd/system/host-network-online.service
-  backup_path /etc/systemd/system/archcfg-reset-resolved-if-stub.service
-  backup_path /etc/systemd/system/archcfg-reset-resolved-if-stub.path
-  backup_path /usr/local/libexec/archcfg-wait-network-online
-  backup_path /usr/local/libexec/archcfg-reset-resolved-if-stub
-  backup_path /etc/resolv.conf
-  save_enabled_state NetworkManager-wait-online.service
-  save_enabled_state systemd-resolved.service
-  save_enabled_state archcfg-reset-resolved-if-stub.path
-
-  log_info "Installing IWD network configuration"
-  write_iwd_networkmanager_config "$wifi_interface" /etc/NetworkManager/conf.d/10-iwd-wlan0.conf || die "Could not write NetworkManager IWD configuration"
   install -Dm644 "$REPO_DIR/network/iwd/main.conf" /etc/iwd/main.conf
+  install -Dm644 "$REPO_DIR/network/systemd/network/20-wired.network" /etc/systemd/network/20-wired.network
   install -Dm644 "$REPO_DIR/network/systemd/host-network-online.service" /etc/systemd/system/host-network-online.service
   install -Dm644 "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.service" /etc/systemd/system/archcfg-reset-resolved-if-stub.service
   install -Dm644 "$REPO_DIR/network/systemd/archcfg-reset-resolved-if-stub.path" /etc/systemd/system/archcfg-reset-resolved-if-stub.path
   install -Dm755 "$REPO_DIR/network/bin/archcfg-wait-network-online" /usr/local/libexec/archcfg-wait-network-online
   install -Dm755 "$REPO_DIR/network/bin/archcfg-reset-resolved-if-stub" /usr/local/libexec/archcfg-reset-resolved-if-stub
-  ln -sfn /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+  install -Dm755 "$REPO_DIR/scripts/rollback-iwd-wlan0.sh" /usr/local/libexec/archcfg-rollback-iwd-network
+  write_personal_profile "$active_connection"
+  if eduroam_connection=$(find_eduroam_connection); then
+    write_eduroam_profile "$eduroam_connection"
+  else
+    die 'No eduroam NetworkManager profile was found.'
+  fi
+  ln -sfn "$backup_dir" /var/lib/arch-linux-config/network-backups/current-iwd-only
+  install -dm700 /var/lib/arch-linux-config/network-cutover
+  : >/var/lib/arch-linux-config/network-cutover/armed
 
   systemctl daemon-reload
-  systemctl disable --now NetworkManager-wait-online.service
-  systemctl stop iwd.service
-  systemctl restart NetworkManager.service
-  systemctl stop wpa_supplicant.service
-  systemctl enable --now systemd-resolved.service
-  systemctl enable iwd.service
+  systemctl unmask iwd.service
+  systemctl enable systemd-resolved.service systemd-networkd.service iwd.service host-network-online.service archcfg-reset-resolved-if-stub.path
+  systemctl disable systemd-networkd-wait-online.service NetworkManager-wait-online.service
+  systemd-run --unit=archcfg-network-rollback --on-active="$ROLLBACK_DELAY" /usr/local/libexec/archcfg-rollback-iwd-network "$backup_dir"
+
+  rm -f /etc/resolv.conf
+  ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+  systemctl start systemd-resolved.service systemd-networkd.service
+  systemctl start host-network-online.service archcfg-reset-resolved-if-stub.path
+  systemctl stop NetworkManager.service
+  systemctl stop wpa_supplicant.service || true
+  systemctl mask NetworkManager.service NetworkManager-wait-online.service NetworkManager-dispatcher.service wpa_supplicant.service
   systemctl start iwd.service
-  systemctl enable host-network-online.service
-  systemctl enable --now archcfg-reset-resolved-if-stub.path
 
-  systemctl is-active --quiet NetworkManager.service || die "NetworkManager did not restart"
-  systemctl is-active --quiet iwd.service || die "IWD did not start"
-
-  log_info "IWD now owns $wifi_interface. Connect using Impala."
-  log_info "If connectivity fails, run: sudo $REPO_DIR/scripts/rollback-iwd-wlan0.sh --backup $BACKUP_DIR"
+  printf '[INFO] IWD cutover started for %s. Rollback is armed for %s.\n' "$wifi_interface" "$ROLLBACK_DELAY"
+  printf '[INFO] Validate Wi-Fi and DNS, then run: sudo rm /var/lib/arch-linux-config/network-cutover/armed && sudo systemctl stop archcfg-network-rollback.timer\n'
 }
 
 main "$@"

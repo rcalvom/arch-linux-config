@@ -1,7 +1,8 @@
 # GRUB boot loader configuration
 
 GRUB_DEFAULT=0
-GRUB_TIMEOUT=-1
+# Keep the menu visible. Press an arrow key immediately to stop the countdown.
+GRUB_TIMEOUT=3
 GRUB_DISTRIBUTOR="Arch"
 # Bind fbcon to the native framebuffer before tuigreet performs its first draw.
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet fbcon=nodefer"
@@ -20,8 +21,8 @@ GRUB_TIMEOUT_STYLE=menu
 # Uncomment to use basic console
 GRUB_TERMINAL_INPUT=console
 
-# Uncomment to disable graphical terminal
-#GRUB_TERMINAL_OUTPUT=console
+# Use gfxterm for the theme; set console for plain-text recovery.
+GRUB_TERMINAL_OUTPUT=gfxterm
 
 # Let GRUB choose a native supported graphics mode to avoid scaled, blurry text.
 GRUB_GFXMODE=auto
@@ -33,13 +34,13 @@ GRUB_GFXPAYLOAD_LINUX=keep
 # format "root=/dev/xxx" instead of "root=/dev/disk/by-uuid/xxx"
 #GRUB_DISABLE_LINUX_UUID=true
 
-# Uncomment to disable generation of recovery mode menu entries
-GRUB_DISABLE_RECOVERY=true
+# Keep recovery entries available in Advanced options.
+GRUB_DISABLE_RECOVERY=false
 
 # Uncomment and set to the desired menu colors.  Used by normal and wallpaper
 # modes only.  Entries specified as foreground/background.
-GRUB_COLOR_NORMAL="light-blue/black"
-GRUB_COLOR_HIGHLIGHT="light-cyan/blue"
+GRUB_COLOR_NORMAL="white/black"
+GRUB_COLOR_HIGHLIGHT="white/blue"
 
 # Uncomment one of them for the gfx desired, a image background or a gfxtheme
 GRUB_THEME="/usr/share/grub/themes/arch/theme.txt"

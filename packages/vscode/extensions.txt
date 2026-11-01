@@ -1,0 +1,11 @@
+# Reviewed optional extension IDs only; no versions, state, or AI integrations.
+pkief.material-icon-theme
+ms-python.python
+ms-python.black-formatter
+ms-vscode.cpptools
+github.vscode-codeql
+mechatroner.rainbow-csv
+reditorsupport.r-syntax
+ms-toolsai.jupyter
+tomoki1207.pdf
+terrastruct.d2

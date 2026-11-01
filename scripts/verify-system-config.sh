@@ -6,7 +6,6 @@ repo_dir=$(cd -- "$SCRIPT_DIR/.." && pwd -P)
 root_dir=/
 root_prefix=
 profile=developer
-wifi_interface=auto
 grub_profile=auto
 show_diff=false
 failures=0
@@ -20,7 +19,6 @@ Options:
   --repo PATH             Repository path. Default: repository containing this script.
   --root PATH             Installed system root. Default: /.
   --profile NAME          minimal, desktop, developer, or virtualbox. Default: developer.
-  --wifi-interface VALUE  auto, none, or an interface name. Default: auto.
   --grub-profile VALUE    auto, graphical, classic, or none. Default: auto.
   --diff                  Show content differences.
   --help                  Print this help.
@@ -222,8 +220,10 @@ check_disabled_unit() {
 
 check_enabled_global_user_unit() {
   local unit=$1
+  local socket=${2:-}
 
-  if ! global_user_unit_is_enabled "$unit"; then
+  if ! global_user_unit_is_enabled "$unit" &&
+    { [[ -z "$socket" ]] || ! global_user_unit_is_enabled "$socket"; }; then
     report DISABLED "global user unit: $unit"
     ((failures += 1))
   fi
@@ -238,67 +238,35 @@ profile_has_desktop() {
   return 1
 }
 
-resolve_wifi_interface() {
-  local selection_status
-
-  if selected_wifi_interface=$(select_wifi_interface "$wifi_interface"); then
-    return 0
-  fi
-
-  selection_status=$?
-  case "$selection_status" in
-    1)
-      report WARN "no Wi-Fi interface detected; skipping IWD ownership checks"
-      ((warnings += 1))
-      ;;
-    2)
-      report WARN "multiple Wi-Fi interfaces detected; rerun with --wifi-interface <name>"
-      ((warnings += 1))
-      ;;
-    *)
-      report ERROR "invalid Wi-Fi interface: $wifi_interface"
-      ((failures += 1))
-      ;;
-  esac
-  selected_wifi_interface=
-  return 1
-}
-
 verify_networking() {
-  local expected_config
-
-  if [[ -z "$selected_wifi_interface" ]]; then
-    return 0
-  fi
-
-  if [[ "$selected_wifi_interface" == none ]]; then
-    check_absent "$root_prefix/etc/NetworkManager/conf.d/10-iwd-wlan0.conf"
-    check_absent "$root_prefix/etc/systemd/system/host-network-online.service"
-    check_absent "$root_prefix/etc/systemd/system/archcfg-reset-resolved-if-stub.service"
-    check_absent "$root_prefix/etc/systemd/system/archcfg-reset-resolved-if-stub.path"
-    check_absent "$root_prefix/usr/local/libexec/archcfg-wait-network-online"
-    check_absent "$root_prefix/usr/local/libexec/archcfg-reset-resolved-if-stub"
-    check_disabled_unit iwd.service
-    check_disabled_unit host-network-online.service
-    check_disabled_unit archcfg-reset-resolved-if-stub.path
-    check_enabled_unit NetworkManager-wait-online.service
-    return 0
-  fi
-
-  expected_config=$(iwd_networkmanager_config "$selected_wifi_interface")
-  compare_content "$expected_config" "$root_prefix/etc/NetworkManager/conf.d/10-iwd-wlan0.conf" 0644
   compare_file "$repo_dir/network/iwd/main.conf" "$root_prefix/etc/iwd/main.conf" 0644
+  compare_file "$repo_dir/network/systemd/network/20-wired.network" "$root_prefix/etc/systemd/network/20-wired.network" 0644
   compare_file "$repo_dir/network/systemd/host-network-online.service" "$root_prefix/etc/systemd/system/host-network-online.service" 0644
   compare_file "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.service" "$root_prefix/etc/systemd/system/archcfg-reset-resolved-if-stub.service" 0644
   compare_file "$repo_dir/network/systemd/archcfg-reset-resolved-if-stub.path" "$root_prefix/etc/systemd/system/archcfg-reset-resolved-if-stub.path" 0644
   compare_file "$repo_dir/network/bin/archcfg-wait-network-online" "$root_prefix/usr/local/libexec/archcfg-wait-network-online" 0755
   compare_file "$repo_dir/network/bin/archcfg-reset-resolved-if-stub" "$root_prefix/usr/local/libexec/archcfg-reset-resolved-if-stub" 0755
-  compare_link /run/systemd/resolve/stub-resolv.conf "$root_prefix/etc/resolv.conf"
+  # VPN clients may temporarily own resolv.conf. Never print its contents,
+  # backup contents, nameservers, search domains, or alternate symlink targets.
+  if [[ -e "$root_prefix/etc/resolv.conf.vpnbackup" || -L "$root_prefix/etc/resolv.conf.vpnbackup" ]]; then
+    report WARN "VPN resolver backup present; resolver ownership is temporary or stale (contents withheld)"
+    ((warnings += 1))
+    if [[ ! -e "$root_prefix/etc/resolv.conf" && ! -L "$root_prefix/etc/resolv.conf" ]]; then
+      report MISSING "resolver configuration"
+      ((failures += 1))
+    fi
+  else
+    compare_link /run/systemd/resolve/stub-resolv.conf "$root_prefix/etc/resolv.conf"
+  fi
   check_enabled_unit iwd.service
+  check_enabled_unit systemd-networkd.service
   check_enabled_unit systemd-resolved.service
   check_enabled_unit host-network-online.service
   check_enabled_unit archcfg-reset-resolved-if-stub.path
+  check_disabled_unit NetworkManager.service
   check_disabled_unit NetworkManager-wait-online.service
+  check_disabled_unit systemd-networkd-wait-online.service
+  check_absent "$root_prefix/etc/NetworkManager/conf.d/10-iwd-wlan0.conf"
 }
 
 verify_charge_limits() {
@@ -306,9 +274,11 @@ verify_charge_limits() {
   compare_file "$repo_dir/power/charge-limit.conf" "$root_prefix/etc/archcfg/charge-limit.conf" 0644
   compare_file "$repo_dir/power/bin/archcfg-charge-limit" "$root_prefix/usr/local/libexec/archcfg-charge-limit" 0755
   compare_file "$repo_dir/power/systemd/archcfg-charge-limit.service" "$root_prefix/etc/systemd/system/archcfg-charge-limit.service" 0644
+  compare_file "$repo_dir/power/systemd/archcfg-charge-limit.timer" "$root_prefix/etc/systemd/system/archcfg-charge-limit.timer" 0644
   compare_file "$repo_dir/power/udev/99-archcfg-charge-limit.rules" "$root_prefix/etc/udev/rules.d/99-archcfg-charge-limit.rules" 0644
   compare_file "$repo_dir/power/upower/90-archcfg-critical-battery.conf" "$root_prefix/etc/UPower/UPower.conf.d/90-archcfg-critical-battery.conf" 0644
   check_enabled_unit archcfg-charge-limit.service
+  check_enabled_unit archcfg-charge-limit.timer
   check_absent "$root_prefix/etc/systemd/system/battery-thresholds.service"
   check_absent "$root_prefix/etc/systemd/system/battery-thresholds.timer"
   check_absent "$root_prefix/usr/local/bin/battery_thresholds.sh"
@@ -340,8 +310,8 @@ verify_desktop() {
   check_absent "$root_prefix/etc/greetd/regreet.toml"
   check_enabled_unit bluetooth.service
   check_enabled_unit greetd.service
-  check_enabled_global_user_unit pipewire.service
-  check_enabled_global_user_unit pipewire-pulse.service
+  check_enabled_global_user_unit pipewire.service pipewire.socket
+  check_enabled_global_user_unit pipewire-pulse.service pipewire-pulse.socket
   check_enabled_global_user_unit wireplumber.service
 
   if [[ "$profile" == developer || "$profile" == virtualbox ]]; then
@@ -428,11 +398,6 @@ while (($#)); do
       profile=$2
       shift 2
       ;;
-    --wifi-interface)
-      (($# >= 2)) || { usage >&2; exit 2; }
-      wifi_interface=$2
-      shift 2
-      ;;
     --grub-profile)
       (($# >= 2)) || { usage >&2; exit 2; }
       grub_profile=$2
@@ -458,9 +423,6 @@ root_dir=$(cd -- "$root_dir" && pwd -P)
 if [[ "$root_dir" != / ]]; then
   root_prefix=$root_dir
 fi
-# shellcheck source=lib/network.sh
-source "$repo_dir/lib/network.sh"
-
 case "$profile" in
   minimal | desktop | developer | virtualbox)
     ;;
@@ -469,11 +431,6 @@ case "$profile" in
     exit 2
     ;;
 esac
-
-wifi_interface_name_is_valid "$wifi_interface" || [[ "$wifi_interface" == auto || "$wifi_interface" == none ]] || {
-  report ERROR "invalid Wi-Fi interface: $wifi_interface"
-  exit 2
-}
 
 case "$grub_profile" in
   auto | graphical | classic | none)
@@ -484,14 +441,10 @@ case "$grub_profile" in
     ;;
 esac
 
-selected_wifi_interface=
-if profile_has_desktop; then
-  resolve_wifi_interface || true
-fi
-
-check_enabled_unit NetworkManager.service
 verify_networking
 verify_charge_limits
+check_enabled_unit fstrim.timer
+check_enabled_unit systemd-timesyncd.service
 if profile_has_desktop; then
   verify_desktop
 fi

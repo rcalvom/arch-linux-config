@@ -1,6 +1,6 @@
 # Dock-Aware Charge Limits
 
-`archcfg-charge-limit.service` sets battery charge thresholds through the kernel's standard `charge_control_*_threshold` sysfs interface. It is an event-driven system service, not a timer or a persistent daemon.
+`archcfg-charge-limit.service` sets battery charge thresholds through the kernel's standard `charge_control_*_threshold` sysfs interface. It is a oneshot service reconciled by `archcfg-charge-limit.timer`, with udev activation hints; it is not a persistent daemon.
 
 ## Policy
 
@@ -9,17 +9,17 @@
 - Direct AC power and battery operation use a 90% charge ceiling.
 - The start threshold is 0%, so charging resumes whenever capacity is below the selected ceiling.
 
-The default pattern, `dock`, detects the connected Dell dock without hard-coding its USB bus number or connector name.
+The default pattern, `dock`, matches USB product strings case-insensitively without hard-coding a bus number or connector name. A matching USB device plus an online `Mains` supply selects the dock policy; this does not prove that the dock supplies the power. A separate charger with a USB-connected dock can select the same policy.
 
 ## Events
 
-The udev rule requests the system service when:
+Activation and reconciliation use:
 
-- AC or battery power-supply state changes.
-- A USB device is added or removed.
-- The system reaches `multi-user.target` during boot.
+- Power-supply and USB udev activation hints.
+- Service enablement at `multi-user.target` during boot.
+- A timer scheduled 10 seconds after the previous service invocation finishes, with 1-second accuracy.
 
-No periodic polling or fixed startup delay is used.
+The helper samples the dock/AC policy twice, 2 seconds apart. If the samples disagree, it leaves thresholds unchanged until a later invocation. Udev alone does not reliably retrigger an already active device dependency on change or removal; the timer handles missed events and repeated transitions. See [system policies](system-policies.md) for timing and unsupported-hardware limits.
 
 The service runs after UPower so it overrides any static UPower hardware default with the selected dock-aware value.
 
@@ -50,15 +50,11 @@ done
 
 ## Installation And Verification
 
-For an existing system, install the charge-limit service, the 3% critical-battery policy, and remove the legacy one-minute `battery-thresholds.timer` with:
+Fresh target installation deploys the service and timer through the system configuration flow. For an explicitly approved existing-system migration, `sudo bash scripts/apply-charge-limits.sh` installs and enables both units, reloads udev rules and removes the legacy one-minute `battery-thresholds.timer`. This source fix does not mean the physical host has been migrated.
 
-```bash
-sudo ./scripts/apply-charge-limits.sh
-```
+The helper requires an already installed `upower`; it does not install packages. Existing charge-limit and UPower policy files are preserved, including local values and permissions. Missing policies receive repository defaults. Changed managed helpers, units and rules, and removed legacy files, are backed up before mutation in a unique private directory under `/var/lib/arch-linux-config/charge-limit-backups/`; original absence is recorded. Identical files are not rewritten and a no-change rerun creates no backup, but service and udev reconciliation still runs. Redirected destinations are rejected.
 
-Install `upower` first when applying this migration to a system that was not created from these profiles.
-
-The migration stores replaced files under `/var/lib/arch-linux-config/charge-limit-backups/`.
+This is a system-changing helper, not a dry-run command. It enables the timer and service, restarts an already active UPower service and can set real battery thresholds. Its backups cover files only: there is no automatic rollback or restoration of previous service enablement/runtime state. Review preserved policies and unit overrides separately. `apply-config.sh` does not invoke this helper or deploy system policies.
 
 Verify the selected policy without modifying thresholds:
 
@@ -70,6 +66,7 @@ Check the service and the active hardware values:
 
 ```bash
 systemctl status archcfg-charge-limit.service
+systemctl status archcfg-charge-limit.timer
 cat /sys/class/power_supply/BAT0/charge_control_start_threshold
 cat /sys/class/power_supply/BAT0/charge_control_end_threshold
 ```
@@ -79,3 +76,5 @@ Inspect the effective UPower policy with:
 ```bash
 upower -d
 ```
+
+These are repository defaults, not a statement of current host state. See the dated [deployment matrix](host-deployment.md) before treating pending timer work as complete.

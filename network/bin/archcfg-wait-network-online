@@ -3,7 +3,7 @@ set -euo pipefail
 
 for _ in {1..60}; do
   if /usr/bin/ip -4 route show default | /usr/bin/grep -q '^default ' &&
-    /usr/bin/resolvectl dns | /usr/bin/grep -q '^Link '; then
+    /usr/bin/resolvectl --cache=no --type=A query archlinux.org >/dev/null 2>&1; then
     exit 0
   fi
 

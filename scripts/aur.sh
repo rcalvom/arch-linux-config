@@ -4,6 +4,11 @@ set -euo pipefail
 aur_package_files_for_profile() {
   local profile=$1
 
+  if [[ "${RECIPE:-none}" == ricardo ]]; then
+    printf '%s\n' packages/recipes/ricardo-aur.txt
+    return
+  fi
+
   case "$profile" in
     developer | virtualbox)
       printf '%s\n' "packages/aur.txt"
@@ -13,6 +18,11 @@ aur_package_files_for_profile() {
 
 aur_dependency_files_for_profile() {
   local profile=$1
+
+  if [[ "${RECIPE:-none}" == ricardo ]]; then
+    printf '%s\n' packages/recipes/ricardo-aur-deps.txt
+    return
+  fi
 
   case "$profile" in
     developer | virtualbox)
@@ -103,13 +113,33 @@ build_aur_package() {
     git -C "$package_dir" rev-parse HEAD)
   [[ "$checked_out_revision" == "$revision" ]] || die "AUR revision mismatch for $package"
 
-  runuser -u "$username" -- env HOME="$build_home" XDG_CACHE_HOME="$build_root/cache" \
-    bash -c 'cd -- "$1" && makepkg --noconfirm --cleanbuild --nodeps' bash "$package_dir"
+  if [[ "$package" == google-cloud-cli ]]; then
+    [[ "$revision" == ed2a1ea507b457fcfbe554d37210f38c7baef180 ]] || die 'gcloud split selection requires review for this pin'
+    # makepkg has no --pkg option. Restrict the reviewed split recipe explicitly;
+    # otherwise its optional GKE package executes an additional component download.
+    printf '\npkgname=(google-cloud-cli)\n' >> "$package_dir/PKGBUILD"
+  fi
+
+  runuser -u "$username" -- env HOME="$build_home" GNUPGHOME="$build_home/.gnupg" XDG_CACHE_HOME="$build_root/cache" \
+    bash -c 'cd -- "$1" && makepkg --noconfirm --cleanbuild' bash "$package_dir"
 
   while IFS= read -r -d '' artifact; do
-    built_packages+=("$artifact")
+    local built_name package_info
+    package_info=$(pacman -Qp "$artifact") || return 1
+    read -r built_name _ <<< "$package_info"
+    [[ "$built_name" != "$package" ]] || built_packages+=("$artifact")
   done < <(find "$package_dir" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -print0)
   [[ "${#built_packages[@]}" -gt 0 ]] || die "No built package artifact found for AUR package: $package"
+
+  if [[ "$package" == chatgpt-desktop ]]; then
+    local listing
+    for artifact in "${built_packages[@]}"; do
+      listing=$(bsdtar -tf "$artifact") || return 1
+      if grep -Eq '^(\./)?usr/bin/codex$' <<< "$listing"; then
+        die 'ChatGPT archive would replace standalone Codex; refusing installation'
+      fi
+    done
+  fi
 
   pacman -U --needed --noconfirm "${built_packages[@]}"
 }
@@ -153,7 +183,13 @@ install_aur_packages_for_profile() (
   trap 'exit 131' QUIT
   trap 'exit 143' TERM
   chown "$username:$username" "$build_root"
-  install -dm700 -o "$username" -g "$username" "$build_root/home" "$build_root/cache"
+  install -dm700 -o "$username" -g "$username" "$build_root/home" "$build_root/home/.gnupg" "$build_root/cache"
+
+  if [[ "${RECIPE:-none}" == ricardo ]]; then
+    # Full reviewed public fingerprint; no --skippgpcheck or inherited host keyring.
+    runuser -u "$username" -- env HOME="$build_root/home" GNUPGHOME="$build_root/home/.gnupg" \
+      gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys E1096BCBFF6D418796DE78515384CE82BA52C83A
+  fi
 
   for index in "${!packages[@]}"; do
     build_aur_package "$username" "$build_root" "${packages[index]}" "${revisions[index]}"

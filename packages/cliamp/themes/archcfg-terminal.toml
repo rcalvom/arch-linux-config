@@ -1,0 +1,7 @@
+# Uses exact colors from the Alacritty palette with blue as the accent.
+accent = "#008ec4"
+bright_fg = "#f1f1f1"
+fg = "#d6d6d6"
+green = "#10a778"
+yellow = "#f3e430"
+red = "#fb007a"

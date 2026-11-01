@@ -1,158 +1,240 @@
-# Arch Linux Configuration Repository
+# Arch Linux Configuration
 
-**Author:** Ricardo Andres Calvo Mendez<br>
-**Last Updated:** 2026-07-25
+Installation scripts, package manifests, and configuration files for an Arch Linux
+system with a Hyprland desktop. The repository defines the system configuration
+and documents its installation, maintenance, and recovery procedures.
 
----
+The installer is written in Bash and targets x86_64 UEFI systems. It supports
+installation on a manually prepared target and automatic installation on an
+explicitly selected disposable VM disk. A separate configuration tool applies
+user settings to existing installations.
+
+Maintainer: Ricardo Calvo. License: [MIT](LICENSE).
+
+## Contents
+
+- [Overview](#overview)
+- [Installation and Configuration](#installation-and-configuration)
+- [Profiles and Package Selection](#profiles-and-package-selection)
+- [Supported Scope](#supported-scope)
+- [Repository Structure](#repository-structure)
+- [Documentation](#documentation)
+- [Development and Contributions](#development-and-contributions)
+- [License](#license)
 
 ## Overview
 
-This repository contains a curated and reproducible set of configurations for an Arch Linux system.
-Its purpose is to document, version, and automate system setup across installations, enabling fast recovery, consistency, and incremental improvements over time.
+| Component | Scope |
+| --- | --- |
+| Installation | Safe and VM modes share the same post-install configuration. |
+| Package selection | Minimal, desktop, developer, and VirtualBox profiles, with optional package sets. |
+| Desktop configuration | Hyprland, Waybar, Rofi, Mako, greetd/tuigreet, Alacritty, Neovim, and Yazi. |
+| Configuration management | Change previews, preservation of differing files, explicit replacement, backups, and conflict-aware rollback. |
+| Recovery | Package manifests, configuration inventories, deployment records, and reconstruction procedures. |
+| Validation | Local regression tests and disposable VirtualBox installations, with an optional archiso build workflow. |
 
-The active installer target is a UEFI Arch Linux system with a Hyprland/Wayland desktop. Qtile files are kept only as legacy reference and are not installed by the new installer path.
+Generic profiles, Ricardo's personal package recipe, and hardware-specific
+settings are separate choices. Credentials, account enrollment, model downloads,
+and SDK license acceptance remain outside automatic provisioning.
 
-The installed display manager is `greetd` with `tuigreet`. It starts Hyprland by default and exposes the system session menu from `/usr/share/wayland-sessions` and `/usr/share/xsessions`, so an existing Qtile session remains selectable when Qtile is installed separately.
-Greeter theming notes live in `docs/greeter.md`.
+## Installation and Configuration
 
----
+Run these commands from the repository root. Installation commands belong in an
+Arch live environment; previews and configuration-only workflows can run on an
+existing system.
 
-## Quick Start
-
-Safe install mode assumes the target system is already partitioned, formatted, and mounted:
-
-```bash
-sudo ./install.sh --target /mnt --profile developer
-```
-
-VM mode is destructive and requires an explicit disk:
-
-```bash
-sudo ./install.sh --vm --disk /dev/sda --profile virtualbox
-```
-
-For repeated disposable VM testing:
+### Package preview
 
 ```bash
-sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes
+bash install.sh --profile developer --dry-run
+bash install.sh --help
 ```
 
-Available profiles: `minimal`, `desktop`, `developer`, `virtualbox`.
+The package preview requires no root privileges, network access, or target writes.
 
-Optional AUR packages for developer-style profiles are opt-in:
+### Installation modes
+
+**Safe mode** requires a partitioned, formatted, and mounted target, as described
+in the [safe-install guide](docs/safe-install.md). The installer validates the
+mount layout and does not partition or format disks in this mode.
 
 ```bash
-sudo ./install.sh --vm --disk /dev/sda --profile virtualbox --yes --aur
+sudo bash install.sh --target /mnt --profile developer
 ```
 
-`packages/aur.txt` pins each reviewed AUR repository revision. The installer builds those revisions as the regular user without granting temporary passwordless root access, then installs only the resulting local packages as root. Their reviewed official dependencies are declared in `packages/aur-deps.txt`; adding or updating an AUR package requires reviewing its PKGBUILD and `.SRCINFO`, then updating both files. Pinning improves reproducibility but does not make AUR source trusted.
+**VM mode** partitions and formats the selected virtual disk before installation.
+See the [VM guide](docs/vm-install.md) for prerequisites and validation steps.
 
-The repository is organized by functional domains (packages, bootloader, desktop environment, etc.), with each directory responsible for a well-defined part of the system configuration.
+> **Destructive operation:** the following example erases `/dev/sda` completely.
+> Verify the virtual disk name. The installer requires confirmation; `--yes`
+> skips that confirmation and is intended only for disposable automated tests.
 
-Configuration capture and read-only drift verification are documented in [docs/configuration-inventory.md](docs/configuration-inventory.md).
-OpenClaw sandbox boundaries, image recovery, and safe operator checks are documented in [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
-Known limitations and deliberately deferred complex work are listed in [docs/roadmap.md](docs/roadmap.md).
-Disposable ISO build and full-install validation in VirtualBox are documented in [docs/vbox-automation.md](docs/vbox-automation.md).
-Original code and configuration are licensed under the [MIT License](LICENSE); bundled third-party assets retain their own terms as listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+```bash
+sudo bash install.sh --vm --disk /dev/sda --profile virtualbox
+```
 
----
+Use `--hostname`, `--username`, and `--timezone` to set installation-specific
+values. Run `--help` to inspect defaults before installing.
+
+### Existing installations
+
+```bash
+# Preview all managed modules.
+bash apply-config.sh --module all
+
+# Apply one module; preserve differing files unless replacement is explicit.
+bash apply-config.sh --module alacritty --apply
+```
+
+This workflow does not install packages or change services. Use `--replace` only
+when you intend to back up and replace differing files. See the
+[configuration and rollback guide](docs/apply-config.md).
+
+## Profiles and Package Selection
+
+| Profile | Purpose |
+| --- | --- |
+| `minimal` | Base system without the desktop package selection. |
+| `desktop` | Hyprland/Wayland workstation and desktop applications. |
+| `developer` | Desktop plus development tools; the default profile. |
+| `virtualbox` | Developer environment with VirtualBox guest integration. |
+
+Optional sets are selected with repeatable `--extra NAME`: `dev-extras`, `research`,
+`multimedia`, `virtualization`, `amd`, or `fingerprint`. CPU microcode selection
+uses `--microcode auto` by default and skips virtual machines.
+
+The optional personal recipe has its own reviewed selection:
+
+```bash
+bash install.sh --recipe ricardo --dry-run
+```
+
+See [the personal recipe](docs/recipe-ricardo.md) for GPU policies and deferred
+applications. It does not expand the live ISO package set or imply
+`--hardware-profile ricardo`, which selects personal display/tablet settings.
+
+AUR packages require `--aur`. Manifests pin reviewed AUR repository revisions;
+builds run unprivileged and package installation runs as root. Official build
+dependencies are declared separately. A recipe pin does not freeze every
+upstream dependency or establish trust in downloaded source.
+
+Host inventories under `packages/pacman/` record explicitly installed packages.
+They are separate from installer selections. See [package manifests](packages/README.md)
+and [portable preferences](docs/perfiles-portables.md) for details.
+
+## Supported Scope
+
+The project is under active development. Disposable VirtualBox installations are
+the primary end-to-end validation environment; recorded results are linked in the
+[deployment evidence](docs/host-deployment.md).
+
+The current installer requires x86_64 UEFI and Secure Boot disabled. Both
+installation paths perform read-only hardware and storage checks before network
+access or writes.
+
+- Safe mode expects dedicated, same-disk GPT/ext4 root and FAT32 ESP partitions
+  on SATA/NVMe storage. Shared ESPs, existing bootloaders, encryption, and dual
+  boot are outside the current supported installation path.
+- VM mode requires an explicit disk and refuses busy disks rather than
+  automatically unmounting them.
+- Hyprland/Wayland is the active desktop. Qtile/X11 files remain as legacy
+  reference and are not installed by the current profiles.
+- New installations use Docker through `sudo`. User setup preserves existing
+  group membership and does not automatically add users to the `docker` group.
+- Physical hardware support and proprietary application builds require their
+  own validation; passing shell tests does not establish either.
+
+Read [hardware support](docs/hardware-support.md) before preparing a target.
+These commands provide read-only observations:
+
+```bash
+bash scripts/hardware-check.sh
+bash scripts/verify-hardware.sh --profile developer
+```
+
+The inventory command does not approve a target for installation. See
+[hardware verification](docs/hardware-verification.md),
+[desktop hardware defaults](docs/desktop-hardware.md), and the
+[maintenance backlog](docs/maintenance-backlog.md) for remaining checks.
 
 ## Repository Structure
 
-### `packages/`
-Contains package-related configuration and metadata.
+```text
+install.sh          Parse options, validate the target, and orchestrate installation
+postinstall.sh      Configure the installed system inside arch-chroot
+apply-config.sh     Preview, apply, back up, and roll back user configuration
+lib/                Shared argument, validation, storage, and logging logic
+scripts/            Installation phases, deployment helpers, and validation tools
+packages/           Official/AUR selections, application configs, and file manifests
+wayland/            Hyprland, Waybar, desktop services, and session configuration
+greetd/ + grub/     Login and boot configuration, themes, and assets
+hardware/           Explicitly selected machine-specific settings
+network/ + power/   Networking and power-management configuration
+live/               Optional archiso installation and recovery environment
+server-bootstrap/  User-level terminal tooling for remote Linux servers
+tests/              Local regression checks and VM validation support
+docs/               Installation, operations, recovery, and design documentation
+```
 
-This directory stores:
-- Lists of explicitly installed packages
-- Per-package configuration folders
-- Installation notes and dependency considerations
+Package-level `files.conf` manifests describe where configuration files are
+deployed. Optional services live in dedicated directories such as `openclaw/`
+and `home-assistant/`; their private runtime state is not bundled.
 
-The goal is to enable reproducible package installation and minimize manual intervention after a fresh system setup.
+## Documentation
 
----
+The [documentation index](docs/README.md) distinguishes operational guides,
+personal profiles, and historical records. See the [current validation record](docs/validation.md),
+[AUR review](docs/aur-review.md), and [tools outside pacman](docs/external-tools.md).
 
-### `live/`
-Contains the minimal `archiso` profile for building a custom live installer environment.
+| Area | Guides |
+| --- | --- |
+| Installation | [Safe mode](docs/safe-install.md) · [VM mode](docs/vm-install.md) · [Live ISO](docs/live-iso.md) |
+| Packages and profiles | [Package layout](packages/README.md) · [Selection decisions](docs/package-selection.md) · [Personal recipe](docs/recipe-ricardo.md) · [Setup worksheet](docs/ricardo-setup.md) |
+| Configuration | [Apply and rollback](docs/apply-config.md) · [Inventory and drift](docs/configuration-inventory.md) · [Portable preferences](docs/perfiles-portables.md) |
+| Desktop and appearance | [Wayland](wayland/README.md) · [Greeter](docs/greeter.md) · [GRUB](docs/grub.md) · [Lock screen](docs/lock-screen.md) · [Yazi file chooser](docs/yazi-filechooser.md) |
+| System operations | [System policies](docs/system-policies.md) · [Desktop runtime](docs/desktop-fixes.md) · [Networking](docs/networking.md) · [Charge limits](docs/charge-limits.md) · [Printing](docs/printing.md) |
+| Optional services | [OpenCode](docs/opencode.md) · [Notifications](docs/opencode-notifier.md) · [OpenClaw](docs/openclaw-sandboxes.md) · [Home Assistant](docs/home-assistant.md) |
+| Remote systems | [Server bootstrap](server-bootstrap/README.md) |
+| Validation and recovery | [VirtualBox automation](docs/vbox-automation.md) · [Deployment evidence](docs/host-deployment.md) · [Recovery checklist](docs/recovery.md) |
+| Project direction | [Roadmap](docs/roadmap.md) · [Maintenance backlog](docs/maintenance-backlog.md) |
 
-This includes:
-- Scripts and configuration files for generating a live ISO
-- Preconfigured defaults for installation or recovery workflows
-- Documentation describing the live environment build process
+## Development and Contributions
 
-This directory is intended for system bootstrap, recovery, and testing.
+Read [AGENTS.md](AGENTS.md) for repository conventions. Keep installation logic
+modular, package lists separate from configuration, and hardware-specific choices
+explicit. Update the relevant guide when changing an operator-facing command.
 
-Build documentation: `docs/live-iso.md`.
+Run the isolated regression suite:
 
----
+```bash
+bash scripts/check.sh
+# Include error-level ShellCheck when installed (as in CI).
+bash scripts/check.sh --lint
+```
 
-### `wayland/`
-Contains the active Hyprland/Wayland desktop configuration.
+Run ShellCheck when available, and run the tests relevant to your change. These
+checks do not install the system. Exercise disk and boot changes only in a
+disposable VM, then record the environment, source revision, commands, and results.
 
-This directory includes:
-- Window manager configuration files
-- Keybindings, layouts, and startup hooks
-- Environment-specific scripts and theming adjustments
-- Hyprland configuration snapshots
-- Waybar configuration
-- Fontconfig fallback for Ubuntu + Noto
-- Package notes for Wayland-related tools
+The [VirtualBox workflow](docs/vbox-automation.md) supports
+`scripts/vbox-build.sh --snapshot-worktree --bootstrap-iso <official-iso>` to
+capture uncommitted sources for testing. Use `--snapshot-worktree` with
+`scripts/vbox-e2e.sh --manifest <manifest>` as well; `--safe` exercises the
+manually mounted target path. Artifacts retain source and ISO checksums with
+separate evidence for each installation mode.
 
-### `packages/alacritty/` and `packages/nvim/`
-Contain the active terminal, editor, and shell configuration. Package folders can include `files.conf` manifests so the installer and live session copy configs into the correct home-directory locations automatically.
-
-### `server-bootstrap/`
-Contains a portable, user-level Bash bootstrap for remote Linux servers. It installs terminal development tools when possible and deploys the Ginger Zsh, Neovim, OpenCode, and tmux configuration without touching system or hardware-specific settings. See [server-bootstrap/README.md](server-bootstrap/README.md).
-
-### `openclaw/`
-Contains the Docker Compose build definition for the local OpenClaw sandbox images. It does not contain OpenClaw runtime configuration, credentials, deploy keys, or workspace state. See [docs/openclaw-sandboxes.md](docs/openclaw-sandboxes.md).
-
-### `qtile/`
-Contains the previous Qtile setup as a legacy reference. It is not part of the installer profiles.
-
-Automatic Redshift and GeoClue setup for the legacy Qtile/X11 session is documented in [docs/redshift.md](docs/redshift.md).
-
-Dock-aware battery charge limits are documented in [docs/charge-limits.md](docs/charge-limits.md).
-
----
-
-
-### `grub/`
-Contains custom **GRUB bootloader** configuration.
-
-This includes:
-- Custom GRUB themes
-- Theme installer script
-- Boot menu appearance settings
-- Configuration overrides and generation notes
-
-The goal is to provide a visually consistent and predictable boot experience.
-
----
-
-## Goals
-
-- Fully reproducible Arch Linux installations
-- Clear separation of system concerns
-- Version-controlled configuration
-- Minimal reliance on ad-hoc manual steps
-
----
-
-## Pending Hardware Maintenance
-
-The AMD laptop should eventually add `amd-ucode` to the package profile and `fwupd` for firmware update checks. This is intentionally documented but not installed or configured yet; review and apply those changes in a dedicated maintenance window.
-
----
-
-## Notes
-
-This repository reflects a personal workflow and hardware setup.
-Adjustments may be required when applying it to different machines or use cases.
-
----
+For bug reports, include the profile, installation mode, expected behavior,
+actual result, and a minimal reproduction. Remove credentials and private host
+details from logs before sharing them.
 
 ## License
 
 Original code and configuration are licensed under the [MIT License](LICENSE).
-Bundled third-party assets retain their own terms as listed in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Bundled fonts, icons, wallpapers, and other third-party assets retain their own
+licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the license
+files alongside those assets. Packages installed by this project retain their
+respective upstream licenses.
+
+This is an independent configuration project and is not an official Arch Linux
+distribution or an Arch Linux-endorsed installer.

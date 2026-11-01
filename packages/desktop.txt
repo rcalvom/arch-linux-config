@@ -4,7 +4,6 @@ hyprpaper
 hypridle
 hyprlock
 hyprsunset
-fprintd
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 waybar
@@ -17,11 +16,19 @@ grim
 slurp
 alacritty
 calcurse
+xournalpp
+rnote
 vdirsyncer
 python-aiohttp-oauthlib
 firefox
 thunderbird
 yazi
+python-dbus
+python-gobject
+evince
+neovim
+adwaita-icon-theme
+adwaita-fonts
 file
 ffmpeg
 7zip
@@ -33,9 +40,11 @@ fzf
 zoxide
 resvg
 imagemagick
+chafa
 ueberzugpp
 mpv
 python
+python-openpyxl
 greetd
 greetd-tuigreet
 kbd
@@ -48,14 +57,21 @@ bluez
 bluez-utils
 bluetui
 impala
-iwd
-wireless-regdb
 brightnessctl
 playerctl
 polkit-kde-agent
-network-manager-applet
 xdg-user-dirs
 xdg-utils
+# Printing. Drivers come from the ECN spooler for Purdue queues; gutenprint and
+# foomatic cover locally attached printers. See docs/printing.md.
+cups
+avahi
+nss-mdns
+system-config-printer
+gutenprint
+foomatic-db
+foomatic-db-ppds
+foomatic-db-engine
 xorg-xwayland
 mesa
 noto-fonts

@@ -1,115 +1,61 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-REPO_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
-BACKUP_ROOT=/var/lib/arch-linux-config/network-backups
-BACKUP_DIR=
-
-# shellcheck source=lib/log.sh
-source "$REPO_DIR/lib/log.sh"
-
-usage() {
-  printf '%s\n' "Usage: rollback-iwd-wlan0.sh --backup <directory>"
-}
-
-require_root() {
-  [[ $EUID -eq 0 ]] || die "Run this script with sudo"
+die() {
+  printf '[ERROR] %s\n' "$*" >&2
+  exit 1
 }
 
 restore_path() {
-  local path=$1
-  local source="$BACKUP_DIR/files$path"
+  local destination=$1
+  local backup=$2
 
-  if [[ -e "$source" || -L "$source" ]]; then
-    install -dm755 "$(dirname -- "$path")"
-    rm -f -- "$path"
-    cp -a -- "$source" "$path"
-    return
+  rm -rf -- "$destination"
+  if [[ ! -e "$backup.absent" ]]; then
+    cp -a --no-dereference "$backup" "$destination"
   fi
-
-  if grep -qxF "$path" "$BACKUP_DIR/absent-paths"; then
-    rm -f -- "$path"
-    return
-  fi
-
-  die "Backup is incomplete for $path"
-}
-
-restore_new_path() {
-  local path=$1
-  local source="$BACKUP_DIR/files$path"
-
-  if [[ -e "$source" || -L "$source" ]] || grep -qxF "$path" "$BACKUP_DIR/absent-paths"; then
-    restore_path "$path"
-  else
-    rm -f -- "$path"
-  fi
-}
-
-was_enabled() {
-  [[ -e "$BACKUP_DIR/enabled-$1" ]]
 }
 
 main() {
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --backup)
-        [[ -n "${2-}" ]] || die "--backup requires a directory"
-        BACKUP_DIR=$(realpath -e "$2")
-        shift 2
-        ;;
-      --help)
-        usage
-        exit 0
-        ;;
-      *)
-        die "Unknown argument: $1"
-        ;;
-    esac
-  done
+  local force=false
+  local backup_dir=/var/lib/arch-linux-config/network-backups/current-iwd-only
 
-  require_root
-  [[ -n "$BACKUP_DIR" ]] || die "--backup is required"
-  [[ "$BACKUP_DIR" == "$BACKUP_ROOT"/* ]] || die "Backup must be under $BACKUP_ROOT"
-  [[ -f "$BACKUP_DIR/absent-paths" ]] || die "Invalid backup directory: $BACKUP_DIR"
-
-  log_info "Restoring NetworkManager ownership of Wi-Fi"
-  systemctl disable --now host-network-online.service
-  if [[ -f /etc/systemd/system/archcfg-reset-resolved-if-stub.path || -f /usr/lib/systemd/system/archcfg-reset-resolved-if-stub.path ]]; then
-    systemctl disable --now archcfg-reset-resolved-if-stub.path
+  if [[ ${1-} == --help ]]; then
+    printf 'Usage: %s [--force] [BACKUP-DIRECTORY]\n' "${0##*/}"
+    exit 0
   fi
-  systemctl disable --now iwd.service
+  if [[ ${1-} == --force ]]; then
+    force=true
+    shift
+  fi
+  if [[ -n ${1-} ]]; then
+    backup_dir=$1
+  fi
 
-  restore_path /etc/NetworkManager/conf.d/10-iwd-wlan0.conf
-  restore_path /etc/iwd/main.conf
-  restore_path /etc/systemd/system/host-network-online.service
-  restore_new_path /etc/systemd/system/archcfg-reset-resolved-if-stub.service
-  restore_new_path /etc/systemd/system/archcfg-reset-resolved-if-stub.path
-  restore_path /usr/local/libexec/archcfg-wait-network-online
-  restore_new_path /usr/local/libexec/archcfg-reset-resolved-if-stub
-  restore_path /etc/resolv.conf
+  [[ ${EUID:-$(id -u)} -eq 0 ]] || die 'Run this script as root.'
+  [[ -d "$backup_dir" ]] || die "Missing network backup: $backup_dir"
+  [[ "$force" == true || -e /var/lib/arch-linux-config/network-cutover/armed ]] || exit 0
 
+  systemctl stop iwd.service systemd-networkd.service || true
+  systemctl unmask NetworkManager.service NetworkManager-wait-online.service NetworkManager-dispatcher.service wpa_supplicant.service || true
+  restore_path /etc/resolv.conf "$backup_dir/resolv.conf"
+  restore_path /etc/iwd "$backup_dir/iwd"
+  restore_path /etc/systemd/network "$backup_dir/network"
+  restore_path /etc/systemd/system/iwd.service "$backup_dir/iwd.service"
+  restore_path /etc/systemd/system/host-network-online.service "$backup_dir/host-network-online.service"
+  restore_path /etc/systemd/system/archcfg-reset-resolved-if-stub.service "$backup_dir/archcfg-reset-resolved-if-stub.service"
+  restore_path /etc/systemd/system/archcfg-reset-resolved-if-stub.path "$backup_dir/archcfg-reset-resolved-if-stub.path"
+  restore_path /usr/local/libexec/archcfg-wait-network-online "$backup_dir/archcfg-wait-network-online"
+  restore_path /usr/local/libexec/archcfg-reset-resolved-if-stub "$backup_dir/archcfg-reset-resolved-if-stub"
   systemctl daemon-reload
-  if was_enabled systemd-resolved.service; then
-    systemctl enable --now systemd-resolved.service
-  else
-    systemctl disable --now systemd-resolved.service
-  fi
-
-  if was_enabled archcfg-reset-resolved-if-stub.path; then
-    systemctl enable archcfg-reset-resolved-if-stub.path
-  fi
-
+  systemctl disable iwd.service systemd-networkd.service systemd-resolved.service host-network-online.service archcfg-reset-resolved-if-stub.path || true
   systemctl enable NetworkManager.service
-  systemctl restart NetworkManager.service
-  if was_enabled NetworkManager-wait-online.service; then
+  if grep -qx 'enabled' "$backup_dir/networkmanager.enabled"; then
     systemctl enable NetworkManager-wait-online.service
-  else
-    systemctl disable NetworkManager-wait-online.service
   fi
-
-  log_info "NetworkManager has been restored. It will reactivate its Wi-Fi backend."
+  systemctl start NetworkManager.service
+  rm -f /var/lib/arch-linux-config/network-cutover/armed
+  printf '[INFO] NetworkManager rollback completed.\n'
 }
 
 main "$@"
