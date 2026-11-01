@@ -37,15 +37,30 @@ changes. This is not a claim that the base commit alone contains the fixes.
 | Calcurse cache/session regression | Passed headlessly after simulating terminal lifetime and closing inherited lock descriptors in the terminal monitor |
 | Full local suite | Passed: Bash syntax, 18 shell tests, four Python groups (including 13 GRUB cases), four Node cases, and whitespace checks |
 | Host ShellCheck | Not run: executable unavailable on the host |
-| GitHub Actions | Workflows prepared; remote results pending publication |
+| GitHub Actions | Both workflows passed on `03575434c7dd52046bb683d0beec77f904e64c4f`; regression run `41280604096`, secret scan `41280604235` |
 | Official bootstrap ISO | Signature verified against the Arch distribution keyring for `archlinux-2026.05.01-x86_64.iso` |
 | VirtualBox preflight | Passed |
 | Fresh ISO build | Started with run ID `validation-20261101`; result pending |
 | Fresh VM and safe-mode installation | Pending the new ISO |
 | AUR review | All 17 pins resolved; Spotify replacement download and signed metadata verified; package builds not performed |
 
-The build captures a worktree snapshot before creating its VM. Documentation
-edits made afterwards are not part of that snapshot. Record the final source
+The successful [regression run](https://github.com/rcalvom/arch-linux-config/actions/runs/41280604096)
+includes error-level ShellCheck and the Calcurse local-notification test. Of the
+14 GRUB cases, 13 passed and font rebuilding was explicitly skipped because the
+runner lacks the source fonts. All 14 GRUB cases passed locally. The
+[secret scan](https://github.com/rcalvom/arch-linux-config/actions/runs/41280604235)
+also passed.
+
+Initial CI runs exposed ambiguous ShellCheck analysis of later test mocks, an
+Arch-keyring assumption in a fixture, and missing system fonts on Ubuntu. The
+fixes preserve real command calls, validate optional mocked keyring setup, and
+separate bundled-asset regeneration from dependency-sensitive font rebuilding.
+
+The build captures a worktree snapshot before creating its VM. Later changes to
+documentation, test portability, license line endings, and the equivalent GRUB
+timeout expansion are not part of that snapshot. The source archive SHA-256 is
+`d3f48aa5f4741f92bede95d45f5df3795d70820baed0fd0720eb7fc489652a83`.
+Record the final source
 hash and results when the run completes; do not substitute older deployment
 results for this run.
 

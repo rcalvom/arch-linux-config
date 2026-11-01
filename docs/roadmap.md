@@ -16,8 +16,8 @@ installation; see [validation evidence](validation.md) for tested scope.
 - Revision-pinned optional AUR recipes with explicit build dependencies.
 - Headless Calcurse regression coverage and a fix for inherited session locks.
 - A shared local check command and GitHub Actions workflows for regressions,
-  error-level ShellCheck, and credential scanning. Remote execution remains to
-  be verified.
+  error-level ShellCheck, and credential scanning. Both workflows passed on
+  `0357543`; see the validation record for the optional font-rebuild skip.
 
 ## Validation and Release Work
 
@@ -25,7 +25,7 @@ installation; see [validation evidence](validation.md) for tested scope.
 - [x] Verify the official bootstrap ISO signature and VirtualBox preflight.
 - [ ] Complete a fresh ISO build and installation/reboot checks in both VM and
   safe modes; retain source hashes and mode-specific evidence.
-- [ ] Verify the published GitHub Actions runs and address lint failures.
+- [x] Verify the published GitHub Actions runs and address lint failures.
 - [x] Review all 17 AUR pins and source availability; repair Spotify's unavailable
   download after signature and checksum verification.
 - [ ] Build automatic AUR selections in a disposable current Arch environment.
