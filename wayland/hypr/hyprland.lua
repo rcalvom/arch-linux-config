@@ -119,7 +119,7 @@ local function toggleFocusedWorkspaceLayout()
     end
 
     local layout = workspace.tiled_layout == "monocle" and "master" or "monocle"
-    hl.workspace_rule({ workspace = workspace.config_name, layout = layout })
+    hl.workspace_rule({ workspace = workspace.addressable_name, layout = layout })
 end
 
 -- Keep the familiar Qtile application and session bindings.
