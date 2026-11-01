@@ -40,8 +40,9 @@ changes. This is not a claim that the base commit alone contains the fixes.
 | GitHub Actions | Both workflows passed on `03575434c7dd52046bb683d0beec77f904e64c4f`; regression run `41280604096`, secret scan `41280604235` |
 | Official bootstrap ISO | Signature verified against the Arch distribution keyring for `archlinux-2026.05.01-x86_64.iso` |
 | VirtualBox preflight | Passed |
-| Fresh ISO build | Started with run ID `validation-20261101`; result pending |
-| Fresh VM and safe-mode installation | Pending the new ISO |
+| Fresh ISO build | Passed, run ID `validation-20261101`; ISO size 2,411,577,344 bytes |
+| Fresh VM installation | Passed: installation, UEFI reboot, graphical login, configuration checks, Docker, and deployment/rollback tests |
+| Fresh safe-mode installation | Passed on a separate disposable virtual disk, including partition-table and root/ESP witness preservation |
 | AUR review | All 17 pins resolved; Spotify replacement download and signed metadata verified; package builds not performed |
 
 The successful [regression run](https://github.com/rcalvom/arch-linux-config/actions/runs/41280604096)
@@ -60,9 +61,43 @@ The build captures a worktree snapshot before creating its VM. Later changes to
 documentation, test portability, license line endings, and the equivalent GRUB
 timeout expansion are not part of that snapshot. The source archive SHA-256 is
 `d3f48aa5f4741f92bede95d45f5df3795d70820baed0fd0720eb7fc489652a83`.
-Record the final source
-hash and results when the run completes; do not substitute older deployment
-results for this run.
+The verified build manifest records:
+
+- Source tree SHA-256: `d4049e43da70133a893c7fdb3e0f5ab61b84296f84102f6b5687479287cc3235`.
+- ISO SHA-256: `6c6278fa7f43629229e126bfe9d1caca7a0daab50bf71b1b287f679af88ce6b2`.
+
+Both installation modes passed using this same ISO and source snapshot.
+
+### VM Installation Result
+
+The `virtualbox` profile installed without AUR and booted kernel
+`7.2.11-arch1-1`. The installed source tree matched the build manifest. Graphical
+login and monitor IPC passed with zero Hyprland configuration errors. Docker
+built and ran the local fixture through `sudo`, without adding the user to the
+Docker group or downloading an external image. Managed system configuration,
+deployment idempotency, private-file preservation, replacement, and hardware
+profile rollback checks passed.
+
+Passive hardware verification reported 42 passes, zero failures, two unknowns
+(microcode exposure and graphics acceleration), and ten skipped observations.
+System and user service checks found no failed units. Dotfile verification
+reported ten extra-local-file warnings for installed launchers and Calcurse
+units; these warnings did not fail the runner. This result does not establish
+physical-device support or AUR build compatibility.
+
+### Safe-Mode Installation Result
+
+The separate safe-mode VM passed the same installation, reboot, graphical login,
+Docker, configuration, and deployment/rollback checks. The runner prepared the
+virtual partitions before invoking the safe installer. The partition-table
+comparison and checksums of witness files on root and the ESP passed after
+installation, confirming preservation of those fixtures. The runner set the
+temporary test user's password separately before reboot.
+
+Hardware verification again reported 42 passes, zero failures, two unknowns,
+and ten skipped observations. The same ten dotfile warnings remained. Both test
+VMs and the builder VM were removed by their successful-run cleanup; private
+evidence and the ISO remain in the managed state directory.
 
 ## End-to-End Evidence
 

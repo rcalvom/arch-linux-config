@@ -23,7 +23,7 @@ installation; see [validation evidence](validation.md) for tested scope.
 
 - [x] Run the isolated local regression suite, including Calcurse.
 - [x] Verify the official bootstrap ISO signature and VirtualBox preflight.
-- [ ] Complete a fresh ISO build and installation/reboot checks in both VM and
+- [x] Complete a fresh ISO build and installation/reboot checks in both VM and
   safe modes; retain source hashes and mode-specific evidence.
 - [x] Verify the published GitHub Actions runs and address lint failures.
 - [x] Review all 17 AUR pins and source availability; repair Spotify's unavailable
