@@ -99,6 +99,12 @@ test_base_system_keyring() {
   install_base_system "$target" "$REPO_DIR"
   mapfile -t call_lines < "$calls"
 
+  # Non-Arch CI hosts lack the live keyring. Both live calls are mocked above.
+  if [[ "${call_lines[0]}" == --init ]]; then
+    [[ "${call_lines[1]}" == --populate ]] || fail "live keyring population did not follow initialization"
+    call_lines=("${call_lines[@]:2}")
+  fi
+  [[ ${#call_lines[@]} -eq 3 ]] || fail "unexpected base installation calls"
   [[ "${call_lines[0]}" == "--gpgdir $keyring_dir --init" ]] || fail "keyring initialization did not run first"
   [[ "${call_lines[1]}" == "--gpgdir $keyring_dir --populate" ]] || fail "keyring population did not run second"
   [[ "${call_lines[2]}" == "-K $target base" ]] || fail "pacstrap invocation is incorrect"
