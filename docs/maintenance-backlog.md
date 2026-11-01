@@ -7,6 +7,9 @@ before implementation.
 
 Audit date: 2026-08-03.
 
+The [roadmap](roadmap.md) tracks current project work. This dated host audit is
+retained as historical evidence, not as a current health report.
+
 ## Verified Baseline
 
 The system was healthy when this backlog was created:

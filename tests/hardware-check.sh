@@ -2,11 +2,13 @@
 set -euo pipefail
 
 REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-# shellcheck source=../lib/log.sh
+# Load real libraries before the later source mock; builtin bypasses that mock.
+# ShellCheck still resolves the later function for these builtin calls.
+# shellcheck source=../lib/log.sh disable=SC2218
 builtin source "$REPO_DIR/lib/log.sh"
-# shellcheck source=../lib/validate.sh
+# shellcheck source=../lib/validate.sh disable=SC2218
 builtin source "$REPO_DIR/lib/validate.sh"
-# shellcheck source=../lib/hardware.sh
+# shellcheck source=../lib/hardware.sh disable=SC2218
 builtin source "$REPO_DIR/lib/hardware.sh"
 
 TEST_ROOT=$(mktemp -d)

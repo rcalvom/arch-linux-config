@@ -1,5 +1,8 @@
 # Host Deployment Status
 
+This is a historical evidence record. For current commands, use the
+[operational index](README.md); for recent checks, see [validation](validation.md).
+
 Documentation review date: September 13, 2026. This record distinguishes source implementation, historical ISO validation and physical-host application. This documentation update did not deploy files, change services or recertify the host.
 
 ## Evidence Identity
