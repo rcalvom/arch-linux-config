@@ -544,10 +544,26 @@ Path(sys.argv[2]).write_text(output)
         self.assertEqual(self.run_helper(extra=("--help",)).returncode, 0)
 
     def test_variant_regeneration(self):
+        self.check_variant_regeneration(build_fonts=False)
+
+    def test_font_regeneration(self):
+        for executable in ("fc-match", "grub-mkfont"):
+            if shutil.which(executable) is None:
+                self.skipTest(f"Font rebuild requires {executable}")
+        for family, style in (("UbuntuMono Nerd Font", "Regular"),
+                              ("UbuntuMono Nerd Font", "Bold"),
+                              ("Adwaita Mono", "Bold")):
+            actual = subprocess.check_output(
+                ["fc-match", "-f", "%{family}|%{style}", f"{family}:style={style}"], text=True)
+            if actual != f"{family}|{style}":
+                self.skipTest(f"Font rebuild requires {family} {style}; fallback is not acceptable")
+        self.check_variant_regeneration(build_fonts=True)
+
+    def check_variant_regeneration(self, *, build_fonts):
         generator = runpy.run_path(str(REPO / "grub/generate-theme.py"))
         output = self.root / "generated"
         output.mkdir()
-        generator["generate"](output, build_assets=True, build_fonts=True)
+        generator["generate"](output, build_assets=True, build_fonts=build_fonts)
         source = REPO / "grub/theme/variants"
         expected = {p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()}
         for _ in range(2):

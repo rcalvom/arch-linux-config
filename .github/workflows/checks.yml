@@ -28,6 +28,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             python3 python3-pil shellcheck jq grub-common nodejs \
-            openssh-client iproute2
+            openssh-client iproute2 calcurse
       - name: Run syntax, lint, and isolated regression checks
         run: bash scripts/check.sh --lint

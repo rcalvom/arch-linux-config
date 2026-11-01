@@ -13,8 +13,14 @@ The command checks Bash syntax, runs 18 isolated shell tests, four Python test
 groups, and four synthetic Node tests, then checks diff whitespace. Fixtures
 mock system operations; they do not install Arch or exercise physical hardware.
 Dependencies include Bash, Python with Pillow, Node.js, jq, GRUB utilities, SSH
-tools, and iproute2. `--lint` additionally requires ShellCheck and blocks on
+tools, iproute2, and Calcurse. `--lint` additionally requires ShellCheck and blocks on
 error-level findings. Warning-level cleanup remains separate work.
+
+GRUB asset regeneration uses the bundled PF2 fonts. A separate font-rebuild
+case requires the exact UbuntuMono Nerd Font and Adwaita Mono families plus
+`fc-match` and `grub-mkfont`; it reports a skip when those dependencies are absent.
+The Ubuntu CI runner does not provide those fonts. It still checks bundled font
+rendering, asset regeneration, and profile deployment/rollback.
 
 GitHub Actions runs this command with `--lint` on pushes and pull requests to
 `master` and `project`. A second workflow scans history with Gitleaks. Actions
