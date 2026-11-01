@@ -6,14 +6,14 @@ source "$REPO_DIR/lib/source-snapshot.sh"
 TEST_DIR=$(mktemp -d)
 trap 'rm -rf -- "$TEST_DIR"' EXIT
 mkdir "$TEST_DIR/repo" "$TEST_DIR/evidence" "$TEST_DIR/unpacked"
-git -C "$TEST_DIR/repo" init -q
+command git -C "$TEST_DIR/repo" init -q
 printf 'original\n' > "$TEST_DIR/repo/tracked"
 printf 'deleted\n' > "$TEST_DIR/repo/deleted"
-git -C "$TEST_DIR/repo" add tracked deleted
+command git -C "$TEST_DIR/repo" add tracked deleted
 mkdir "$TEST_DIR/repo/__pycache__"
 printf 'cached\n' > "$TEST_DIR/repo/__pycache__/tracked.pyc"
 printf 'cached\n' > "$TEST_DIR/repo/standalone.pyc"
-git -C "$TEST_DIR/repo" add __pycache__/tracked.pyc standalone.pyc
+command git -C "$TEST_DIR/repo" add __pycache__/tracked.pyc standalone.pyc
 printf 'modified\n' > "$TEST_DIR/repo/tracked"
 rm "$TEST_DIR/repo/deleted"
 printf 'new\n' > "$TEST_DIR/repo/untracked file"
@@ -61,8 +61,8 @@ preserve_bundled_source_permissions "$TEST_DIR/profile"
 source "$TEST_DIR/profile/profiledef.sh"
 [[ ${file_permissions['/opt/arch-linux-config/run me']} == 0:0:751 ]]
 # Exercise real Git archive permissions without creating a fixture commit.
-git -C "$TEST_DIR/repo" update-index --chmod=+x tracked
-fixture_tree=$(git -C "$TEST_DIR/repo" write-tree)
+command git -C "$TEST_DIR/repo" update-index --chmod=+x tracked
+fixture_tree=$(command git -C "$TEST_DIR/repo" write-tree)
 (
   git() {
     local args=("$@")

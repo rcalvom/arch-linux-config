@@ -145,7 +145,7 @@ main() {
   grep -Fq "$THEME_DIR/theme.txt" "$TEMPORARY_CONFIG" || die "Generated configuration does not reference the selected theme"
   grep -Eq '^[[:space:]]*set timeout_style=menu[[:space:]]*$' "$TEMPORARY_CONFIG" || die "Generated configuration does not expose the menu"
   local timeout=3
-  grep -Eq "^[[:space:]]*set timeout=$timeout[[:space:]]*$" "$TEMPORARY_CONFIG" || die "Generated configuration has an unexpected timeout"
+  grep -Eq "^[[:space:]]*set timeout=${timeout}[[:space:]]*$" "$TEMPORARY_CONFIG" || die "Generated configuration has an unexpected timeout"
   chmod --reference="$BACKUP_DIR/grub.cfg" "$TEMPORARY_CONFIG"
   chown --reference="$BACKUP_DIR/grub.cfg" "$TEMPORARY_CONFIG"
   mv -- "$TEMPORARY_CONFIG" /boot/grub/grub.cfg

@@ -3,11 +3,11 @@ set -euo pipefail
 
 REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck source=../lib/log.sh
-source "$REPO_DIR/lib/log.sh"
+builtin source "$REPO_DIR/lib/log.sh"
 # shellcheck source=../lib/validate.sh
-source "$REPO_DIR/lib/validate.sh"
+builtin source "$REPO_DIR/lib/validate.sh"
 # shellcheck source=../lib/hardware.sh
-source "$REPO_DIR/lib/hardware.sh"
+builtin source "$REPO_DIR/lib/hardware.sh"
 
 TEST_ROOT=$(mktemp -d)
 trap 'rm -rf -- "$TEST_ROOT"' EXIT
